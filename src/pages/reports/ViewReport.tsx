@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Download, Edit, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { pdf } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
+import { ReportPdf } from '@/pdf/ReportPdf';
 
 interface Expense {
   id: string;
@@ -109,32 +110,21 @@ const ViewReport = () => {
     if (!report) return;
 
     try {
-      const element = document.getElementById('report-pdf');
-      if (!element) {
-        toast({
-          title: 'שגיאה',
-          description: 'לא נמצא תוכן הדוח ליצירת PDF',
-          variant: 'destructive',
-        });
-        return;
-      }
+      const blob = await pdf(
+        <ReportPdf
+          report={report as any}
+          expenses={expenses as any}
+        />,
+      ).toBlob();
 
-      const doc = new jsPDF('p', 'pt', 'a4');
+      saveAs(
+        blob,
+        `דוח_נסיעה_${report.trip_destination}_${format(new Date(), 'dd-MM-yyyy')}.pdf`,
+      );
 
-      await doc.html(element, {
-        html2canvas: {
-          scale: 0.8,
-        },
-        callback: (docInstance) => {
-          docInstance.save(
-            `דוח_נסיעה_${report.trip_destination}_${format(new Date(), 'dd-MM-yyyy')}.pdf`,
-          );
-
-          toast({
-            title: 'הדוח הורד בהצלחה',
-            description: 'הקובץ נשמר במחשב שלך',
-          });
-        },
+      toast({
+        title: 'הדוח הורד בהצלחה',
+        description: 'הקובץ נשמר במחשב שלך',
       });
     } catch (error) {
       console.error('Failed generating report PDF', error);
@@ -145,7 +135,6 @@ const ViewReport = () => {
       });
     }
   };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
