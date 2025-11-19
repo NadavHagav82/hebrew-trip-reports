@@ -36,6 +36,12 @@ interface Report {
   created_at: string;
 }
 
+interface Profile {
+  full_name: string;
+  employee_id: string;
+  department: string;
+}
+
 const ViewReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,6 +50,7 @@ const ViewReport = () => {
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<Report | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -61,20 +68,42 @@ const ViewReport = () => {
         .single();
 
       if (reportError) throw reportError;
-      setReport(reportData);
+      setReport(reportData as Report);
 
-      // Load expenses
+      // Load expenses with receipts
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
-        .select(`
-          *,
-          receipts (*)
-        `)
+        .select(
+          `*,
+           receipts (*)`
+        )
         .eq('report_id', id)
         .order('expense_date', { ascending: true });
 
       if (expensesError) throw expensesError;
-      setExpenses(expensesData || []);
+
+      const enhancedExpenses: Expense[] = (expensesData || []).map((expense: any) => ({
+        ...expense,
+        receipts: (expense.receipts || []).map((receipt: any) => ({
+          ...receipt,
+          file_url: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/receipts/${receipt.file_url}`,
+        })),
+      }));
+
+      setExpenses(enhancedExpenses);
+
+      // Load employee profile
+      if (user?.id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!profileError && profileData) {
+          setProfile(profileData as Profile);
+        }
+      }
     } catch (error: any) {
       toast({
         title: 'שגיאה',
@@ -111,10 +140,7 @@ const ViewReport = () => {
 
     try {
       const blob = await pdf(
-        <ReportPdf
-          report={report as any}
-          expenses={expenses as any}
-        />,
+        <ReportPdf report={report as any} expenses={expenses as any} profile={profile as any} />,
       ).toBlob();
 
       saveAs(
