@@ -109,154 +109,32 @@ const ViewReport = () => {
     if (!report) return;
 
     try {
-      const doc = new jsPDF();
-
-      // Use Hebrew language (standard built-in font)
-      doc.setLanguage('he');
-
-      // Title
-      doc.setFontSize(20);
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const rightMargin = pageWidth - 20;
-      doc.text('דוח נסיעה', rightMargin, 20, { align: 'right' });
-
-      // Report details
-      doc.setFontSize(12);
-      let yPos = 40;
-
-      doc.text(`יעד: ${report.trip_destination}`, rightMargin, yPos, { align: 'right' });
-      yPos += 10;
-      doc.text(`מטרת הנסיעה: ${report.trip_purpose}`, rightMargin, yPos, { align: 'right' });
-      yPos += 10;
-      doc.text(
-        `תאריך התחלה: ${format(new Date(report.trip_start_date), 'dd/MM/yyyy')}`,
-        rightMargin,
-        yPos,
-        { align: 'right' },
-      );
-      yPos += 10;
-      doc.text(
-        `תאריך סיום: ${format(new Date(report.trip_end_date), 'dd/MM/yyyy')}`,
-        rightMargin,
-        yPos,
-        { align: 'right' },
-      );
-      yPos += 10;
-      doc.text(`משך הנסיעה: ${calculateTripDuration()} ימים`, rightMargin, yPos, {
-        align: 'right',
-      });
-      yPos += 10;
-      doc.text(`סטטוס: ${report.status}`, rightMargin, yPos, { align: 'right' });
-      yPos += 15;
-
-      // Expenses table
-      if (expenses.length > 0) {
-        const tableData = expenses.map((exp) => [
-          format(new Date(exp.expense_date), 'dd/MM/yyyy'),
-          getCategoryLabel(exp.category),
-          exp.description,
-          `${exp.amount} ${exp.currency}`,
-          `₪${exp.amount_in_ils.toFixed(2)}`,
-        ]);
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', "סכום בש'ח"]],
-          body: tableData,
-          styles: {
-            font: 'helvetica',
-            fontSize: 10,
-            halign: 'right',
-            overflow: 'linebreak',
-            cellWidth: 'wrap',
-          },
-          headStyles: {
-            fillColor: [66, 66, 66],
-            textColor: [255, 255, 255],
-            halign: 'right',
-            font: 'helvetica',
-          },
-          tableWidth: 'auto',
-          margin: { left: 20, right: 20 },
+      const element = document.getElementById('report-pdf');
+      if (!element) {
+        toast({
+          title: 'שגיאה',
+          description: 'לא נמצא תוכן הדוח ליצירת PDF',
+          variant: 'destructive',
         });
-
-        const finalY = (doc as any).lastAutoTable?.finalY || yPos + 50;
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`סה"כ: ₪${report.total_amount_ils.toFixed(2)}`, rightMargin, finalY + 15, {
-          align: 'right',
-        });
-
-        // Try to add receipts images section on following pages, but
-        // don't fail the whole export if something goes wrong.
-        try {
-          let hasReceipts = false;
-          let receiptPageY = 30;
-
-          const ensureNewPage = () => {
-            doc.addPage();
-            doc.setFontSize(18);
-            doc.setFont('Assistant', 'normal');
-            doc.text('חשבוניות מצורפות', rightMargin, 20, { align: 'right' });
-            receiptPageY = 30;
-          };
-
-          const loadImageAsDataUrl = async (url: string): Promise<string> => {
-            const response = await fetch(url);
-            const blob = await response.blob();
-
-            return new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          };
-
-          for (const exp of expenses) {
-            if (!exp.receipts || exp.receipts.length === 0) continue;
-
-            for (const receipt of exp.receipts) {
-              if (receipt.file_type !== 'image') continue;
-
-              if (!hasReceipts) {
-                hasReceipts = true;
-                ensureNewPage();
-              }
-
-              const dataUrl = await loadImageAsDataUrl(receipt.file_url);
-              const imgProps = (doc as any).getImageProperties(dataUrl);
-              const pageHeight = doc.internal.pageSize.getHeight();
-
-              const maxWidth = pageWidth - 40;
-              const maxHeight = pageHeight - 60;
-              let imgWidth = maxWidth;
-              let imgHeight = (imgProps.height * maxWidth) / imgProps.width;
-
-              if (imgHeight > maxHeight) {
-                imgHeight = maxHeight;
-                imgWidth = (imgProps.width * maxHeight) / imgProps.height;
-              }
-
-              if (receiptPageY + imgHeight > pageHeight - 20) {
-                ensureNewPage();
-              }
-
-              const x = (pageWidth - imgWidth) / 2;
-              doc.addImage(dataUrl, 'JPEG', x, receiptPageY, imgWidth, imgHeight);
-              receiptPageY += imgHeight + 10;
-            }
-          }
-        } catch (e) {
-          console.error('Failed adding receipt images to PDF', e);
-        }
+        return;
       }
 
-      doc.save(`דוח_נסיעה_${report.trip_destination}_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+      const doc = new jsPDF('p', 'pt', 'a4');
 
-      toast({
-        title: 'הדוח הורד בהצלחה',
-        description: 'הקובץ נשמר במחשב שלך',
+      await doc.html(element, {
+        html2canvas: {
+          scale: 0.8,
+        },
+        callback: (docInstance) => {
+          docInstance.save(
+            `דוח_נסיעה_${report.trip_destination}_${format(new Date(), 'dd-MM-yyyy')}.pdf`,
+          );
+
+          toast({
+            title: 'הדוח הורד בהצלחה',
+            description: 'הקובץ נשמר במחשב שלך',
+          });
+        },
       });
     } catch (error) {
       console.error('Failed generating report PDF', error);
@@ -315,7 +193,7 @@ const ViewReport = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div id="report-pdf" className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Report Status */}
         <Card className="mb-6">
           <CardHeader>
