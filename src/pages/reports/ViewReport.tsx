@@ -154,6 +154,26 @@ const ViewReport = () => {
     return acc;
   }, {} as Record<string, number>);
 
+  // Calculate category totals by original currency
+  const categoryTotalsByCurrency = expenses.reduce((acc, exp) => {
+    if (!acc[exp.category]) {
+      acc[exp.category] = { currencies: {}, totalILS: 0 };
+    }
+    if (!acc[exp.category].currencies[exp.currency]) {
+      acc[exp.category].currencies[exp.currency] = 0;
+    }
+    acc[exp.category].currencies[exp.currency] += exp.amount;
+    acc[exp.category].totalILS += exp.amount_in_ils;
+    return acc;
+  }, {} as Record<string, { currencies: Record<string, number>, totalILS: number }>);
+
+  // Calculate grand total by currency
+  const grandTotalByCurrency = expenses.reduce((acc, exp) => {
+    if (!acc[exp.currency]) acc[exp.currency] = 0;
+    acc[exp.currency] += exp.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <>
       <style>{`
@@ -419,6 +439,8 @@ const ViewReport = () => {
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>תאריך</th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>ספק</th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>סכום</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>מטבע</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>בשקלים</th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>קטגוריה</th>
                 </tr>
               </thead>
@@ -433,6 +455,12 @@ const ViewReport = () => {
                       {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                     </td>
                     <td style={{ padding: '12px', fontSize: '14px' }}>{expense.description}</td>
+                    <td style={{ padding: '12px', fontSize: '14px', fontWeight: '600' }}>
+                      {expense.amount.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '14px' }}>
+                      {expense.currency}
+                    </td>
                     <td style={{ padding: '12px', fontSize: '14px', fontWeight: '600' }}>
                       ₪{expense.amount_in_ils.toFixed(2)}
                     </td>
@@ -484,10 +512,18 @@ const ViewReport = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(categoryTotals).map(([category, total]) => (
+                {Object.entries(categoryTotalsByCurrency).map(([category, data]) => (
                   <tr key={category} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '10px', fontSize: '15px' }}>{getCategoryLabel(category)}</td>
-                    <td style={{ padding: '10px', fontSize: '15px', fontWeight: '600' }}>₪{total.toFixed(2)}</td>
+                    <td style={{ padding: '10px', fontSize: '15px', fontWeight: '600' }}>
+                      {Object.entries(data.currencies).map(([currency, amount], idx) => (
+                        <span key={currency}>
+                          {idx > 0 && ' + '}
+                          {amount.toFixed(2)} {currency}
+                        </span>
+                      ))}
+                      {' = '}₪{data.totalILS.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
                 <tr style={{ 
@@ -497,7 +533,15 @@ const ViewReport = () => {
                   fontSize: '16px'
                 }}>
                   <td style={{ padding: '12px' }}>סה"כ כולל</td>
-                  <td style={{ padding: '12px' }}>₪{report?.total_amount_ils.toFixed(2)}</td>
+                  <td style={{ padding: '12px' }}>
+                    {Object.entries(grandTotalByCurrency).map(([currency, amount], idx) => (
+                      <span key={currency}>
+                        {idx > 0 && ' + '}
+                        {amount.toFixed(2)} {currency}
+                      </span>
+                    ))}
+                    {' = '}₪{report?.total_amount_ils.toFixed(2)}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -522,73 +566,109 @@ const ViewReport = () => {
               }}>
                 קבלות
               </h2>
-              {expenses.map((expense, expIdx) => 
+              {expenses.map((expense) => 
                 expense.receipts && expense.receipts.length > 0 ? (
-                  expense.receipts.map((receipt, receiptIdx) => (
-                    <div key={receipt.id} style={{ 
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      padding: '20px',
-                      marginBottom: '20px',
-                      background: '#fafafa'
-                    }}>
-                      <h3 style={{ 
-                        fontSize: '16px', 
-                        fontWeight: 'bold', 
-                        color: '#1e3a8a',
-                        marginBottom: '15px'
+                  expense.receipts.map((receipt, idx) => {
+                    const receiptNumber = expenses
+                      .slice(0, expenses.indexOf(expense))
+                      .reduce((sum, e) => sum + (e.receipts?.length || 0), 0) + idx + 1;
+                    
+                    return (
+                      <div key={receipt.id} style={{ 
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '25px',
+                        marginBottom: '25px',
+                        background: '#fafafa',
+                        pageBreakInside: 'avoid'
                       }}>
-                        חשבונית #{expIdx + receiptIdx + 1} - {expense.description} - {getCategoryLabel(expense.category)}
-                      </h3>
-                      <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: '1fr 2fr',
-                        gap: '20px',
-                        marginBottom: '15px'
-                      }}>
-                        <div>
-                          <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                            <span style={{ color: '#6b7280', fontWeight: '500' }}>תאריך:</span>
-                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
-                              {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                            </span>
+                        <h3 style={{ 
+                          fontSize: '18px', 
+                          fontWeight: 'bold', 
+                          color: '#1e3a8a',
+                          marginBottom: '20px',
+                          borderBottom: '1px solid #d1d5db',
+                          paddingBottom: '10px'
+                        }}>
+                          חשבונית #{receiptNumber} - {expense.description} - {getCategoryLabel(expense.category)}
+                        </h3>
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '1fr',
+                          gap: '20px'
+                        }}>
+                          <div style={{ 
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            padding: '15px',
+                            background: 'white',
+                            borderRadius: '6px',
+                            fontSize: '15px'
+                          }}>
+                            <div style={{ display: 'flex', gap: '30px' }}>
+                              <div>
+                                <span style={{ color: '#6b7280', fontWeight: '500' }}>תאריך: </span>
+                                <span style={{ fontWeight: '600' }}>
+                                  {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ color: '#6b7280', fontWeight: '500' }}>סכום: </span>
+                                <span style={{ fontWeight: '600' }}>
+                                  {expense.amount.toFixed(2)} {expense.currency} = ₪{expense.amount_in_ils.toFixed(2)}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ color: '#6b7280', fontWeight: '500' }}>קטגוריה: </span>
+                                <span style={{ fontWeight: '600' }}>
+                                  {getCategoryLabel(expense.category)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                            <span style={{ color: '#6b7280', fontWeight: '500' }}>סכום:</span>
-                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
-                              ₪{expense.amount_in_ils.toFixed(2)}
-                            </span>
+                          <div style={{ 
+                            display: 'flex',
+                            justifyContent: 'center',
+                            padding: '15px',
+                            background: 'white',
+                            borderRadius: '6px'
+                          }}>
+                            <img 
+                              src={receipt.file_url} 
+                              alt={`קבלה ${receiptNumber}`}
+                              style={{ 
+                                width: '100%',
+                                maxWidth: '600px',
+                                height: 'auto',
+                                border: '2px solid #d1d5db',
+                                borderRadius: '6px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                              }}
+                              onError={(e) => {
+                                console.error('Failed to load receipt image:', receipt.file_url);
+                                e.currentTarget.style.display = 'none';
+                                const errorDiv = document.createElement('div');
+                                errorDiv.style.cssText = 'padding: 40px; text-align: center; color: #ef4444; border: 2px dashed #ef4444; border-radius: 6px;';
+                                errorDiv.textContent = 'שגיאה בטעינת התמונה';
+                                e.currentTarget.parentElement?.appendChild(errorDiv);
+                              }}
+                            />
                           </div>
-                          <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                            <span style={{ color: '#6b7280', fontWeight: '500' }}>קטגוריה:</span>
-                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
-                              {getCategoryLabel(expense.category)}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '14px' }}>
-                            <span style={{ color: '#6b7280', fontWeight: '500' }}>פירוט:</span>
-                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
+                          <div style={{ 
+                            padding: '15px',
+                            background: 'white',
+                            borderRadius: '6px',
+                            fontSize: '14px'
+                          }}>
+                            <span style={{ color: '#6b7280', fontWeight: '500' }}>פירוט: </span>
+                            <span style={{ fontWeight: '600' }}>
                               {expense.description}
                             </span>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <img 
-                            src={receipt.file_url} 
-                            alt={`קבלה ${expIdx + receiptIdx + 1}`}
-                            style={{ 
-                              maxWidth: '100%',
-                              height: 'auto',
-                              maxHeight: '400px',
-                              border: '2px solid #d1d5db',
-                              borderRadius: '6px',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                          />
-                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : null
               )}
             </div>
