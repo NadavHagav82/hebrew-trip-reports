@@ -48,21 +48,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-3 sm:p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-              <FileText className="w-8 h-8 text-primary-foreground" />
+        <CardHeader className="text-center space-y-2">
+          <div className="flex justify-center mb-2 sm:mb-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center">
+              <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">כניסה למערכת</CardTitle>
-          <CardDescription>מערכת דוחות נסיעה עסקית</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold">כניסה למערכת</CardTitle>
+          <CardDescription className="text-sm sm:text-base">מערכת דוחות נסיעה עסקית</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">אימייל</Label>
+              <Label htmlFor="email" className="text-base">אימייל</Label>
               <Input
                 id="email"
                 type="email"
@@ -70,10 +70,11 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
+                className="h-12 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">סיסמה</Label>
+              <Label htmlFor="password" className="text-base">סיסמה</Label>
               <Input
                 id="password"
                 type="password"
@@ -81,13 +82,14 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
+                className="h-12 text-base"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
               {loading ? 'מתחבר...' : 'התחבר'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center text-sm sm:text-base">
             <span className="text-muted-foreground">עדיין אין לך חשבון? </span>
             <Link to="/auth/register" className="text-primary hover:underline font-medium">
               הירשם כאן

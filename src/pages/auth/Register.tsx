@@ -90,21 +90,21 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-3 sm:p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-              <FileText className="w-8 h-8 text-primary-foreground" />
+        <CardHeader className="text-center space-y-2">
+          <div className="flex justify-center mb-2 sm:mb-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center">
+              <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">הרשמה למערכת</CardTitle>
-          <CardDescription>צור חשבון חדש במערכת דוחות הנסיעה</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold">הרשמה למערכת</CardTitle>
+          <CardDescription className="text-sm sm:text-base">צור חשבון חדש במערכת דוחות הנסיעה</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="full_name">שם מלא *</Label>
+              <Label htmlFor="full_name" className="text-base">שם מלא *</Label>
               <Input
                 id="full_name"
                 name="full_name"
@@ -112,6 +112,7 @@ export default function Register() {
                 value={formData.full_name}
                 onChange={handleChange}
                 disabled={loading}
+                className="h-12 text-base"
               />
             </div>
             <div className="space-y-2">

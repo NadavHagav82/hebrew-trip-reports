@@ -603,33 +603,32 @@ export default function NewReport() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-                <ArrowRight className="w-4 h-4 ml-2" />
-                חזרה
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-9">
+                <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
+                <span className="text-sm">חזרה</span>
               </Button>
-              <h1 className="text-xl font-bold">{isEditMode ? 'עריכת דוח נסיעה' : 'דוח נסיעה חדש'}</h1>
+              <h1 className="text-base sm:text-xl font-bold flex-1 sm:flex-none">{isEditMode ? 'עריכת דוח' : 'דוח חדש'}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => handleSave(false, false)} disabled={loading}>
-                <Save className="w-4 h-4 ml-2" />
-                שמור
+            <div className="flex items-center gap-2 w-full sm:w-auto sm:mr-auto">
+              <Button variant="outline" onClick={() => handleSave(false, false)} disabled={loading} className="flex-1 sm:flex-none h-10 sm:h-9 text-sm">
+                <Save className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
+                <span className="hidden sm:inline">שמור</span>
+                <span className="sm:hidden">שמור</span>
               </Button>
-              <Button onClick={() => handleSave(false, true)} disabled={loading}>
-                <Download className="w-4 h-4 ml-2" />
-                הפק דוח
-              </Button>
-              <Button variant="ghost" onClick={() => handleSave(true, false)} disabled={loading}>
-                שמור כטיוטה
+              <Button onClick={() => handleSave(false, true)} disabled={loading} className="flex-1 sm:flex-none h-10 sm:h-9 text-sm">
+                <Download className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
+                <span className="hidden sm:inline">הפק דוח</span>
+                <span className="sm:hidden">הפק</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl">
         {/* Trip Details */}
         <Card className="mb-6">
           <CardHeader>
