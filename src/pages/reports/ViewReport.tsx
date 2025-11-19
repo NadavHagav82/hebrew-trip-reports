@@ -18,6 +18,7 @@ interface Expense {
   currency: string;
   amount_in_ils: number;
   receipts: any[];
+  notes?: string;
 }
 
 interface Report {
@@ -31,6 +32,7 @@ interface Report {
   submitted_at: string | null;
   approved_at: string | null;
   created_at: string;
+  notes?: string;
 }
 
 interface Profile {
@@ -309,6 +311,12 @@ const ViewReport = () => {
                   <p className="font-medium">{calculateTripDuration()} ימים</p>
                 </div>
               </div>
+              {report.notes && (
+                <div className="mt-4 pt-4 border-t">
+                  <span className="text-sm text-muted-foreground">הערות:</span>
+                  <p className="font-medium whitespace-pre-wrap">{report.notes}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -331,6 +339,11 @@ const ViewReport = () => {
                         <p className="text-sm text-muted-foreground">
                           {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                         </p>
+                        {expense.notes && (
+                          <p className="text-sm text-muted-foreground mt-2 italic">
+                            הערה: {expense.notes}
+                          </p>
+                        )}
                       </div>
                       <div className="text-left">
                         <p className="font-bold">₪{expense.amount_in_ils.toFixed(2)}</p>

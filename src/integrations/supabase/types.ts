@@ -24,6 +24,7 @@ export type Database = {
           description: string
           expense_date: string
           id: string
+          notes: string | null
           report_id: string
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           description: string
           expense_date: string
           id?: string
+          notes?: string | null
           report_id: string
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           description?: string
           expense_date?: string
           id?: string
+          notes?: string | null
           report_id?: string
         }
         Relationships: [
@@ -210,6 +213,7 @@ export type Database = {
           approved_by: string | null
           created_at: string
           id: string
+          notes: string | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["expense_status"]
           submitted_at: string | null
@@ -226,6 +230,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           id?: string
+          notes?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_at?: string | null
@@ -242,6 +247,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           id?: string
+          notes?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_at?: string | null
