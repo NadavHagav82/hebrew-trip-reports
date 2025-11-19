@@ -79,13 +79,30 @@ const ViewReport = () => {
 
       if (expensesError) throw expensesError;
 
-      const enhancedExpenses: Expense[] = (expensesData || []).map((expense: any) => ({
-        ...expense,
-        receipts: (expense.receipts || []).map((receipt: any) => ({
-          ...receipt,
-          file_url: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/receipts/${receipt.file_url}`,
-        })),
-      }));
+      const enhancedExpenses: Expense[] = await Promise.all(
+        (expensesData || []).map(async (expense: any) => {
+          const receiptsWithSignedUrls = await Promise.all(
+            (expense.receipts || []).map(async (receipt: any) => {
+              const { data } = await supabase
+                .storage
+                .from('receipts')
+                .createSignedUrl(receipt.file_url, 60 * 60); // שעה תוקף
+
+              return {
+                ...receipt,
+                file_url:
+                  data?.signedUrl ||
+                  `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/receipts/${receipt.file_url}`,
+              };
+            })
+          );
+
+          return {
+            ...expense,
+            receipts: receiptsWithSignedUrls,
+          };
+        })
+      );
 
       setExpenses(enhancedExpenses);
 
