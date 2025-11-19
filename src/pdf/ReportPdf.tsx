@@ -44,9 +44,16 @@ interface Report {
   created_at: string;
 }
 
+interface Profile {
+  full_name: string;
+  employee_id: string;
+  department: string;
+}
+
 interface ReportPdfProps {
   report: Report;
   expenses: Expense[];
+  profile?: Profile | null;
 }
 
 const styles = StyleSheet.create({

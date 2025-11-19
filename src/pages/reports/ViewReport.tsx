@@ -86,7 +86,7 @@ const ViewReport = () => {
         ...expense,
         receipts: (expense.receipts || []).map((receipt: any) => ({
           ...receipt,
-          file_url: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/receipts/${receipt.file_url}`,
+          file_url: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/receipts/${receipt.file_url}`,
         })),
       }));
 
