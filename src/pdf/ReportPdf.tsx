@@ -45,78 +45,154 @@ interface ReportPdfProps {
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
-    padding: 32,
+    padding: 40,
     fontFamily: 'Heebo',
-    direction: 'rtl',
   },
-  header: {
+  headerBox: {
+    backgroundColor: '#2c3e50',
+    padding: 16,
+    marginBottom: 24,
     textAlign: 'right',
-    marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    marginBottom: 8,
+    fontSize: 20,
+    color: '#ffffff',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  subtitle: {
+    fontSize: 10,
+    color: '#ecf0f1',
+    textAlign: 'right',
   },
   sectionTitle: {
-    fontSize: 16,
-    marginBottom: 8,
-    marginTop: 16,
+    fontSize: 14,
+    marginBottom: 12,
+    marginTop: 20,
+    textAlign: 'right',
+    color: '#2c3e50',
+    borderBottomWidth: 2,
+    borderBottomColor: '#3498db',
+    paddingBottom: 4,
   },
-  row: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+  infoTable: {
+    marginBottom: 16,
   },
-  label: {
-    fontSize: 11,
+  infoRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+    paddingVertical: 8,
   },
-  value: {
-    fontSize: 11,
+  infoLabel: {
+    width: '40%',
+    fontSize: 10,
+    textAlign: 'right',
+    paddingRight: 8,
+  },
+  infoValue: {
+    width: '60%',
+    fontSize: 10,
+    textAlign: 'right',
     fontWeight: 600,
   },
   table: {
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#cccccc',
+    borderColor: '#bdc3c7',
   },
   tableHeader: {
-    flexDirection: 'row-reverse',
-    backgroundColor: '#424242',
+    flexDirection: 'row',
+    backgroundColor: '#34495e',
+    borderBottomWidth: 2,
+    borderBottomColor: '#2c3e50',
   },
   tableHeaderCell: {
-    flex: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    padding: 8,
+    textAlign: 'right',
   },
   tableHeaderText: {
     fontSize: 10,
     color: '#ffffff',
+    fontWeight: 700,
     textAlign: 'right',
   },
   tableRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
   },
   tableCell: {
-    flex: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#eeeeee',
+    padding: 6,
+    textAlign: 'right',
   },
   tableCellText: {
     fontSize: 9,
     textAlign: 'right',
   },
-  summaryRow: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#cccccc',
-    paddingTop: 8,
+  numberCell: {
+    width: '8%',
   },
-  bold: {
+  dateCell: {
+    width: '15%',
+  },
+  categoryCell: {
+    width: '18%',
+  },
+  descriptionCell: {
+    width: '32%',
+  },
+  amountCell: {
+    width: '13%',
+  },
+  ilsCell: {
+    width: '14%',
+  },
+  summaryBox: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: '#ecf0f1',
+    borderWidth: 1,
+    borderColor: '#bdc3c7',
+  },
+  summaryTitle: {
+    fontSize: 14,
+    marginBottom: 8,
+    textAlign: 'right',
     fontWeight: 700,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    textAlign: 'right',
+  },
+  summaryValue: {
+    fontSize: 10,
+    textAlign: 'right',
+    fontWeight: 600,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 2,
+    borderTopColor: '#2c3e50',
+  },
+  totalLabel: {
+    fontSize: 12,
+    fontWeight: 700,
+    textAlign: 'right',
+  },
+  totalValue: {
+    fontSize: 12,
+    fontWeight: 700,
+    textAlign: 'right',
+    color: '#2c3e50',
   },
 });
 
@@ -148,80 +224,115 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.title}>דוח נסיעה</Text>
-          <Text style={styles.label}>יעד: <Text style={styles.value}>{report.trip_destination}</Text></Text>
-          <Text style={styles.label}>מטרת הנסיעה: <Text style={styles.value}>{report.trip_purpose}</Text></Text>
-          <Text style={styles.label}>
-            תאריך התחלה: <Text style={styles.value}>{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</Text>
-          </Text>
-          <Text style={styles.label}>
-            תאריך סיום: <Text style={styles.value}>{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</Text>
-          </Text>
-          <Text style={styles.label}>
-            משך הנסיעה: <Text style={styles.value}>{calculateTripDuration(report)} ימים</Text>
-          </Text>
-          <Text style={styles.label}>
-            תאריך יצירה: <Text style={styles.value}>{format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}</Text>
+        {/* Header */}
+        <View style={styles.headerBox}>
+          <Text style={styles.title}>דוח נסיעה עסקית</Text>
+          <Text style={styles.subtitle}>
+            נוצר ב: {format(new Date(), 'dd/MM/yyyy HH:mm')}
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>הוצאות</Text>
+        {/* Trip Details */}
+        <Text style={styles.sectionTitle}>פרטי הנסיעה</Text>
+        <View style={styles.infoTable}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>שם החברה:</Text>
+            <Text style={styles.infoValue}>{report.trip_destination}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>מטרת הנסיעה:</Text>
+            <Text style={styles.infoValue}>{report.trip_purpose}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>תאריך התחלה:</Text>
+            <Text style={styles.infoValue}>
+              {format(new Date(report.trip_start_date), 'dd/MM/yyyy')}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>תאריך סיום:</Text>
+            <Text style={styles.infoValue}>
+              {format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>משך הנסיעה:</Text>
+            <Text style={styles.infoValue}>{calculateTripDuration(report)} ימים</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>תאריך יצירה:</Text>
+            <Text style={styles.infoValue}>
+              {format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}
+            </Text>
+          </View>
+        </View>
+
+        {/* Expenses Table */}
+        <Text style={styles.sectionTitle}>סיכום הוצאות</Text>
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <View style={styles.tableHeaderCell}>
+            <View style={[styles.tableHeaderCell, styles.numberCell]}>
+              <Text style={styles.tableHeaderText}>#</Text>
+            </View>
+            <View style={[styles.tableHeaderCell, styles.dateCell]}>
               <Text style={styles.tableHeaderText}>תאריך</Text>
             </View>
-            <View style={styles.tableHeaderCell}>
+            <View style={[styles.tableHeaderCell, styles.categoryCell]}>
               <Text style={styles.tableHeaderText}>קטגוריה</Text>
             </View>
-            <View style={styles.tableHeaderCell}>
+            <View style={[styles.tableHeaderCell, styles.descriptionCell]}>
               <Text style={styles.tableHeaderText}>תיאור</Text>
             </View>
-            <View style={styles.tableHeaderCell}>
+            <View style={[styles.tableHeaderCell, styles.amountCell]}>
               <Text style={styles.tableHeaderText}>סכום</Text>
             </View>
-            <View style={styles.tableHeaderCell}>
+            <View style={[styles.tableHeaderCell, styles.ilsCell]}>
               <Text style={styles.tableHeaderText}>סכום בש"ח</Text>
             </View>
           </View>
 
-          {expenses.map((expense) => (
+          {expenses.map((expense, index) => (
             <View key={expense.id} style={styles.tableRow}>
-              <View style={styles.tableCell}>
+              <View style={[styles.tableCell, styles.numberCell]}>
+                <Text style={styles.tableCellText}>{index + 1}</Text>
+              </View>
+              <View style={[styles.tableCell, styles.dateCell]}>
                 <Text style={styles.tableCellText}>
                   {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                 </Text>
               </View>
-              <View style={styles.tableCell}>
+              <View style={[styles.tableCell, styles.categoryCell]}>
                 <Text style={styles.tableCellText}>{getCategoryLabel(expense.category)}</Text>
               </View>
-              <View style={styles.tableCell}>
+              <View style={[styles.tableCell, styles.descriptionCell]}>
                 <Text style={styles.tableCellText}>{expense.description}</Text>
               </View>
-              <View style={styles.tableCell}>
+              <View style={[styles.tableCell, styles.amountCell]}>
                 <Text style={styles.tableCellText}>
                   {expense.amount} {expense.currency}
                 </Text>
               </View>
-              <View style={styles.tableCell}>
+              <View style={[styles.tableCell, styles.ilsCell]}>
                 <Text style={styles.tableCellText}>₪{expense.amount_in_ils.toFixed(2)}</Text>
               </View>
             </View>
           ))}
         </View>
 
-        <View style={styles.summaryRow}>
-          <Text style={styles.bold}>סה"כ:</Text>
-          <Text style={styles.bold}>₪{report.total_amount_ils.toFixed(2)}</Text>
-        </View>
-
-        {Object.entries(categoryTotals).map(([category, total]) => (
-          <View key={category} style={styles.row}>
-            <Text style={styles.label}>{getCategoryLabel(category)}:</Text>
-            <Text style={styles.value}>₪{total.toFixed(2)}</Text>
+        {/* Summary */}
+        <View style={styles.summaryBox}>
+          <Text style={styles.summaryTitle}>סיכום לפי קטגוריות</Text>
+          {Object.entries(categoryTotals).map(([category, total]) => (
+            <View key={category} style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>{getCategoryLabel(category)}:</Text>
+              <Text style={styles.summaryValue}>₪{total.toFixed(2)}</Text>
+            </View>
+          ))}
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>סה"כ:</Text>
+            <Text style={styles.totalValue}>₪{report.total_amount_ils.toFixed(2)}</Text>
           </View>
-        ))}
+        </View>
       </Page>
     </Document>
   );
