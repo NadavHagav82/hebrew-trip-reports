@@ -167,19 +167,16 @@ const ViewReport = () => {
             font: 'helvetica',
             fontSize: 10,
             halign: 'right',
+            overflow: 'linebreak',
+            cellWidth: 'wrap',
           },
           headStyles: {
             fillColor: [66, 66, 66],
             textColor: [255, 255, 255],
             halign: 'right',
           },
-          columnStyles: {
-            0: { cellWidth: 30 },
-            1: { cellWidth: 30 },
-            2: { cellWidth: 60 },
-            3: { cellWidth: 30 },
-            4: { cellWidth: 30 },
-          },
+          tableWidth: 'auto',
+          margin: { left: 20, right: 20 },
         });
 
         const finalY = (doc as any).lastAutoTable?.finalY || yPos + 50;
