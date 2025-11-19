@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { convertPdfToImages } from '@/utils/pdfToImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -185,37 +186,61 @@ export default function NewReport() {
     setExpenses(expenses.filter(exp => exp.id !== id));
   };
 
-  const handleFileSelect = (expenseId: string, files: FileList | null) => {
+  const handleFileSelect = async (expenseId: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const validFiles = Array.from(files).filter(file => {
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    let allFiles: File[] = [];
 
-      if (!validTypes.includes(file.type)) {
-        toast({
-          title: 'פורמט קובץ לא נתמך',
-          description: 'נא להעלות תמונות בלבד (JPG, PNG, HEIC)',
-          variant: 'destructive',
-        });
-        return false;
-      }
-
+    // Process each file
+    for (const file of Array.from(files)) {
       if (file.size > maxSize) {
         toast({
           title: 'הקובץ גדול מדי',
           description: 'מקסימום 10MB לכל קובץ',
           variant: 'destructive',
         });
-        return false;
+        continue;
       }
 
-      return true;
-    });
+      // Check if it's a PDF and convert to images
+      if (file.type === 'application/pdf') {
+        try {
+          toast({
+            title: 'ממיר PDF לתמונות...',
+            description: 'אנא המתן',
+          });
+          const images = await convertPdfToImages(file);
+          allFiles.push(...images);
+          toast({
+            title: 'PDF הומר בהצלחה',
+            description: `נוצרו ${images.length} תמונות`,
+          });
+        } catch (error) {
+          toast({
+            title: 'שגיאה בהמרת PDF',
+            description: error instanceof Error ? error.message : 'נסה שוב',
+            variant: 'destructive',
+          });
+        }
+      } else {
+        // Check if it's a valid image type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
+        if (validTypes.includes(file.type)) {
+          allFiles.push(file);
+        } else {
+          toast({
+            title: 'פורמט קובץ לא נתמך',
+            description: 'נא להעלות תמונות או PDF בלבד',
+            variant: 'destructive',
+          });
+        }
+      }
+    }
 
-    if (validFiles.length === 0) return;
+    if (allFiles.length === 0) return;
 
-    const newReceipts: ReceiptFile[] = validFiles.map(file => ({
+    const newReceipts: ReceiptFile[] = allFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
       uploading: false,
@@ -900,7 +925,7 @@ export default function NewReport() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/heic"
+        accept="image/jpeg,image/jpg,image/png,image/heic,application/pdf"
         multiple
         className="hidden"
         onChange={(e) => {
