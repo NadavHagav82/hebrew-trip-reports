@@ -26,7 +26,7 @@ interface Report {
   trip_start_date: string;
   trip_end_date: string;
   trip_purpose: string;
-  status: 'draft' | 'open' | 'pending' | 'approved' | 'rejected' | 'closed';
+  status: 'draft' | 'open' | 'closed';
   total_amount_ils: number;
   submitted_at: string | null;
   approved_at: string | null;
@@ -238,10 +238,35 @@ const ViewReport = () => {
                 </Button>
                 <h1 className="text-xl font-bold">צפייה בדוח</h1>
               </div>
-              <Button onClick={printPDF}>
-                <Printer className="w-4 h-4 ml-2" />
-                הדפס דוח
-              </Button>
+              <div className="flex items-center gap-2">
+                {report.status === 'open' && (
+                  <>
+                    <Button variant="outline" onClick={() => navigate(`/reports/edit/${report.id}`)}>
+                      <Edit className="w-4 h-4 ml-2" />
+                      עריכה
+                    </Button>
+                    <Button onClick={async () => {
+                      try {
+                        await supabase
+                          .from('reports')
+                          .update({ status: 'closed' })
+                          .eq('id', report.id);
+                        toast({ title: 'הדוח נסגר בהצלחה' });
+                        loadReport();
+                      } catch (error) {
+                        toast({ title: 'שגיאה', variant: 'destructive' });
+                      }
+                    }}>
+                      <Download className="w-4 h-4 ml-2" />
+                      סגור דוח
+                    </Button>
+                  </>
+                )}
+                <Button onClick={printPDF}>
+                  <Printer className="w-4 h-4 ml-2" />
+                  ייצא PDF
+                </Button>
+              </div>
             </div>
           </div>
         </header>

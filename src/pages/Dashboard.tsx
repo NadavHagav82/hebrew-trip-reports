@@ -15,7 +15,7 @@ interface Report {
   trip_destination: string;
   trip_start_date: string;
   trip_end_date: string;
-  status: 'draft' | 'open' | 'pending' | 'approved' | 'rejected' | 'closed';
+  status: 'draft' | 'open' | 'closed';
   total_amount_ils: number;
   submitted_at: string | null;
   approved_at: string | null;
@@ -62,7 +62,7 @@ export default function Dashboard() {
   const getStatistics = () => {
     return {
       open: reports.filter(r => r.status === 'open').length,
-      pending: reports.filter(r => r.status === 'pending').length,
+      draft: reports.filter(r => r.status === 'draft').length,
       closed: reports.filter(r => r.status === 'closed').length,
     };
   };
@@ -73,8 +73,8 @@ export default function Dashboard() {
     if (status && status !== 'all') {
       if (status === 'drafts') {
         filtered = filtered.filter(r => r.status === 'draft');
-      } else if (status === 'history') {
-        filtered = filtered.filter(r => r.status === 'approved' || r.status === 'closed');
+      } else if (status === 'closed') {
+        filtered = filtered.filter(r => r.status === 'closed');
       } else {
         filtered = filtered.filter(r => r.status === 'open');
       }
@@ -135,35 +135,35 @@ export default function Dashboard() {
                   <p className="text-sm text-muted-foreground mb-1">דוחות פתוחים</p>
                   <p className="text-3xl font-bold">{stats.open}</p>
                 </div>
-                <div className="w-12 h-12 bg-status-open/10 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
                   <span className="text-2xl">🟠</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('all')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('drafts')}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">ממתין לאישור</p>
-                  <p className="text-3xl font-bold">{stats.pending}</p>
+                  <p className="text-sm text-muted-foreground mb-1">טיוטות</p>
+                  <p className="text-3xl font-bold">{stats.draft}</p>
                 </div>
-                <div className="w-12 h-12 bg-status-pending/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🔵</span>
+                <div className="w-12 h-12 bg-gray-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🔘</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('history')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('closed')}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">דוחות סגורים</p>
                   <p className="text-3xl font-bold">{stats.closed}</p>
                 </div>
-                <div className="w-12 h-12 bg-status-closed/10 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-green-600/10 rounded-full flex items-center justify-center">
                   <span className="text-2xl">🟢</span>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function Dashboard() {
                   <TabsTrigger value="all">כל הדוחות</TabsTrigger>
                   <TabsTrigger value="open">דוחות פתוחים</TabsTrigger>
                   <TabsTrigger value="drafts">טיוטות</TabsTrigger>
-                  <TabsTrigger value="history">היסטוריה</TabsTrigger>
+                  <TabsTrigger value="closed">דוחות סגורים</TabsTrigger>
                 </TabsList>
               </Tabs>
 
