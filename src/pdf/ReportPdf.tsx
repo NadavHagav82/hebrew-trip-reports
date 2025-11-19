@@ -6,6 +6,7 @@ import {
   View,
   StyleSheet,
   Font,
+  Image,
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
@@ -22,6 +23,12 @@ interface Expense {
   amount: number;
   currency: string;
   amount_in_ils: number;
+  receipts?: {
+    id: string;
+    file_url: string;
+    file_name: string;
+    file_type: string;
+  }[];
 }
 
 interface Report {
@@ -194,6 +201,46 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: '#2c3e50',
   },
+  receiptPage: {
+    flexDirection: 'column',
+    padding: 40,
+    fontFamily: 'Heebo',
+  },
+  receiptHeaderBox: {
+    backgroundColor: '#2c3e50',
+    padding: 12,
+    marginBottom: 20,
+    textAlign: 'right',
+  },
+  receiptPageTitle: {
+    fontSize: 16,
+    color: '#ffffff',
+    textAlign: 'right',
+  },
+  receiptContainer: {
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#bdc3c7',
+    padding: 12,
+  },
+  receiptTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    marginBottom: 8,
+    textAlign: 'right',
+    color: '#2c3e50',
+  },
+  receiptDetails: {
+    fontSize: 9,
+    marginBottom: 8,
+    textAlign: 'right',
+    color: '#7f8c8d',
+  },
+  receiptImage: {
+    maxWidth: '100%',
+    maxHeight: 400,
+    objectFit: 'contain',
+  },
 });
 
 const getCategoryLabel = (category: string) => {
@@ -334,6 +381,34 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
           </View>
         </View>
       </Page>
+
+      {/* Receipt Pages */}
+      {expenses.map((expense, expenseIndex) => {
+        const imageReceipts = expense.receipts?.filter(r => r.file_type === 'image') || [];
+        if (imageReceipts.length === 0) return null;
+
+        return imageReceipts.map((receipt, receiptIndex) => (
+          <Page key={`${expense.id}-${receipt.id}`} size="A4" style={styles.receiptPage}>
+            <View style={styles.receiptHeaderBox}>
+              <Text style={styles.receiptPageTitle}>צילומי חשבוניות ומסמכים</Text>
+            </View>
+
+            <View style={styles.receiptContainer}>
+              <Text style={styles.receiptTitle}>
+                חשבונית מס׳ {expenseIndex + 1} - {expense.description}
+              </Text>
+              <Text style={styles.receiptDetails}>
+                תאריך: {format(new Date(expense.expense_date), 'dd/MM/yyyy')} | 
+                סכום: {expense.amount} {expense.currency} (₪{expense.amount_in_ils.toFixed(2)})
+              </Text>
+              <Image 
+                src={receipt.file_url} 
+                style={styles.receiptImage}
+              />
+            </View>
+          </Page>
+        ));
+      })}
     </Document>
   );
 };
