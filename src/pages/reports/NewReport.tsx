@@ -189,13 +189,13 @@ export default function NewReport() {
     if (!files || files.length === 0) return;
 
     const validFiles = Array.from(files).filter(file => {
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'application/pdf'];
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
       const maxSize = 10 * 1024 * 1024; // 10MB
 
       if (!validTypes.includes(file.type)) {
         toast({
           title: 'פורמט קובץ לא נתמך',
-          description: 'נא להעלות JPG, PNG, HEIC או PDF',
+          description: 'נא להעלות תמונות בלבד (JPG, PNG, HEIC)',
           variant: 'destructive',
         });
         return false;
@@ -268,6 +268,16 @@ export default function NewReport() {
 
     const receipt = expense.receipts[receiptIndex];
     if (!receipt || receipt.analyzed) return;
+
+    // Check if file is an image
+    if (!receipt.file.type.startsWith('image/')) {
+      toast({
+        title: 'לא ניתן לנתח',
+        description: 'ניתן לנתח רק תמונות של קבלות',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Mark as analyzing
     setExpenses(expenses.map(exp => {
@@ -890,7 +900,7 @@ export default function NewReport() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/heic,application/pdf"
+        accept="image/jpeg,image/jpg,image/png,image/heic"
         multiple
         className="hidden"
         onChange={(e) => {
