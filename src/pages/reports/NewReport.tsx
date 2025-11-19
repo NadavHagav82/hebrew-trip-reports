@@ -421,6 +421,15 @@ export default function NewReport() {
     }
   };
 
+  const calculateTripDuration = () => {
+    if (!tripStartDate || !tripEndDate) return 0;
+    const start = new Date(tripStartDate);
+    const end = new Date(tripEndDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+    return diffDays;
+  };
+
   const categoryTotals = calculateTotalByCategory();
   const grandTotal = calculateGrandTotal();
 
@@ -470,7 +479,7 @@ export default function NewReport() {
                 onChange={(e) => setTripDestination(e.target.value)}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="startDate">תאריך התחלה *</Label>
                 <Input
@@ -489,6 +498,14 @@ export default function NewReport() {
                   onChange={(e) => setTripEndDate(e.target.value)}
                   min={tripStartDate}
                 />
+              </div>
+              <div>
+                <Label>משך הנסיעה</Label>
+                <div className="h-10 px-3 py-2 rounded-md border bg-muted flex items-center">
+                  <span className="font-semibold">
+                    {calculateTripDuration()} ימים
+                  </span>
+                </div>
               </div>
             </div>
             <div>
@@ -564,6 +581,90 @@ export default function NewReport() {
 
                     {expandedExpense === expense.id && (
                       <div className="p-4 border-t space-y-4">
+                        {/* Receipt Upload - First */}
+                        <div>
+                          <Label className="text-base font-semibold">צלם או העלה קבלה</Label>
+                          <div className="space-y-3 mt-2">
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => openCameraDialog(expense.id)}
+                              >
+                                <Camera className="w-4 h-4 ml-2" />
+                                צלם קבלה
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => openFileDialog(expense.id)}
+                              >
+                                <Upload className="w-4 h-4 ml-2" />
+                                העלה מהמכשיר
+                              </Button>
+                            </div>
+
+                            {expense.receipts.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2">
+                                {expense.receipts.map((receipt, idx) => (
+                                  <div key={idx} className="relative group">
+                                    <div className="aspect-square rounded-lg border-2 overflow-hidden bg-muted">
+                                      {receipt.file.type.startsWith('image') ? (
+                                        <img
+                                          src={receipt.preview}
+                                          alt={`קבלה ${idx + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center flex-col">
+                                          <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                          <span className="text-xs mt-2">PDF</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="icon"
+                                      className="absolute -top-2 -left-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => removeReceipt(expense.id, idx)}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                    {!receipt.analyzed && !receipt.analyzing && (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        className="absolute bottom-1 left-1 right-1 text-xs h-7"
+                                        onClick={() => analyzeReceipt(expense.id, idx)}
+                                      >
+                                        ✨ אישור וניתוח
+                                      </Button>
+                                    )}
+                                    {receipt.analyzing && (
+                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                        <span className="text-xs">מנתח...</span>
+                                      </div>
+                                    )}
+                                    {receipt.analyzed && (
+                                      <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        {/* Expense Details - After Receipt Upload */}
                         <div>
                           <Label>תאריך *</Label>
                           <Input
@@ -639,98 +740,6 @@ export default function NewReport() {
                           <p className="text-lg font-bold">
                             {expense.amount_in_ils.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
                           </p>
-                        </div>
-
-                        <div>
-                          <Label>קבלות</Label>
-                          <div className="space-y-3">
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => openCameraDialog(expense.id)}
-                              >
-                                <Camera className="w-4 h-4 ml-2" />
-                                צלם קבלה
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => openFileDialog(expense.id)}
-                              >
-                                <Upload className="w-4 h-4 ml-2" />
-                                העלה מהמכשיר
-                              </Button>
-                            </div>
-
-                            {expense.receipts.length > 0 && (
-                              <div className="grid grid-cols-3 gap-2">
-                                {expense.receipts.map((receipt, idx) => (
-                                  <div key={idx} className="relative group">
-                                    <div className="aspect-square rounded-lg border-2 overflow-hidden bg-muted">
-                                      {receipt.file.type.startsWith('image') ? (
-                                        <img
-                                          src={receipt.preview}
-                                          alt={`קבלה ${idx + 1}`}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center flex-col">
-                                          <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                                          <span className="text-xs mt-2">PDF</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="icon"
-                                      className="absolute -top-2 -left-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeReceipt(expense.id, idx)}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                    {!receipt.analyzed && !receipt.analyzing && (
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        className="absolute bottom-1 left-1 right-1 text-xs h-7"
-                                        onClick={() => analyzeReceipt(expense.id, idx)}
-                                      >
-                                        ✨ אישור וניתוח
-                                      </Button>
-                                    )}
-                                    {receipt.analyzing && (
-                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                        <span className="text-xs">מנתח...</span>
-                                      </div>
-                                    )}
-                                    {receipt.analyzed && (
-                                      <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                      </div>
-                                    )}
-                                    {receipt.uploading && (
-                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                        <span className="text-xs">מעלה...</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {expense.receipts.length === 0 && (
-                              <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                                <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                                <p className="text-xs text-muted-foreground">לחץ על הכפתורים מעלה להעלות קבלות</p>
-                              </div>
-                            )}
-                          </div>
                         </div>
                       </div>
                     )}
