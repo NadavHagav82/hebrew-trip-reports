@@ -127,44 +127,44 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
           <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('open')}>
-            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm sm:text-base text-muted-foreground mb-1">דוחות פתוחים</p>
-                  <p className="text-4xl sm:text-3xl font-bold">{stats.open}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">דוחות פתוחים</p>
+                  <p className="text-2xl font-bold">{stats.open}</p>
                 </div>
-                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-3xl sm:text-2xl">🟠</span>
+                <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🟠</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('closed')}>
-            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm sm:text-base text-muted-foreground mb-1">דוחות סגורים</p>
-                  <p className="text-4xl sm:text-3xl font-bold">{stats.closed}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">דוחות סגורים</p>
+                  <p className="text-2xl font-bold">{stats.closed}</p>
                 </div>
-                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-green-600/10 rounded-full flex items-center justify-center">
-                  <span className="text-3xl sm:text-2xl">🟢</span>
+                <div className="w-10 h-10 bg-green-600/10 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🟢</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('drafts')}>
-            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm sm:text-base text-muted-foreground mb-1">טיוטות</p>
-                  <p className="text-4xl sm:text-3xl font-bold">{stats.draft}</p>
+                  <p className="text-xs text-muted-foreground mb-0.5">טיוטות</p>
+                  <p className="text-2xl font-bold">{stats.draft}</p>
                 </div>
-                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-gray-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-3xl sm:text-2xl">🔘</span>
+                <div className="w-10 h-10 bg-gray-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🔘</span>
                 </div>
               </div>
             </CardContent>
