@@ -111,7 +111,30 @@ const ViewReport = () => {
     try {
       const doc = new jsPDF();
 
-      // Use Hebrew language, but keep LTR rendering to avoid character corruption
+      // Ensure Hebrew-capable font is loaded
+      const loadHebrewFont = async () => {
+        const response = await fetch('/fonts/Assistant-Regular.ttf');
+        const blob = await response.blob();
+
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            const base64Data = result.split(',')[1] || '';
+            resolve(base64Data);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+
+        (doc as any).addFileToVFS('Assistant-Regular.ttf', base64);
+        (doc as any).addFont('Assistant-Regular.ttf', 'Assistant', 'normal');
+        doc.setFont('Assistant');
+      };
+
+      await loadHebrewFont();
+
+      // Use Hebrew language
       doc.setLanguage('he');
 
       // Title
@@ -164,7 +187,7 @@ const ViewReport = () => {
           head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', "סכום בש'ח"]],
           body: tableData,
           styles: {
-            font: 'helvetica',
+            font: 'Assistant',
             fontSize: 10,
             halign: 'right',
             overflow: 'linebreak',
@@ -174,6 +197,7 @@ const ViewReport = () => {
             fillColor: [66, 66, 66],
             textColor: [255, 255, 255],
             halign: 'right',
+            font: 'Assistant',
           },
           tableWidth: 'auto',
           margin: { left: 20, right: 20 },
@@ -181,7 +205,7 @@ const ViewReport = () => {
 
         const finalY = (doc as any).lastAutoTable?.finalY || yPos + 50;
         doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('Assistant', 'normal');
         doc.text(`סה"כ: ₪${report.total_amount_ils.toFixed(2)}`, rightMargin, finalY + 15, {
           align: 'right',
         });
@@ -195,6 +219,7 @@ const ViewReport = () => {
           const ensureNewPage = () => {
             doc.addPage();
             doc.setFontSize(18);
+            doc.setFont('Assistant', 'normal');
             doc.text('חשבוניות מצורפות', rightMargin, 20, { align: 'right' });
             receiptPageY = 30;
           };
