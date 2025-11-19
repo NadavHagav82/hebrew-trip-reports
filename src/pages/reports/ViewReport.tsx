@@ -157,7 +157,7 @@ const ViewReport = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap');
         
         @media print {
           body, * {
@@ -169,11 +169,11 @@ const ViewReport = () => {
           }
           
           body {
-            background: white !important;
+            background: #f5f5f5 !important;
           }
           
           @page {
-            margin: 1.5cm;
+            margin: 1cm;
             size: A4;
           }
           
@@ -305,190 +305,339 @@ const ViewReport = () => {
         </div>
         
         {/* Print Version */}
-        <div id="report-print" style={{ fontFamily: 'Heebo, sans-serif', direction: 'rtl', padding: '20px', background: 'white' }}>
-          <div style={{ border: '3px solid #1e3a8a', padding: '30px', borderRadius: '8px' }}>
-            {/* כותרת */}
+        <div id="report-print" style={{ 
+          fontFamily: 'Heebo, sans-serif', 
+          direction: 'rtl', 
+          padding: '30px', 
+          background: '#f5f5f5',
+          minHeight: '100vh'
+        }}>
+          {/* כותרת ראשית */}
+          <div style={{ 
+            background: 'white', 
+            padding: '30px', 
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
             <h1 style={{ 
               fontSize: '32px', 
               fontWeight: 'bold', 
-              textAlign: 'center', 
               color: '#1e3a8a', 
-              marginBottom: '30px',
-              borderBottom: '2px solid #1e3a8a',
-              paddingBottom: '15px'
+              marginBottom: '10px'
             }}>
-              דוח הוצאות נסיעה עסקית
+              דוח נסיעה עסקית
             </h1>
-
-            {/* קופסה 1 - פרטי הנסיעה */}
             <div style={{ 
-              background: '#f3f4f6', 
-              border: '1px solid #d1d5db', 
-              borderRadius: '6px', 
-              padding: '20px', 
-              marginBottom: '20px' 
+              fontSize: '18px', 
+              color: '#4b5563',
+              fontWeight: '500'
             }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: 'bold', 
-                color: '#1e3a8a', 
-                marginBottom: '15px' 
-              }}>
-                פרטי הנסיעה
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <strong>יעד:</strong> {report?.trip_destination}
-                </div>
-                <div>
-                  <strong>מטרה:</strong> {report?.trip_purpose}
-                </div>
-                <div>
-                  <strong>תאריך התחלה:</strong> {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')}
-                </div>
-                <div>
-                  <strong>תאריך סיום:</strong> {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
-                </div>
-                <div>
-                  <strong>משך:</strong> {calculateTripDuration()} ימים
-                </div>
+              {report?.trip_destination} | {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')} - {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
+            </div>
+          </div>
+
+          {/* פרטי נסיעה */}
+          <div style={{ 
+            background: 'white', 
+            padding: '25px', 
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '20px'
+          }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: 'bold', 
+              color: '#1e3a8a', 
+              marginBottom: '20px',
+              borderBottom: '2px solid #1e3a8a',
+              paddingBottom: '10px'
+            }}>
+              פרטי נסיעה
+            </h2>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(2, 1fr)', 
+              gap: '15px',
+              fontSize: '15px'
+            }}>
+              <div>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>שם העובד:</span>
+                <span style={{ marginRight: '8px', fontWeight: '600' }}>{profile?.full_name || 'לא זמין'}</span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>חברה:</span>
+                <span style={{ marginRight: '8px', fontWeight: '600' }}>{profile?.department || 'לא זמין'}</span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>יעד:</span>
+                <span style={{ marginRight: '8px', fontWeight: '600' }}>{report?.trip_destination}</span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>מטרה:</span>
+                <span style={{ marginRight: '8px', fontWeight: '600' }}>{report?.trip_purpose}</span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>תאריכי נסיעה:</span>
+                <span style={{ marginRight: '8px', fontWeight: '600' }}>
+                  {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')} - {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>מטבע:</span>
+                <span style={{ marginRight: '8px', fontWeight: '600' }}>ILS (₪)</span>
               </div>
             </div>
+          </div>
 
-            {/* קופסה 2 - טבלת הוצאות */}
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: 'bold', 
-                color: '#1e3a8a', 
-                marginBottom: '15px' 
-              }}>
-                טבלת הוצאות
-              </h2>
-              <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse', 
-                border: '1px solid #d1d5db',
-                background: '#f9fafb'
-              }}>
-                <thead>
-                  <tr style={{ background: '#1e3a8a', color: 'white' }}>
-                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>תאריך</th>
-                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>קטגוריה</th>
-                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>תיאור</th>
-                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>סכום</th>
-                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>מטבע</th>
-                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>בשקלים</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map((expense, idx) => (
-                    <tr key={expense.id} style={{ background: idx % 2 === 0 ? 'white' : '#f9fafb' }}>
-                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
-                        {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                      </td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
-                        {getCategoryLabel(expense.category)}
-                      </td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
-                        {expense.description}
-                      </td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
-                        {expense.amount.toFixed(2)}
-                      </td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
-                        {expense.currency}
-                      </td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '8px', fontWeight: 'bold' }}>
-                        ₪{expense.amount_in_ils.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* קופסה 3 - סיכום לפי קטגוריות */}
-            <div style={{ 
-              background: '#f3f4f6', 
-              border: '1px solid #d1d5db', 
-              borderRadius: '6px', 
-              padding: '20px', 
-              marginBottom: '20px' 
+          {/* טבלת הוצאות */}
+          <div style={{ 
+            background: 'white', 
+            padding: '25px', 
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '20px'
+          }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: 'bold', 
+              color: '#1e3a8a', 
+              marginBottom: '20px',
+              borderBottom: '2px solid #1e3a8a',
+              paddingBottom: '10px'
             }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: 'bold', 
-                color: '#1e3a8a', 
-                marginBottom: '15px' 
-              }}>
-                סיכום לפי קטגוריות
-              </h2>
-              {Object.entries(categoryTotals).map(([category, total]) => (
-                <div key={category} style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  padding: '8px 0',
+              טבלת הוצאות
+            </h2>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse'
+            }}>
+              <thead>
+                <tr style={{ background: '#1e3a8a', color: 'white' }}>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>#</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>תאריך</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>ספק</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>סכום</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>קטגוריה</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map((expense, idx) => (
+                  <tr key={expense.id} style={{ 
+                    background: idx % 2 === 0 ? '#f9fafb' : 'white',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}>
+                    <td style={{ padding: '12px', fontSize: '14px' }}>{idx + 1}</td>
+                    <td style={{ padding: '12px', fontSize: '14px' }}>
+                      {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '14px' }}>{expense.description}</td>
+                    <td style={{ padding: '12px', fontSize: '14px', fontWeight: '600' }}>
+                      ₪{expense.amount_in_ils.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '14px' }}>
+                      <span style={{ 
+                        background: '#dbeafe', 
+                        color: '#1e40af', 
+                        padding: '4px 8px', 
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}>
+                        {getCategoryLabel(expense.category)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* סיכום קטגוריות */}
+          <div style={{ 
+            background: 'white', 
+            padding: '25px', 
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '20px'
+          }}>
+            <h2 style={{ 
+              fontSize: '20px', 
+              fontWeight: 'bold', 
+              color: '#1e3a8a', 
+              marginBottom: '20px',
+              borderBottom: '2px solid #1e3a8a',
+              paddingBottom: '10px'
+            }}>
+              סיכום לפי קטגוריות
+            </h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  <th style={{ padding: '10px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                    קטגוריה
+                  </th>
+                  <th style={{ padding: '10px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                    סכום
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(categoryTotals).map(([category, total]) => (
+                  <tr key={category} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '10px', fontSize: '15px' }}>{getCategoryLabel(category)}</td>
+                    <td style={{ padding: '10px', fontSize: '15px', fontWeight: '600' }}>₪{total.toFixed(2)}</td>
+                  </tr>
+                ))}
+                <tr style={{ 
+                  background: '#1e3a8a', 
+                  color: 'white', 
+                  fontWeight: 'bold',
                   fontSize: '16px'
                 }}>
-                  <span>{getCategoryLabel(category)}:</span>
-                  <span style={{ fontWeight: 'bold' }}>₪{total.toFixed(2)}</span>
-                </div>
-              ))}
-              <div style={{ 
-                borderTop: '2px solid #1e3a8a', 
-                marginTop: '10px', 
-                paddingTop: '10px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }}>
-                <span>סה"כ:</span>
-                <span>₪{report?.total_amount_ils.toFixed(2)}</span>
-              </div>
-            </div>
+                  <td style={{ padding: '12px' }}>סה"כ כולל</td>
+                  <td style={{ padding: '12px' }}>₪{report?.total_amount_ils.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-            {/* קופסה 4 - קבלות מצורפות */}
-            {expenses.some(exp => exp.receipts && exp.receipts.length > 0) && (
-              <div>
-                <h2 style={{ 
-                  fontSize: '18px', 
-                  fontWeight: 'bold', 
-                  color: '#1e3a8a', 
-                  marginBottom: '15px' 
-                }}>
-                  קבלות מצורפות
-                </h2>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(3, 1fr)', 
-                  gap: '20px' 
-                }}>
-                  {expenses.flatMap((expense, expIdx) => 
-                    (expense.receipts || []).map((receipt, idx) => (
-                      <div key={receipt.id} style={{ textAlign: 'center' }}>
-                        <img 
-                          src={receipt.file_url} 
-                          alt={`קבלה ${expIdx + idx + 1}`}
-                          style={{ 
-                            width: '150px', 
-                            height: '150px', 
-                            objectFit: 'cover', 
-                            border: '2px solid #d1d5db',
-                            borderRadius: '4px',
-                            marginBottom: '8px'
-                          }}
-                        />
-                        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                          קבלה #{expIdx + idx + 1}
+          {/* קבלות */}
+          {expenses.some(exp => exp.receipts && exp.receipts.length > 0) && (
+            <div style={{ 
+              background: 'white', 
+              padding: '25px', 
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{ 
+                fontSize: '20px', 
+                fontWeight: 'bold', 
+                color: '#1e3a8a', 
+                marginBottom: '20px',
+                borderBottom: '2px solid #1e3a8a',
+                paddingBottom: '10px'
+              }}>
+                קבלות
+              </h2>
+              {expenses.map((expense, expIdx) => 
+                expense.receipts && expense.receipts.length > 0 ? (
+                  expense.receipts.map((receipt, receiptIdx) => (
+                    <div key={receipt.id} style={{ 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      padding: '20px',
+                      marginBottom: '20px',
+                      background: '#fafafa'
+                    }}>
+                      <h3 style={{ 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        color: '#1e3a8a',
+                        marginBottom: '15px'
+                      }}>
+                        חשבונית #{expIdx + receiptIdx + 1} - {expense.description} - {getCategoryLabel(expense.category)}
+                      </h3>
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '1fr 2fr',
+                        gap: '20px',
+                        marginBottom: '15px'
+                      }}>
+                        <div>
+                          <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                            <span style={{ color: '#6b7280', fontWeight: '500' }}>תאריך:</span>
+                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
+                              {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                            </span>
+                          </div>
+                          <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                            <span style={{ color: '#6b7280', fontWeight: '500' }}>סכום:</span>
+                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
+                              ₪{expense.amount_in_ils.toFixed(2)}
+                            </span>
+                          </div>
+                          <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                            <span style={{ color: '#6b7280', fontWeight: '500' }}>קטגוריה:</span>
+                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
+                              {getCategoryLabel(expense.category)}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '14px' }}>
+                            <span style={{ color: '#6b7280', fontWeight: '500' }}>פירוט:</span>
+                            <span style={{ marginRight: '8px', fontWeight: '600' }}>
+                              {expense.description}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <img 
+                            src={receipt.file_url} 
+                            alt={`קבלה ${expIdx + receiptIdx + 1}`}
+                            style={{ 
+                              maxWidth: '100%',
+                              height: 'auto',
+                              maxHeight: '400px',
+                              border: '2px solid #d1d5db',
+                              borderRadius: '6px',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          />
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+                    </div>
+                  ))
+                ) : null
+              )}
+            </div>
+          )}
+
+          {/* הערות */}
+          <div style={{ 
+            background: '#e0f2fe', 
+            padding: '20px', 
+            borderRadius: '8px',
+            border: '2px solid #7dd3fc',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{ 
+              fontSize: '18px', 
+              fontWeight: 'bold', 
+              color: '#075985',
+              marginBottom: '15px'
+            }}>
+              הערות
+            </h3>
+            <ul style={{ 
+              listStyle: 'disc', 
+              paddingRight: '20px',
+              margin: 0,
+              fontSize: '14px',
+              color: '#0c4a6e'
+            }}>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>מטרה:</strong> {report?.trip_purpose}
+              </li>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>תקופה:</strong> {calculateTripDuration()} ימים ({report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')} - {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')})
+              </li>
+              <li>
+                <strong>מסמכים מצורפים:</strong> {expenses.reduce((total, exp) => total + (exp.receipts?.length || 0), 0)} קבלות
+              </li>
+            </ul>
+          </div>
+
+          {/* תחתית */}
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '20px',
+            borderTop: '2px solid #e5e7eb',
+            fontSize: '14px',
+            color: '#6b7280'
+          }}>
+            מוגש על ידי: <strong>{profile?.full_name || 'לא זמין'}</strong> | חברה: <strong>{profile?.department || 'לא זמין'}</strong>
           </div>
         </div>
       </div>
