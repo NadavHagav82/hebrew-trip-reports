@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -46,6 +47,14 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        status: {
+          draft: "hsl(var(--status-draft))",
+          open: "hsl(var(--status-open))",
+          pending: "hsl(var(--status-pending))",
+          approved: "hsl(var(--status-approved))",
+          rejected: "hsl(var(--status-rejected))",
+          closed: "hsl(var(--status-closed))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
