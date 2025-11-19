@@ -186,62 +186,67 @@ const ViewReport = () => {
           align: 'right',
         });
 
-        // Add receipts images section on following pages
-        let hasReceipts = false;
-        let receiptPageY = 30;
+        // Try to add receipts images section on following pages, but
+        // don't fail the whole export if something goes wrong.
+        try {
+          let hasReceipts = false;
+          let receiptPageY = 30;
 
-        const ensureNewPage = () => {
-          doc.addPage();
-          doc.setFontSize(18);
-          doc.text('חשבוניות מצורפות', rightMargin, 20, { align: 'right' });
-          receiptPageY = 30;
-        };
+          const ensureNewPage = () => {
+            doc.addPage();
+            doc.setFontSize(18);
+            doc.text('חשבוניות מצורפות', rightMargin, 20, { align: 'right' });
+            receiptPageY = 30;
+          };
 
-        const loadImageAsDataUrl = async (url: string): Promise<string> => {
-          const response = await fetch(url);
-          const blob = await response.blob();
+          const loadImageAsDataUrl = async (url: string): Promise<string> => {
+            const response = await fetch(url);
+            const blob = await response.blob();
 
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        };
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          };
 
-        for (const exp of expenses) {
-          if (!exp.receipts || exp.receipts.length === 0) continue;
+          for (const exp of expenses) {
+            if (!exp.receipts || exp.receipts.length === 0) continue;
 
-          for (const receipt of exp.receipts) {
-            if (receipt.file_type !== 'image') continue;
+            for (const receipt of exp.receipts) {
+              if (receipt.file_type !== 'image') continue;
 
-            if (!hasReceipts) {
-              hasReceipts = true;
-              ensureNewPage();
+              if (!hasReceipts) {
+                hasReceipts = true;
+                ensureNewPage();
+              }
+
+              const dataUrl = await loadImageAsDataUrl(receipt.file_url);
+              const imgProps = (doc as any).getImageProperties(dataUrl);
+              const pageHeight = doc.internal.pageSize.getHeight();
+
+              const maxWidth = pageWidth - 40;
+              const maxHeight = pageHeight - 60;
+              let imgWidth = maxWidth;
+              let imgHeight = (imgProps.height * maxWidth) / imgProps.width;
+
+              if (imgHeight > maxHeight) {
+                imgHeight = maxHeight;
+                imgWidth = (imgProps.width * maxHeight) / imgProps.height;
+              }
+
+              if (receiptPageY + imgHeight > pageHeight - 20) {
+                ensureNewPage();
+              }
+
+              const x = (pageWidth - imgWidth) / 2;
+              doc.addImage(dataUrl, 'JPEG', x, receiptPageY, imgWidth, imgHeight);
+              receiptPageY += imgHeight + 10;
             }
-
-            const dataUrl = await loadImageAsDataUrl(receipt.file_url);
-            const imgProps = (doc as any).getImageProperties(dataUrl);
-            const pageHeight = doc.internal.pageSize.getHeight();
-
-            const maxWidth = pageWidth - 40;
-            const maxHeight = pageHeight - 60;
-            let imgWidth = maxWidth;
-            let imgHeight = (imgProps.height * maxWidth) / imgProps.width;
-
-            if (imgHeight > maxHeight) {
-              imgHeight = maxHeight;
-              imgWidth = (imgProps.width * maxHeight) / imgProps.height;
-            }
-
-            if (receiptPageY + imgHeight > pageHeight - 20) {
-              ensureNewPage();
-            }
-
-            const x = (pageWidth - imgWidth) / 2;
-            doc.addImage(dataUrl, 'JPEG', x, receiptPageY, imgWidth, imgHeight);
-            receiptPageY += imgHeight + 10;
           }
+        } catch (e) {
+          console.error('Failed adding receipt images to PDF', e);
         }
       }
 
@@ -252,6 +257,7 @@ const ViewReport = () => {
         description: 'הקובץ נשמר במחשב שלך',
       });
     } catch (error) {
+      console.error('Failed generating report PDF', error);
       toast({
         title: 'שגיאה',
         description: 'לא ניתן להוריד את הדוח',
