@@ -6,9 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
-import { FileText, LogOut, Plus, Search } from 'lucide-react';
+import { FileText, LogOut, Plus, Search, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface Report {
   id: string;
@@ -22,12 +31,24 @@ interface Report {
   created_at: string;
 }
 
+interface Profile {
+  id: string;
+  username: string;
+  full_name: string;
+  employee_id: string;
+  department: string;
+}
+
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [editedProfile, setEditedProfile] = useState({ full_name: '', department: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,6 +58,7 @@ export default function Dashboard() {
       return;
     }
     fetchReports();
+    fetchProfile();
   }, [user, navigate]);
 
   const fetchReports = async () => {
@@ -56,6 +78,65 @@ export default function Dashboard() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+      setEditedProfile({
+        full_name: data.full_name || '',
+        department: data.department || '',
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !profile) return;
+
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editedProfile.full_name,
+          department: editedProfile.department,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'הפרופיל עודכן בהצלחה',
+        description: 'הפרטים שלך נשמרו במערכת',
+      });
+
+      setProfile({
+        ...profile,
+        full_name: editedProfile.full_name,
+        department: editedProfile.department,
+      });
+      setShowProfileDialog(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'שגיאה בעדכון הפרופיל',
+        description: error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -112,13 +193,22 @@ export default function Dashboard() {
               </div>
               <h1 className="text-lg sm:text-xl font-bold">דוחות נסיעה</h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
-                שלום, {user?.user_metadata?.full_name || user?.email}
+                {profile?.full_name || user?.email}
               </span>
-              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 sm:h-9">
-                <LogOut className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
-                <span className="hidden sm:inline">יציאה</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowProfileDialog(true)}
+                className="h-8 w-8 sm:h-9 sm:w-9"
+                title="פרופיל"
+              >
+                <User className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 sm:h-9 gap-1 sm:gap-2">
+                <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm">יציאה</span>
               </Button>
             </div>
           </div>
@@ -321,6 +411,78 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Profile Dialog */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>עריכת פרופיל</DialogTitle>
+            <DialogDescription>
+              עדכן את הפרטים האישיים שלך
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">שם משתמש</Label>
+              <Input 
+                id="username" 
+                value={profile?.username || ''} 
+                disabled 
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">לא ניתן לשנות את שם המשתמש</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="employee_id">מספר עובד</Label>
+              <Input 
+                id="employee_id" 
+                value={profile?.employee_id || ''} 
+                disabled 
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">לא ניתן לשנות את מספר העובד</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="full_name">שם מלא *</Label>
+              <Input 
+                id="full_name" 
+                value={editedProfile.full_name}
+                onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
+                placeholder="הזן שם מלא"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="department">מחלקה / חברה *</Label>
+              <Input 
+                id="department" 
+                value={editedProfile.department}
+                onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
+                placeholder="הזן שם מחלקה או חברה"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowProfileDialog(false)}
+              disabled={savingProfile}
+            >
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleSaveProfile}
+              disabled={savingProfile || !editedProfile.full_name || !editedProfile.department}
+            >
+              {savingProfile ? 'שומר...' : 'שמור שינויים'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
