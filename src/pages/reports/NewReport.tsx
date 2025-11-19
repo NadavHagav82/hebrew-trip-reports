@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,8 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, Calendar, Globe, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+
+interface ReceiptFile {
+  file: File;
+  preview: string;
+  uploading?: boolean;
+}
 
 interface Expense {
   id: string;
@@ -20,7 +26,7 @@ interface Expense {
   amount: number;
   currency: 'USD' | 'EUR' | 'ILS' | 'PLN' | 'GBP';
   amount_in_ils: number;
-  receipts: File[];
+  receipts: ReceiptFile[];
 }
 
 const categoryLabels = {
@@ -62,6 +68,9 @@ export default function NewReport() {
   // Expenses
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expandedExpense, setExpandedExpense] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [currentExpenseForUpload, setCurrentExpenseForUpload] = useState<string | null>(null);
 
   const addExpense = () => {
     const newExpense: Expense = {
@@ -95,7 +104,91 @@ export default function NewReport() {
   };
 
   const removeExpense = (id: string) => {
+    const expense = expenses.find(exp => exp.id === id);
+    if (expense) {
+      // Cleanup preview URLs
+      expense.receipts.forEach(receipt => {
+        URL.revokeObjectURL(receipt.preview);
+      });
+    }
     setExpenses(expenses.filter(exp => exp.id !== id));
+  };
+
+  const handleFileSelect = (expenseId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const validFiles = Array.from(files).filter(file => {
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'application/pdf'];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: 'פורמט קובץ לא נתמך',
+          description: 'נא להעלות JPG, PNG, HEIC או PDF',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      if (file.size > maxSize) {
+        toast({
+          title: 'הקובץ גדול מדי',
+          description: 'מקסימום 10MB לכל קובץ',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    const newReceipts: ReceiptFile[] = validFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      uploading: false,
+    }));
+
+    setExpenses(expenses.map(exp => {
+      if (exp.id === expenseId) {
+        const totalReceipts = exp.receipts.length + newReceipts.length;
+        if (totalReceipts > 10) {
+          toast({
+            title: 'יותר מדי קבצים',
+            description: 'מקסימום 10 קבלות לכל הוצאה',
+            variant: 'destructive',
+          });
+          return exp;
+        }
+        return { ...exp, receipts: [...exp.receipts, ...newReceipts] };
+      }
+      return exp;
+    }));
+  };
+
+  const removeReceipt = (expenseId: string, receiptIndex: number) => {
+    setExpenses(expenses.map(exp => {
+      if (exp.id === expenseId) {
+        const receipt = exp.receipts[receiptIndex];
+        URL.revokeObjectURL(receipt.preview);
+        return {
+          ...exp,
+          receipts: exp.receipts.filter((_, idx) => idx !== receiptIndex)
+        };
+      }
+      return exp;
+    }));
+  };
+
+  const openFileDialog = (expenseId: string) => {
+    setCurrentExpenseForUpload(expenseId);
+    fileInputRef.current?.click();
+  };
+
+  const openCameraDialog = (expenseId: string) => {
+    setCurrentExpenseForUpload(expenseId);
+    cameraInputRef.current?.click();
   };
 
   const calculateTotalByCategory = () => {
@@ -155,21 +248,51 @@ export default function NewReport() {
 
       // Create expenses
       if (expenses.length > 0) {
-        const expensesData = expenses.map(exp => ({
-          report_id: report.id,
-          expense_date: exp.expense_date,
-          category: exp.category,
-          description: exp.description,
-          amount: exp.amount,
-          currency: exp.currency,
-          amount_in_ils: exp.amount_in_ils,
-        }));
+        for (const exp of expenses) {
+          // Insert expense
+          const { data: expenseData, error: expenseError } = await supabase
+            .from('expenses')
+            .insert({
+              report_id: report.id,
+              expense_date: exp.expense_date,
+              category: exp.category,
+              description: exp.description,
+              amount: exp.amount,
+              currency: exp.currency,
+              amount_in_ils: exp.amount_in_ils,
+            })
+            .select()
+            .single();
 
-        const { error: expensesError } = await supabase
-          .from('expenses')
-          .insert(expensesData);
+          if (expenseError) throw expenseError;
 
-        if (expensesError) throw expensesError;
+          // Upload receipts
+          if (exp.receipts.length > 0) {
+            for (const receipt of exp.receipts) {
+              const fileExt = receipt.file.name.split('.').pop();
+              const fileName = `${user.id}/${expenseData.id}/${Date.now()}.${fileExt}`;
+
+              const { error: uploadError } = await supabase.storage
+                .from('receipts')
+                .upload(fileName, receipt.file);
+
+              if (uploadError) throw uploadError;
+
+              const { data: { publicUrl } } = supabase.storage
+                .from('receipts')
+                .getPublicUrl(fileName);
+
+              // Save receipt record
+              await supabase.from('receipts').insert({
+                expense_id: expenseData.id,
+                file_name: receipt.file.name,
+                file_url: fileName,
+                file_type: receipt.file.type.startsWith('image') ? 'image' : 'pdf',
+                file_size: receipt.file.size,
+              });
+            }
+          }
+        }
       }
 
       // Create history record
@@ -418,9 +541,71 @@ export default function NewReport() {
 
                         <div>
                           <Label>קבלות</Label>
-                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">העלאת קבלות תתווסף בשלב הבא</p>
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => openCameraDialog(expense.id)}
+                              >
+                                <Camera className="w-4 h-4 ml-2" />
+                                צלם קבלה
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => openFileDialog(expense.id)}
+                              >
+                                <Upload className="w-4 h-4 ml-2" />
+                                העלה מהמכשיר
+                              </Button>
+                            </div>
+
+                            {expense.receipts.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2">
+                                {expense.receipts.map((receipt, idx) => (
+                                  <div key={idx} className="relative group">
+                                    <div className="aspect-square rounded-lg border-2 overflow-hidden bg-muted">
+                                      {receipt.file.type.startsWith('image') ? (
+                                        <img
+                                          src={receipt.preview}
+                                          alt={`קבלה ${idx + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                          <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                          <span className="text-xs mt-2">PDF</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="icon"
+                                      className="absolute -top-2 -left-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => removeReceipt(expense.id, idx)}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                    {receipt.uploading && (
+                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                        <span className="text-xs">מעלה...</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {expense.receipts.length === 0 && (
+                              <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                                <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground">לחץ על הכפתורים מעלה להעלות קבלות</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -467,6 +652,34 @@ export default function NewReport() {
           </Card>
         )}
       </main>
+
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/heic,application/pdf"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (currentExpenseForUpload) {
+            handleFileSelect(currentExpenseForUpload, e.target.files);
+            e.target.value = '';
+          }
+        }}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          if (currentExpenseForUpload) {
+            handleFileSelect(currentExpenseForUpload, e.target.files);
+            e.target.value = '';
+          }
+        }}
+      />
     </div>
   );
 }
