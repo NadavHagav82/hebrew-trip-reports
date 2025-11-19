@@ -142,20 +142,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('drafts')}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">טיוטות</p>
-                  <p className="text-3xl font-bold">{stats.draft}</p>
-                </div>
-                <div className="w-12 h-12 bg-gray-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🔘</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('closed')}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -165,6 +151,20 @@ export default function Dashboard() {
                 </div>
                 <div className="w-12 h-12 bg-green-600/10 rounded-full flex items-center justify-center">
                   <span className="text-2xl">🟢</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('drafts')}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">טיוטות</p>
+                  <p className="text-3xl font-bold">{stats.draft}</p>
+                </div>
+                <div className="w-12 h-12 bg-gray-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🔘</span>
                 </div>
               </div>
             </CardContent>
