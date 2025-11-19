@@ -157,108 +157,28 @@ const ViewReport = () => {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap');
+        
         @media print {
-          /* Hide non-printable elements */
+          body, * {
+            font-family: 'Heebo', sans-serif !important;
+          }
+          
           header, .no-print {
             display: none !important;
           }
           
-          /* Remove backgrounds and borders */
           body {
             background: white !important;
           }
           
-          /* Page setup */
           @page {
-            margin: 2cm;
+            margin: 1.5cm;
             size: A4;
           }
           
-          /* RTL alignment */
-          * {
-            direction: rtl !important;
-            text-align: right !important;
-          }
-          
-          /* Ensure print container is visible */
           #report-print {
             display: block !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          
-          /* Card styling for print */
-          .print-card {
-            break-inside: avoid;
-            page-break-inside: avoid;
-            margin-bottom: 1.5rem;
-            border: 1px solid #e5e7eb;
-            padding: 1rem;
-          }
-          
-          .print-card-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid #000;
-            padding-bottom: 0.5rem;
-          }
-          
-          /* Expense table */
-          .print-expense {
-            border: 1px solid #e5e7eb;
-            padding: 0.75rem;
-            margin-bottom: 0.75rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1rem;
-          }
-          
-          /* Category totals */
-          .print-summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          
-          .print-summary-total {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            font-weight: bold;
-            font-size: 1.125rem;
-            border-top: 2px solid #000;
-            margin-top: 0.5rem;
-          }
-          
-          /* Receipt images grid */
-          .print-receipts-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-top: 1rem;
-          }
-          
-          .print-receipt-item {
-            text-align: center;
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-          
-          .print-receipt-item img {
-            width: 5cm;
-            height: 5cm;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
-            display: block;
-            margin: 0 auto 0.5rem auto;
-          }
-          
-          .print-receipt-label {
-            font-size: 0.875rem;
-            font-weight: 600;
           }
         }
         
@@ -269,259 +189,309 @@ const ViewReport = () => {
         }
       `}</style>
       
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background font-sans">
         {/* Header */}
         <header className="bg-card border-b sticky top-0 z-10 no-print">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-                <ArrowRight className="w-4 h-4 ml-2" />
-                חזרה
-              </Button>
-              <h1 className="text-xl font-bold">צפייה בדוח</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              {report.status === 'draft' && (
-                <Button variant="outline" onClick={() => navigate(`/reports/edit/${id}`)}>
-                  <Edit className="w-4 h-4 ml-2" />
-                  ערוך דוח
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                  חזרה
                 </Button>
-              )}
+                <h1 className="text-xl font-bold">צפייה בדוח</h1>
+              </div>
               <Button onClick={printPDF}>
                 <Printer className="w-4 h-4 ml-2" />
-                ייצא ל-PDF
+                הדפס דוח
               </Button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div id="report-pdf" className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Report Status */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>סטטוס הדוח</CardTitle>
-              <StatusBadge status={report.status} />
-            </div>
-          </CardHeader>
-        </Card>
+        {/* Screen View */}
+        <div id="report-pdf" className="container mx-auto px-4 py-8 max-w-4xl no-print">
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>סטטוס הדוח</CardTitle>
+                <StatusBadge status={report.status} />
+              </div>
+            </CardHeader>
+          </Card>
 
-        {/* Trip Details */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>פרטי הנסיעה</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-muted-foreground">יעד:</span>
-                <p className="font-medium">{report.trip_destination}</p>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>פרטי הנסיעה</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-muted-foreground">יעד:</span>
+                  <p className="font-medium">{report.trip_destination}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">מטרה:</span>
+                  <p className="font-medium">{report.trip_purpose}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">תאריך התחלה:</span>
+                  <p className="font-medium">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">תאריך סיום:</span>
+                  <p className="font-medium">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">משך הנסיעה:</span>
+                  <p className="font-medium">{calculateTripDuration()} ימים</p>
+                </div>
               </div>
-              <div>
-                <span className="text-sm text-muted-foreground">מטרה:</span>
-                <p className="font-medium">{report.trip_purpose}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">תאריך התחלה:</span>
-                <p className="font-medium">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">תאריך סיום:</span>
-                <p className="font-medium">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">משך הנסיעה:</span>
-                <p className="font-medium">{calculateTripDuration()} ימים</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">תאריך יצירה:</span>
-                <p className="font-medium">{format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Expenses */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>הוצאות ({expenses.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {expenses.map((expense) => (
-                <div key={expense.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">{expense.description}</span>
-                        <span className="text-sm px-2 py-0.5 bg-primary/10 text-primary rounded">
-                          {getCategoryLabel(expense.category)}
-                        </span>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>הוצאות ({expenses.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {expenses.map((expense) => (
+                  <div key={expense.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{expense.description}</span>
+                          <span className="text-sm px-2 py-0.5 bg-primary/10 text-primary rounded">
+                            {getCategoryLabel(expense.category)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                      </p>
-                    </div>
-                    <div className="text-left">
-                      <p className="font-bold">₪{expense.amount_in_ils.toFixed(2)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {expense.amount} {expense.currency}
-                      </p>
+                      <div className="text-left">
+                        <p className="font-bold">₪{expense.amount_in_ils.toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {expense.amount} {expense.currency}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  {expense.receipts && expense.receipts.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm text-muted-foreground">
-                        {expense.receipts.length} קבלות מצורפות
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle>סיכום</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(categoryTotals).map(([category, total]) => (
-                <div key={category} className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{getCategoryLabel(category)}:</span>
-                  <span className="font-medium">₪{total.toFixed(2)}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>סיכום</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Object.entries(categoryTotals).map(([category, total]) => (
+                  <div key={category} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{getCategoryLabel(category)}:</span>
+                    <span className="font-medium">₪{total.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="border-t pt-3 flex justify-between font-bold text-lg">
+                  <span>סה"כ:</span>
+                  <span>₪{report.total_amount_ils.toFixed(2)}</span>
                 </div>
-              ))}
-              <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                <span>סה"כ:</span>
-                <span>₪{report.total_amount_ils.toFixed(2)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Print Version */}
+        <div id="report-print" style={{ fontFamily: 'Heebo, sans-serif', direction: 'rtl', padding: '20px', background: 'white' }}>
+          <div style={{ border: '3px solid #1e3a8a', padding: '30px', borderRadius: '8px' }}>
+            {/* כותרת */}
+            <h1 style={{ 
+              fontSize: '32px', 
+              fontWeight: 'bold', 
+              textAlign: 'center', 
+              color: '#1e3a8a', 
+              marginBottom: '30px',
+              borderBottom: '2px solid #1e3a8a',
+              paddingBottom: '15px'
+            }}>
+              דוח הוצאות נסיעה עסקית
+            </h1>
+
+            {/* קופסה 1 - פרטי הנסיעה */}
+            <div style={{ 
+              background: '#f3f4f6', 
+              border: '1px solid #d1d5db', 
+              borderRadius: '6px', 
+              padding: '20px', 
+              marginBottom: '20px' 
+            }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: 'bold', 
+                color: '#1e3a8a', 
+                marginBottom: '15px' 
+              }}>
+                פרטי הנסיעה
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <strong>יעד:</strong> {report?.trip_destination}
+                </div>
+                <div>
+                  <strong>מטרה:</strong> {report?.trip_purpose}
+                </div>
+                <div>
+                  <strong>תאריך התחלה:</strong> {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')}
+                </div>
+                <div>
+                  <strong>תאריך סיום:</strong> {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
+                </div>
+                <div>
+                  <strong>משך:</strong> {calculateTripDuration()} ימים
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Hidden print version */}
-      <div id="report-print">
-        <div style={{ padding: '20px' }}>
-          {/* Header */}
-          <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
-              דוח נסיעה - Travel Report
-            </h1>
-            {profile && (
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                {profile.full_name} | {profile.employee_id} | {profile.department}
+
+            {/* קופסה 2 - טבלת הוצאות */}
+            <div style={{ marginBottom: '20px' }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: 'bold', 
+                color: '#1e3a8a', 
+                marginBottom: '15px' 
+              }}>
+                טבלת הוצאות
+              </h2>
+              <table style={{ 
+                width: '100%', 
+                borderCollapse: 'collapse', 
+                border: '1px solid #d1d5db',
+                background: '#f9fafb'
+              }}>
+                <thead>
+                  <tr style={{ background: '#1e3a8a', color: 'white' }}>
+                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>תאריך</th>
+                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>קטגוריה</th>
+                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>תיאור</th>
+                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>סכום</th>
+                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>מטבע</th>
+                    <th style={{ border: '1px solid #d1d5db', padding: '10px', textAlign: 'right' }}>בשקלים</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.map((expense, idx) => (
+                    <tr key={expense.id} style={{ background: idx % 2 === 0 ? 'white' : '#f9fafb' }}>
+                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
+                        {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                      </td>
+                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
+                        {getCategoryLabel(expense.category)}
+                      </td>
+                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
+                        {expense.description}
+                      </td>
+                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
+                        {expense.amount.toFixed(2)}
+                      </td>
+                      <td style={{ border: '1px solid #d1d5db', padding: '8px' }}>
+                        {expense.currency}
+                      </td>
+                      <td style={{ border: '1px solid #d1d5db', padding: '8px', fontWeight: 'bold' }}>
+                        ₪{expense.amount_in_ils.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* קופסה 3 - סיכום לפי קטגוריות */}
+            <div style={{ 
+              background: '#f3f4f6', 
+              border: '1px solid #d1d5db', 
+              borderRadius: '6px', 
+              padding: '20px', 
+              marginBottom: '20px' 
+            }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: 'bold', 
+                color: '#1e3a8a', 
+                marginBottom: '15px' 
+              }}>
+                סיכום לפי קטגוריות
+              </h2>
+              {Object.entries(categoryTotals).map(([category, total]) => (
+                <div key={category} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  padding: '8px 0',
+                  fontSize: '16px'
+                }}>
+                  <span>{getCategoryLabel(category)}:</span>
+                  <span style={{ fontWeight: 'bold' }}>₪{total.toFixed(2)}</span>
+                </div>
+              ))}
+              <div style={{ 
+                borderTop: '2px solid #1e3a8a', 
+                marginTop: '10px', 
+                paddingTop: '10px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                <span>סה"כ:</span>
+                <span>₪{report?.total_amount_ils.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* קופסה 4 - קבלות מצורפות */}
+            {expenses.some(exp => exp.receipts && exp.receipts.length > 0) && (
+              <div>
+                <h2 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: 'bold', 
+                  color: '#1e3a8a', 
+                  marginBottom: '15px' 
+                }}>
+                  קבלות מצורפות
+                </h2>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(3, 1fr)', 
+                  gap: '20px' 
+                }}>
+                  {expenses.flatMap((expense, expIdx) => 
+                    (expense.receipts || []).map((receipt, idx) => (
+                      <div key={receipt.id} style={{ textAlign: 'center' }}>
+                        <img 
+                          src={receipt.file_url} 
+                          alt={`קבלה ${expIdx + idx + 1}`}
+                          style={{ 
+                            width: '150px', 
+                            height: '150px', 
+                            objectFit: 'cover', 
+                            border: '2px solid #d1d5db',
+                            borderRadius: '4px',
+                            marginBottom: '8px'
+                          }}
+                        />
+                        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                          קבלה #{expIdx + idx + 1}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
-          
-          {/* Report Status */}
-          <div className="print-card">
-            <div className="print-card-title">סטטוס הדוח</div>
-            <div style={{ fontSize: '18px', fontWeight: '600' }}>
-              {report?.status === 'draft' && 'טיוטה'}
-              {report?.status === 'open' && 'פתוח'}
-              {report?.status === 'pending' && 'ממתין לאישור'}
-              {report?.status === 'approved' && 'אושר'}
-              {report?.status === 'rejected' && 'נדחה'}
-              {report?.status === 'closed' && 'סגור'}
-            </div>
-          </div>
-          
-          {/* Trip Details */}
-          <div className="print-card">
-            <div className="print-card-title">פרטי הנסיעה</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div>
-                <div style={{ fontSize: '12px', color: '#666' }}>יעד:</div>
-                <div style={{ fontWeight: '500' }}>{report?.trip_destination}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', color: '#666' }}>מטרה:</div>
-                <div style={{ fontWeight: '500' }}>{report?.trip_purpose}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', color: '#666' }}>תאריך התחלה:</div>
-                <div style={{ fontWeight: '500' }}>
-                  {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', color: '#666' }}>תאריך סיום:</div>
-                <div style={{ fontWeight: '500' }}>
-                  {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', color: '#666' }}>משך הנסיעה:</div>
-                <div style={{ fontWeight: '500' }}>{calculateTripDuration()} ימים</div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Expenses */}
-          <div className="print-card">
-            <div className="print-card-title">הוצאות ({expenses.length})</div>
-            {expenses.map((expense) => (
-              <div key={expense.id} className="print-expense">
-                <div>
-                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                    {expense.description}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
-                    {format(new Date(expense.expense_date), 'dd/MM/yyyy')} | {getCategoryLabel(expense.category)}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold' }}>₪{expense.amount_in_ils.toFixed(2)}</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
-                    {expense.amount} {expense.currency}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Summary */}
-          <div className="print-card">
-            <div className="print-card-title">סיכום</div>
-            {Object.entries(categoryTotals).map(([category, total]) => (
-              <div key={category} className="print-summary-row">
-                <span>{getCategoryLabel(category)}</span>
-                <span style={{ fontWeight: '500' }}>₪{total.toFixed(2)}</span>
-              </div>
-            ))}
-            <div className="print-summary-total">
-              <span>סה"כ</span>
-              <span>₪{report?.total_amount_ils.toFixed(2)}</span>
-            </div>
-          </div>
-          
-          {/* Receipts Grid */}
-          {expenses.some(exp => exp.receipts && exp.receipts.length > 0) && (
-            <div className="print-card">
-              <div className="print-card-title">קבלות</div>
-              <div className="print-receipts-grid">
-                {expenses.flatMap((expense) => 
-                  (expense.receipts || []).map((receipt, idx) => (
-                    <div key={receipt.id} className="print-receipt-item">
-                      <img src={receipt.file_url} alt={`קבלה ${idx + 1}`} />
-                      <div className="print-receipt-label">קבלה #{idx + 1}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
-    </div>
     </>
   );
 };
