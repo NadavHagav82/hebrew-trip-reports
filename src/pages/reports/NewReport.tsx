@@ -30,6 +30,7 @@ interface Expense {
   currency: 'USD' | 'EUR' | 'ILS' | 'PLN' | 'GBP';
   amount_in_ils: number;
   receipts: ReceiptFile[];
+  notes?: string;
 }
 
 const categoryLabels = {
@@ -70,6 +71,7 @@ export default function NewReport() {
   const [tripStartDate, setTripStartDate] = useState('');
   const [tripEndDate, setTripEndDate] = useState('');
   const [tripPurpose, setTripPurpose] = useState('');
+  const [reportNotes, setReportNotes] = useState('');
 
   // Expenses
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -105,6 +107,7 @@ export default function NewReport() {
       setTripStartDate(report.trip_start_date);
       setTripEndDate(report.trip_end_date);
       setTripPurpose(report.trip_purpose);
+      setReportNotes(report.notes || '');
 
       // Load expenses
       const { data: expensesData, error: expensesError } = await supabase
@@ -124,6 +127,7 @@ export default function NewReport() {
         currency: exp.currency,
         amount_in_ils: exp.amount_in_ils,
         receipts: [], // Receipts will be loaded separately if needed
+        notes: exp.notes || '',
       }));
 
       setExpenses(transformedExpenses);
@@ -154,6 +158,7 @@ export default function NewReport() {
       currency: 'USD',
       amount_in_ils: 0,
       receipts: [],
+      notes: '',
     };
     setExpenses([...expenses, newExpense]);
     setExpandedExpense(newExpense.id);
@@ -455,6 +460,7 @@ export default function NewReport() {
             trip_start_date: tripStartDate,
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
+            notes: reportNotes,
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -482,6 +488,7 @@ export default function NewReport() {
             trip_start_date: tripStartDate,
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
+            notes: reportNotes,
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -507,6 +514,7 @@ export default function NewReport() {
               amount: exp.amount,
               currency: exp.currency,
               amount_in_ils: exp.amount_in_ils,
+              notes: exp.notes || null,
             })
             .select()
             .single();
@@ -677,6 +685,16 @@ export default function NewReport() {
                 rows={3}
                 value={tripPurpose}
                 onChange={(e) => setTripPurpose(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="reportNotes">הערות כלליות על הדוח</Label>
+              <Textarea
+                id="reportNotes"
+                placeholder="הוסף הערות, הסברים או פרטים נוספים על הדוח (אופציונלי)"
+                rows={3}
+                value={reportNotes}
+                onChange={(e) => setReportNotes(e.target.value)}
               />
             </div>
           </CardContent>
@@ -862,6 +880,16 @@ export default function NewReport() {
                             placeholder="תאר את ההוצאה"
                             value={expense.description}
                             onChange={(e) => updateExpense(expense.id, 'description', e.target.value)}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>הערות על ההוצאה</Label>
+                          <Textarea
+                            placeholder="הוסף הערות או פרטים נוספים על ההוצאה (אופציונלי)"
+                            rows={2}
+                            value={expense.notes || ''}
+                            onChange={(e) => updateExpense(expense.id, 'notes', e.target.value)}
                           />
                         </div>
 
