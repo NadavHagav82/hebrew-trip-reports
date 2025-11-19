@@ -110,36 +110,48 @@ const ViewReport = () => {
 
     try {
       const doc = new jsPDF();
-      
-      // Add Hebrew font support (using default fonts for now)
+
+      // Use Hebrew language, but keep LTR rendering to avoid character corruption
       doc.setLanguage('he');
-      doc.setR2L(true);
 
       // Title
       doc.setFontSize(20);
-      doc.text('דוח נסיעה', doc.internal.pageSize.width - 20, 20, { align: 'right' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const rightMargin = pageWidth - 20;
+      doc.text('דוח נסיעה', rightMargin, 20, { align: 'right' });
 
       // Report details
       doc.setFontSize(12);
       let yPos = 40;
-      const rightMargin = doc.internal.pageSize.width - 20;
 
       doc.text(`יעד: ${report.trip_destination}`, rightMargin, yPos, { align: 'right' });
       yPos += 10;
       doc.text(`מטרת הנסיעה: ${report.trip_purpose}`, rightMargin, yPos, { align: 'right' });
       yPos += 10;
-      doc.text(`תאריך התחלה: ${format(new Date(report.trip_start_date), 'dd/MM/yyyy')}`, rightMargin, yPos, { align: 'right' });
+      doc.text(
+        `תאריך התחלה: ${format(new Date(report.trip_start_date), 'dd/MM/yyyy')}`,
+        rightMargin,
+        yPos,
+        { align: 'right' },
+      );
       yPos += 10;
-      doc.text(`תאריך סיום: ${format(new Date(report.trip_end_date), 'dd/MM/yyyy')}`, rightMargin, yPos, { align: 'right' });
+      doc.text(
+        `תאריך סיום: ${format(new Date(report.trip_end_date), 'dd/MM/yyyy')}`,
+        rightMargin,
+        yPos,
+        { align: 'right' },
+      );
       yPos += 10;
-      doc.text(`משך הנסיעה: ${calculateTripDuration()} ימים`, rightMargin, yPos, { align: 'right' });
+      doc.text(`משך הנסיעה: ${calculateTripDuration()} ימים`, rightMargin, yPos, {
+        align: 'right',
+      });
       yPos += 10;
       doc.text(`סטטוס: ${report.status}`, rightMargin, yPos, { align: 'right' });
       yPos += 15;
 
       // Expenses table
       if (expenses.length > 0) {
-        const tableData = expenses.map(exp => [
+        const tableData = expenses.map((exp) => [
           format(new Date(exp.expense_date), 'dd/MM/yyyy'),
           getCategoryLabel(exp.category),
           exp.description,
@@ -149,7 +161,7 @@ const ViewReport = () => {
 
         autoTable(doc, {
           startY: yPos,
-          head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', 'סכום בש"ח']],
+          head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', "סכום בש'ח"]],
           body: tableData,
           styles: {
             font: 'helvetica',
@@ -170,14 +182,72 @@ const ViewReport = () => {
           },
         });
 
-        // Total
-        const finalY = (doc as any).lastAutoTable.finalY || yPos + 50;
+        const finalY = (doc as any).lastAutoTable?.finalY || yPos + 50;
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text(`סה"כ: ₪${report.total_amount_ils.toFixed(2)}`, rightMargin, finalY + 15, { align: 'right' });
+        doc.text(`סה"כ: ₪${report.total_amount_ils.toFixed(2)}`, rightMargin, finalY + 15, {
+          align: 'right',
+        });
+
+        // Add receipts images section on following pages
+        let hasReceipts = false;
+        let receiptPageY = 30;
+
+        const ensureNewPage = () => {
+          doc.addPage();
+          doc.setFontSize(18);
+          doc.text('חשבוניות מצורפות', rightMargin, 20, { align: 'right' });
+          receiptPageY = 30;
+        };
+
+        const loadImageAsDataUrl = async (url: string): Promise<string> => {
+          const response = await fetch(url);
+          const blob = await response.blob();
+
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        };
+
+        for (const exp of expenses) {
+          if (!exp.receipts || exp.receipts.length === 0) continue;
+
+          for (const receipt of exp.receipts) {
+            if (receipt.file_type !== 'image') continue;
+
+            if (!hasReceipts) {
+              hasReceipts = true;
+              ensureNewPage();
+            }
+
+            const dataUrl = await loadImageAsDataUrl(receipt.file_url);
+            const imgProps = (doc as any).getImageProperties(dataUrl);
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            const maxWidth = pageWidth - 40;
+            const maxHeight = pageHeight - 60;
+            let imgWidth = maxWidth;
+            let imgHeight = (imgProps.height * maxWidth) / imgProps.width;
+
+            if (imgHeight > maxHeight) {
+              imgHeight = maxHeight;
+              imgWidth = (imgProps.width * maxHeight) / imgProps.height;
+            }
+
+            if (receiptPageY + imgHeight > pageHeight - 20) {
+              ensureNewPage();
+            }
+
+            const x = (pageWidth - imgWidth) / 2;
+            doc.addImage(dataUrl, 'JPEG', x, receiptPageY, imgWidth, imgHeight);
+            receiptPageY += imgHeight + 10;
+          }
+        }
       }
 
-      // Save PDF
       doc.save(`דוח_נסיעה_${report.trip_destination}_${format(new Date(), 'dd-MM-yyyy')}.pdf`);
 
       toast({
