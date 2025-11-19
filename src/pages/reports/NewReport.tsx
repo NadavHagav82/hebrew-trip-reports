@@ -544,7 +544,7 @@ export default function NewReport() {
         description: submitForApproval ? 'הדוח נשלח לאישור' : 'ניתן להמשיך לערוך מאוחר יותר',
       });
 
-      navigate('/');
+      navigate(`/reports/${report.id}`);
     } catch (error: any) {
       toast({
         title: 'שגיאה',
