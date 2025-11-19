@@ -1,0 +1,472 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowRight, Calendar, Globe, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+
+interface Expense {
+  id: string;
+  expense_date: string;
+  category: 'flights' | 'accommodation' | 'food' | 'transportation' | 'miscellaneous';
+  description: string;
+  amount: number;
+  currency: 'USD' | 'EUR' | 'ILS' | 'PLN' | 'GBP';
+  amount_in_ils: number;
+  receipts: File[];
+}
+
+const categoryLabels = {
+  flights: '🛫 טיסות',
+  accommodation: '🏨 לינה / חדרי ישיבות',
+  food: '🍽️ אוכל ואירוח',
+  transportation: '🚗 תחבורה מקומית',
+  miscellaneous: '📌 שונות',
+};
+
+const currencyLabels = {
+  USD: '$ דולר',
+  EUR: '€ יורו',
+  ILS: '₪ שקל',
+  PLN: 'zł זלוטי',
+  GBP: '£ לירה',
+};
+
+const currencyRates = {
+  USD: 3.60,
+  EUR: 3.90,
+  ILS: 1.00,
+  PLN: 0.89,
+  GBP: 4.58,
+};
+
+export default function NewReport() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  // Trip details
+  const [tripDestination, setTripDestination] = useState('');
+  const [tripStartDate, setTripStartDate] = useState('');
+  const [tripEndDate, setTripEndDate] = useState('');
+  const [tripPurpose, setTripPurpose] = useState('');
+
+  // Expenses
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expandedExpense, setExpandedExpense] = useState<string | null>(null);
+
+  const addExpense = () => {
+    const newExpense: Expense = {
+      id: Date.now().toString(),
+      expense_date: '',
+      category: 'miscellaneous',
+      description: '',
+      amount: 0,
+      currency: 'USD',
+      amount_in_ils: 0,
+      receipts: [],
+    };
+    setExpenses([...expenses, newExpense]);
+    setExpandedExpense(newExpense.id);
+  };
+
+  const updateExpense = (id: string, field: keyof Expense, value: any) => {
+    setExpenses(expenses.map(exp => {
+      if (exp.id === id) {
+        const updated = { ...exp, [field]: value };
+        // Auto-convert to ILS
+        if (field === 'amount' || field === 'currency') {
+          const amount = field === 'amount' ? value : exp.amount;
+          const currency = field === 'currency' ? value : exp.currency;
+          updated.amount_in_ils = amount * currencyRates[currency as keyof typeof currencyRates];
+        }
+        return updated;
+      }
+      return exp;
+    }));
+  };
+
+  const removeExpense = (id: string) => {
+    setExpenses(expenses.filter(exp => exp.id !== id));
+  };
+
+  const calculateTotalByCategory = () => {
+    const totals: Record<string, number> = {};
+    expenses.forEach(exp => {
+      if (!totals[exp.category]) totals[exp.category] = 0;
+      totals[exp.category] += exp.amount_in_ils;
+    });
+    return totals;
+  };
+
+  const calculateGrandTotal = () => {
+    return expenses.reduce((sum, exp) => sum + exp.amount_in_ils, 0);
+  };
+
+  const handleSave = async (submitForApproval: boolean = false) => {
+    if (!user) return;
+
+    // Validation
+    if (!tripDestination || !tripStartDate || !tripEndDate || !tripPurpose) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש למלא את כל פרטי הנסיעה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (submitForApproval && expenses.length === 0) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש להוסיף לפחות הוצאה אחת',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create report
+      const { data: report, error: reportError } = await supabase
+        .from('reports')
+        .insert({
+          user_id: user.id,
+          trip_destination: tripDestination,
+          trip_start_date: tripStartDate,
+          trip_end_date: tripEndDate,
+          trip_purpose: tripPurpose,
+          status: submitForApproval ? 'open' : 'draft',
+          submitted_at: submitForApproval ? new Date().toISOString() : null,
+          total_amount_ils: calculateGrandTotal(),
+        })
+        .select()
+        .single();
+
+      if (reportError) throw reportError;
+
+      // Create expenses
+      if (expenses.length > 0) {
+        const expensesData = expenses.map(exp => ({
+          report_id: report.id,
+          expense_date: exp.expense_date,
+          category: exp.category,
+          description: exp.description,
+          amount: exp.amount,
+          currency: exp.currency,
+          amount_in_ils: exp.amount_in_ils,
+        }));
+
+        const { error: expensesError } = await supabase
+          .from('expenses')
+          .insert(expensesData);
+
+        if (expensesError) throw expensesError;
+      }
+
+      // Create history record
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: submitForApproval ? 'submitted' : 'created',
+        performed_by: user.id,
+      });
+
+      toast({
+        title: submitForApproval ? 'הדוח הוגש בהצלחה' : 'הדוח נשמר כטיוטה',
+        description: submitForApproval ? 'הדוח נשלח לאישור' : 'ניתן להמשיך לערוך מאוחר יותר',
+      });
+
+      navigate('/');
+    } catch (error: any) {
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'אירעה שגיאה בשמירת הדוח',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categoryTotals = calculateTotalByCategory();
+  const grandTotal = calculateGrandTotal();
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-card border-b sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                <ArrowRight className="w-4 h-4 ml-2" />
+                חזרה
+              </Button>
+              <h1 className="text-xl font-bold">דוח נסיעה חדש</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => handleSave(false)} disabled={loading}>
+                <Save className="w-4 h-4 ml-2" />
+                שמור כטיוטה
+              </Button>
+              <Button onClick={() => handleSave(true)} disabled={loading}>
+                <Save className="w-4 h-4 ml-2" />
+                שמור והגש לאישור
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Trip Details */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5" />
+              פרטי הנסיעה
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="destination">יעד הנסיעה *</Label>
+              <Input
+                id="destination"
+                placeholder="לדוגמה: ניו יורק, ארה״ב"
+                value={tripDestination}
+                onChange={(e) => setTripDestination(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startDate">תאריך התחלה *</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={tripStartDate}
+                  onChange={(e) => setTripStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="endDate">תאריך סיום *</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={tripEndDate}
+                  onChange={(e) => setTripEndDate(e.target.value)}
+                  min={tripStartDate}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="purpose">מטרת הנסיעה *</Label>
+              <Textarea
+                id="purpose"
+                placeholder="תאר את מטרת הנסיעה העסקית"
+                rows={3}
+                value={tripPurpose}
+                onChange={(e) => setTripPurpose(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expenses */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                💰 הוצאות
+              </CardTitle>
+              <Button onClick={addExpense}>
+                <Plus className="w-4 h-4 ml-2" />
+                הוסף הוצאה
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {expenses.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">עדיין לא הוספת הוצאות</p>
+                <p className="text-sm text-muted-foreground">לחץ על "הוסף הוצאה" כדי להתחיל</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {expenses.map((expense, index) => (
+                  <Card key={expense.id} className="border-2">
+                    <div
+                      className="p-4 cursor-pointer flex items-center justify-between hover:bg-muted/50"
+                      onClick={() => setExpandedExpense(expandedExpense === expense.id ? null : expense.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold">הוצאה #{index + 1}</span>
+                        {expense.description && (
+                          <>
+                            <span className="text-muted-foreground">-</span>
+                            <span>{expense.description}</span>
+                          </>
+                        )}
+                        {expense.amount > 0 && (
+                          <>
+                            <span className="text-muted-foreground">-</span>
+                            <span className="font-semibold">
+                              {expense.amount.toFixed(2)} {currencyLabels[expense.currency]}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeExpense(expense.id);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {expandedExpense === expense.id && (
+                      <div className="p-4 border-t space-y-4">
+                        <div>
+                          <Label>תאריך *</Label>
+                          <Input
+                            type="date"
+                            value={expense.expense_date}
+                            onChange={(e) => updateExpense(expense.id, 'expense_date', e.target.value)}
+                            min={tripStartDate}
+                            max={tripEndDate}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>קטגוריה *</Label>
+                          <Select
+                            value={expense.category}
+                            onValueChange={(value) => updateExpense(expense.id, 'category', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(categoryLabels).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label>תיאור *</Label>
+                          <Input
+                            placeholder="תאר את ההוצאה"
+                            value={expense.description}
+                            onChange={(e) => updateExpense(expense.id, 'description', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>סכום *</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={expense.amount || ''}
+                              onChange={(e) => updateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div>
+                            <Label>מטבע *</Label>
+                            <Select
+                              value={expense.currency}
+                              onValueChange={(value) => updateExpense(expense.id, 'currency', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(currencyLabels).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">סכום בשקלים</p>
+                          <p className="text-lg font-bold">
+                            {expense.amount_in_ils.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                          </p>
+                        </div>
+
+                        <div>
+                          <Label>קבלות</Label>
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">העלאת קבלות תתווסף בשלב הבא</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Summary */}
+        {expenses.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>סיכום הוצאות</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="font-semibold mb-3">סיכום לפי קטגוריה:</p>
+                <div className="space-y-2">
+                  {Object.entries(categoryTotals).map(([category, total]) => (
+                    <div key={category} className="flex justify-between items-center">
+                      <span>{categoryLabels[category as keyof typeof categoryLabels]}</span>
+                      <span className="font-semibold">
+                        {total.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="bg-primary text-primary-foreground p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold">סה"כ כללי:</span>
+                  <span className="text-2xl font-bold">
+                    {grandTotal.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </main>
+    </div>
+  );
+}
