@@ -104,67 +104,67 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <FileText className="w-5 h-5 text-primary-foreground" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
-              <h1 className="text-xl font-bold">דוחות נסיעה</h1>
+              <h1 className="text-lg sm:text-xl font-bold">דוחות נסיעה</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
                 שלום, {user?.user_metadata?.full_name || user?.email}
               </span>
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <LogOut className="w-4 h-4 ml-2" />
-                יציאה
+              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 sm:h-9">
+                <LogOut className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
+                <span className="hidden sm:inline">יציאה</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('open')}>
-            <CardContent className="pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('open')}>
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">דוחות פתוחים</p>
-                  <p className="text-3xl font-bold">{stats.open}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-1">דוחות פתוחים</p>
+                  <p className="text-4xl sm:text-3xl font-bold">{stats.open}</p>
                 </div>
-                <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🟠</span>
+                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-3xl sm:text-2xl">🟠</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('closed')}>
-            <CardContent className="pt-6">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('closed')}>
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">דוחות סגורים</p>
-                  <p className="text-3xl font-bold">{stats.closed}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-1">דוחות סגורים</p>
+                  <p className="text-4xl sm:text-3xl font-bold">{stats.closed}</p>
                 </div>
-                <div className="w-12 h-12 bg-green-600/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🟢</span>
+                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-green-600/10 rounded-full flex items-center justify-center">
+                  <span className="text-3xl sm:text-2xl">🟢</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('drafts')}>
-            <CardContent className="pt-6">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('drafts')}>
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">טיוטות</p>
-                  <p className="text-3xl font-bold">{stats.draft}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-1">טיוטות</p>
+                  <p className="text-4xl sm:text-3xl font-bold">{stats.draft}</p>
                 </div>
-                <div className="w-12 h-12 bg-gray-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🔘</span>
+                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-gray-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-3xl sm:text-2xl">🔘</span>
                 </div>
               </div>
             </CardContent>
@@ -173,104 +173,150 @@ export default function Dashboard() {
 
         {/* Tabs and Filters */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-                <TabsList>
-                  <TabsTrigger value="all">כל הדוחות</TabsTrigger>
-                  <TabsTrigger value="open">דוחות פתוחים</TabsTrigger>
-                  <TabsTrigger value="drafts">טיוטות</TabsTrigger>
-                  <TabsTrigger value="closed">דוחות סגורים</TabsTrigger>
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+            <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full grid grid-cols-4 h-auto">
+                  <TabsTrigger value="all" className="text-xs sm:text-sm py-2">כל הדוחות</TabsTrigger>
+                  <TabsTrigger value="open" className="text-xs sm:text-sm py-2">פתוחים</TabsTrigger>
+                  <TabsTrigger value="drafts" className="text-xs sm:text-sm py-2">טיוטות</TabsTrigger>
+                  <TabsTrigger value="closed" className="text-xs sm:text-sm py-2">סגורים</TabsTrigger>
                 </TabsList>
               </Tabs>
 
-              <Button onClick={() => navigate('/reports/new')} size="lg">
+              <Button onClick={() => navigate('/reports/new')} size="lg" className="w-full sm:w-auto h-12 sm:h-10">
                 <Plus className="w-5 h-5 ml-2" />
                 דוח נסיעה חדש
               </Button>
             </div>
 
             {/* Search */}
-            <div className="mb-6 relative">
+            <div className="mb-4 sm:mb-6 relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="חיפוש לפי יעד, תיאור או מספר דוח..."
+                placeholder="חיפוש לפי יעד..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
+                className="pr-10 h-12 sm:h-10 text-base"
               />
             </div>
 
-            {/* Reports Table */}
+            {/* Reports Table/Cards */}
             {loading ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">טוען דוחות...</p>
+                <p className="text-muted-foreground text-base">טוען דוחות...</p>
               </div>
             ) : displayedReports.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">אין דוחות להצגה</p>
-                <Button onClick={() => navigate('/reports/new')} className="mt-4">
+                <p className="text-muted-foreground text-base mb-4">אין דוחות להצגה</p>
+                <Button onClick={() => navigate('/reports/new')} className="h-12">
                   <Plus className="w-4 h-4 ml-2" />
                   צור דוח ראשון
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b">
-                    <tr>
-                      <th className="text-right p-4 font-semibold">סטטוס</th>
-                      <th className="text-right p-4 font-semibold">יעד</th>
-                      <th className="text-right p-4 font-semibold">תאריכים</th>
-                      <th className="text-right p-4 font-semibold">סה"כ (₪)</th>
-                      <th className="text-right p-4 font-semibold">הוגש</th>
-                      <th className="text-right p-4 font-semibold">פעולות</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedReports.map((report) => (
-                      <tr key={report.id} className="border-b hover:bg-muted/50 transition-colors">
-                        <td className="p-4">
+              <>
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b">
+                      <tr>
+                        <th className="text-right p-4 font-semibold">סטטוס</th>
+                        <th className="text-right p-4 font-semibold">יעד</th>
+                        <th className="text-right p-4 font-semibold">תאריכים</th>
+                        <th className="text-right p-4 font-semibold">סה"כ (₪)</th>
+                        <th className="text-right p-4 font-semibold">הוגש</th>
+                        <th className="text-right p-4 font-semibold">פעולות</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedReports.map((report) => (
+                        <tr key={report.id} className="border-b hover:bg-muted/50 transition-colors">
+                          <td className="p-4">
+                            <StatusBadge 
+                              status={report.status} 
+                              daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
+                            />
+                          </td>
+                          <td className="p-4 font-medium">{report.trip_destination}</td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {new Date(report.trip_start_date).toLocaleDateString('he-IL')} - {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                          </td>
+                          <td className="p-4 font-semibold">
+                            {report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {report.submitted_at ? new Date(report.submitted_at).toLocaleDateString('he-IL') : '-'}
+                          </td>
+                          <td className="p-4">
+                            {report.status === 'draft' ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/reports/edit/${report.id}`)}
+                              >
+                                המשך עריכה
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/reports/${report.id}`)}
+                              >
+                                צפייה
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden space-y-3">
+                  {displayedReports.map((report) => (
+                    <Card key={report.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg mb-1">{report.trip_destination}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(report.trip_start_date).toLocaleDateString('he-IL')} - {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                            </p>
+                          </div>
                           <StatusBadge 
                             status={report.status} 
                             daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
                           />
-                        </td>
-                        <td className="p-4 font-medium">{report.trip_destination}</td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {new Date(report.trip_start_date).toLocaleDateString('he-IL')} - {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
-                        </td>
-                        <td className="p-4 font-semibold">
-                          {report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {report.submitted_at ? new Date(report.submitted_at).toLocaleDateString('he-IL') : '-'}
-                        </td>
-                        <td className="p-4">
-                          {report.status === 'draft' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/reports/edit/${report.id}`)}
-                            >
-                              המשך עריכה
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/reports/${report.id}`)}
-                            >
-                              צפייה
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-3 pt-3 border-t">
+                          <span className="text-sm text-muted-foreground">סה"כ</span>
+                          <span className="text-xl font-bold">
+                            ₪{report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+
+                        {report.submitted_at && (
+                          <p className="text-xs text-muted-foreground mb-3">
+                            הוגש: {new Date(report.submitted_at).toLocaleDateString('he-IL')}
+                          </p>
+                        )}
+
+                        <Button
+                          className="w-full h-12"
+                          variant={report.status === 'draft' ? 'default' : 'outline'}
+                          onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
+                        >
+                          {report.status === 'draft' ? 'המשך עריכה' : 'צפה בדוח'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
