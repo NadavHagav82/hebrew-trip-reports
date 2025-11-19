@@ -248,13 +248,23 @@ export default function Dashboard() {
                           {report.submitted_at ? new Date(report.submitted_at).toLocaleDateString('he-IL') : '-'}
                         </td>
                         <td className="p-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/reports/${report.id}`)}
-                          >
-                            צפייה
-                          </Button>
+                          {report.status === 'draft' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/reports/edit/${report.id}`)}
+                            >
+                              המשך עריכה
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/reports/${report.id}`)}
+                            >
+                              צפייה
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
