@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -57,9 +57,12 @@ const currencyRates = {
 
 export default function NewReport() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   // Trip details
   const [tripDestination, setTripDestination] = useState('');
@@ -73,6 +76,72 @@ export default function NewReport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [currentExpenseForUpload, setCurrentExpenseForUpload] = useState<string | null>(null);
+
+  // Load existing report if in edit mode
+  useEffect(() => {
+    if (id && user) {
+      setIsEditMode(true);
+      setReportId(id);
+      loadReport(id);
+    }
+  }, [id, user]);
+
+  const loadReport = async (reportId: string) => {
+    try {
+      setLoading(true);
+      
+      // Load report details
+      const { data: report, error: reportError } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('id', reportId)
+        .single();
+
+      if (reportError) throw reportError;
+
+      // Set trip details
+      setTripDestination(report.trip_destination);
+      setTripStartDate(report.trip_start_date);
+      setTripEndDate(report.trip_end_date);
+      setTripPurpose(report.trip_purpose);
+
+      // Load expenses
+      const { data: expensesData, error: expensesError } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('report_id', reportId);
+
+      if (expensesError) throw expensesError;
+
+      // Transform expenses to local format
+      const transformedExpenses: Expense[] = expensesData.map(exp => ({
+        id: exp.id,
+        expense_date: exp.expense_date,
+        category: exp.category,
+        description: exp.description,
+        amount: exp.amount,
+        currency: exp.currency,
+        amount_in_ils: exp.amount_in_ils,
+        receipts: [], // Receipts will be loaded separately if needed
+      }));
+
+      setExpenses(transformedExpenses);
+
+      toast({
+        title: 'דוח נטען בהצלחה',
+        description: 'ניתן להמשיך לערוך את הדוח',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לטעון את הדוח',
+        variant: 'destructive',
+      });
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addExpense = () => {
     const newExpense: Expense = {
@@ -330,25 +399,56 @@ export default function NewReport() {
 
     setLoading(true);
     try {
-      // Create report
-      const { data: report, error: reportError } = await supabase
-        .from('reports')
-        .insert({
-          user_id: user.id,
-          trip_destination: tripDestination,
-          trip_start_date: tripStartDate,
-          trip_end_date: tripEndDate,
-          trip_purpose: tripPurpose,
-          status: submitForApproval ? 'open' : 'draft',
-          submitted_at: submitForApproval ? new Date().toISOString() : null,
-          total_amount_ils: calculateGrandTotal(),
-        })
-        .select()
-        .single();
+      let report;
+      
+      if (isEditMode && reportId) {
+        // Update existing report
+        const { data: updatedReport, error: reportError } = await supabase
+          .from('reports')
+          .update({
+            trip_destination: tripDestination,
+            trip_start_date: tripStartDate,
+            trip_end_date: tripEndDate,
+            trip_purpose: tripPurpose,
+            status: submitForApproval ? 'open' : 'draft',
+            submitted_at: submitForApproval ? new Date().toISOString() : null,
+            total_amount_ils: calculateGrandTotal(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', reportId)
+          .select()
+          .single();
 
-      if (reportError) throw reportError;
+        if (reportError) throw reportError;
+        report = updatedReport;
 
-      // Create expenses
+        // Delete existing expenses for this report
+        await supabase
+          .from('expenses')
+          .delete()
+          .eq('report_id', reportId);
+      } else {
+        // Create new report
+        const { data: newReport, error: reportError } = await supabase
+          .from('reports')
+          .insert({
+            user_id: user.id,
+            trip_destination: tripDestination,
+            trip_start_date: tripStartDate,
+            trip_end_date: tripEndDate,
+            trip_purpose: tripPurpose,
+            status: submitForApproval ? 'open' : 'draft',
+            submitted_at: submitForApproval ? new Date().toISOString() : null,
+            total_amount_ils: calculateGrandTotal(),
+          })
+          .select()
+          .single();
+
+        if (reportError) throw reportError;
+        report = newReport;
+      }
+
+      // Create/Update expenses
       if (expenses.length > 0) {
         for (const exp of expenses) {
           // Insert expense
@@ -400,12 +500,12 @@ export default function NewReport() {
       // Create history record
       await supabase.from('report_history').insert({
         report_id: report.id,
-        action: submitForApproval ? 'submitted' : 'created',
+        action: isEditMode ? 'edited' : (submitForApproval ? 'submitted' : 'created'),
         performed_by: user.id,
       });
 
       toast({
-        title: submitForApproval ? 'הדוח הוגש בהצלחה' : 'הדוח נשמר כטיוטה',
+        title: isEditMode ? 'הדוח עודכן בהצלחה' : (submitForApproval ? 'הדוח הוגש בהצלחה' : 'הדוח נשמר כטיוטה'),
         description: submitForApproval ? 'הדוח נשלח לאישור' : 'ניתן להמשיך לערוך מאוחר יותר',
       });
 
@@ -444,7 +544,7 @@ export default function NewReport() {
                 <ArrowRight className="w-4 h-4 ml-2" />
                 חזרה
               </Button>
-              <h1 className="text-xl font-bold">דוח נסיעה חדש</h1>
+              <h1 className="text-xl font-bold">{isEditMode ? 'עריכת דוח נסיעה' : 'דוח נסיעה חדש'}</h1>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => handleSave(false)} disabled={loading}>
