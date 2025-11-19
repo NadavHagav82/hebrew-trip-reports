@@ -16,6 +16,8 @@ interface ReceiptFile {
   file: File;
   preview: string;
   uploading?: boolean;
+  analyzing?: boolean;
+  analyzed?: boolean;
 }
 
 interface Expense {
@@ -189,6 +191,106 @@ export default function NewReport() {
   const openCameraDialog = (expenseId: string) => {
     setCurrentExpenseForUpload(expenseId);
     cameraInputRef.current?.click();
+  };
+
+  const analyzeReceipt = async (expenseId: string, receiptIndex: number) => {
+    const expense = expenses.find(exp => exp.id === expenseId);
+    if (!expense) return;
+
+    const receipt = expense.receipts[receiptIndex];
+    if (!receipt || receipt.analyzed) return;
+
+    // Mark as analyzing
+    setExpenses(expenses.map(exp => {
+      if (exp.id === expenseId) {
+        return {
+          ...exp,
+          receipts: exp.receipts.map((r, idx) =>
+            idx === receiptIndex ? { ...r, analyzing: true } : r
+          )
+        };
+      }
+      return exp;
+    }));
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to convert file'));
+          }
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(receipt.file);
+      const imageBase64 = await base64Promise;
+
+      // Call AI analysis
+      const { data, error } = await supabase.functions.invoke('analyze-receipt', {
+        body: { imageBase64 }
+      });
+
+      if (error) throw error;
+
+      if (data?.data) {
+        const { date, amount, currency, category, description } = data.data;
+        
+        // Update expense with analyzed data
+        setExpenses(expenses.map(exp => {
+          if (exp.id === expenseId) {
+            const updated = { ...exp };
+            if (date) updated.expense_date = date;
+            if (amount) updated.amount = parseFloat(amount);
+            if (currency) updated.currency = currency;
+            if (category) updated.category = category;
+            if (description) updated.description = description;
+            
+            // Calculate ILS amount
+            if (amount && currency) {
+              updated.amount_in_ils = parseFloat(amount) * currencyRates[currency as keyof typeof currencyRates];
+            }
+
+            // Mark receipt as analyzed
+            updated.receipts = exp.receipts.map((r, idx) =>
+              idx === receiptIndex ? { ...r, analyzing: false, analyzed: true } : r
+            );
+
+            return updated;
+          }
+          return exp;
+        }));
+
+        toast({
+          title: 'הקבלה נותחה בהצלחה! ✨',
+          description: 'הפרטים מולאו אוטומטית',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error analyzing receipt:', error);
+      
+      // Remove analyzing state
+      setExpenses(expenses.map(exp => {
+        if (exp.id === expenseId) {
+          return {
+            ...exp,
+            receipts: exp.receipts.map((r, idx) =>
+              idx === receiptIndex ? { ...r, analyzing: false } : r
+            )
+          };
+        }
+        return exp;
+      }));
+
+      toast({
+        title: 'שגיאה בניתוח הקבלה',
+        description: error.message || 'נסה שוב',
+        variant: 'destructive',
+      });
+    }
   };
 
   const calculateTotalByCategory = () => {
@@ -575,7 +677,7 @@ export default function NewReport() {
                                           className="w-full h-full object-cover"
                                         />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
+                                        <div className="w-full h-full flex items-center justify-center flex-col">
                                           <ImageIcon className="w-8 h-8 text-muted-foreground" />
                                           <span className="text-xs mt-2">PDF</span>
                                         </div>
@@ -590,6 +692,28 @@ export default function NewReport() {
                                     >
                                       <X className="w-3 h-3" />
                                     </Button>
+                                    {!receipt.analyzed && !receipt.analyzing && (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        className="absolute bottom-1 left-1 right-1 text-xs h-7"
+                                        onClick={() => analyzeReceipt(expense.id, idx)}
+                                      >
+                                        ✨ אישור וניתוח
+                                      </Button>
+                                    )}
+                                    {receipt.analyzing && (
+                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                        <span className="text-xs">מנתח...</span>
+                                      </div>
+                                    )}
+                                    {receipt.analyzed && (
+                                      <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                    )}
                                     {receipt.uploading && (
                                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                                         <span className="text-xs">מעלה...</span>
