@@ -318,49 +318,49 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
         <Text style={styles.sectionTitle}>סיכום הוצאות</Text>
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <View style={[styles.tableHeaderCell, styles.numberCell]}>
-              <Text style={styles.tableHeaderText}>#</Text>
-            </View>
-            <View style={[styles.tableHeaderCell, styles.dateCell]}>
-              <Text style={styles.tableHeaderText}>תאריך</Text>
-            </View>
-            <View style={[styles.tableHeaderCell, styles.categoryCell]}>
-              <Text style={styles.tableHeaderText}>קטגוריה</Text>
-            </View>
-            <View style={[styles.tableHeaderCell, styles.descriptionCell]}>
-              <Text style={styles.tableHeaderText}>תיאור</Text>
+            <View style={[styles.tableHeaderCell, styles.ilsCell]}>
+              <Text style={styles.tableHeaderText}>סכום בש"ח</Text>
             </View>
             <View style={[styles.tableHeaderCell, styles.amountCell]}>
               <Text style={styles.tableHeaderText}>סכום</Text>
             </View>
-            <View style={[styles.tableHeaderCell, styles.ilsCell]}>
-              <Text style={styles.tableHeaderText}>סכום בש"ח</Text>
+            <View style={[styles.tableHeaderCell, styles.descriptionCell]}>
+              <Text style={styles.tableHeaderText}>תיאור</Text>
+            </View>
+            <View style={[styles.tableHeaderCell, styles.categoryCell]}>
+              <Text style={styles.tableHeaderText}>קטגוריה</Text>
+            </View>
+            <View style={[styles.tableHeaderCell, styles.dateCell]}>
+              <Text style={styles.tableHeaderText}>תאריך</Text>
+            </View>
+            <View style={[styles.tableHeaderCell, styles.numberCell]}>
+              <Text style={styles.tableHeaderText}>#</Text>
             </View>
           </View>
 
           {expenses.map((expense, index) => (
             <View key={expense.id} style={styles.tableRow}>
-              <View style={[styles.tableCell, styles.numberCell]}>
-                <Text style={styles.tableCellText}>{index + 1}</Text>
-              </View>
-              <View style={[styles.tableCell, styles.dateCell]}>
-                <Text style={styles.tableCellText}>
-                  {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                </Text>
-              </View>
-              <View style={[styles.tableCell, styles.categoryCell]}>
-                <Text style={styles.tableCellText}>{getCategoryLabel(expense.category)}</Text>
-              </View>
-              <View style={[styles.tableCell, styles.descriptionCell]}>
-                <Text style={styles.tableCellText}>{expense.description}</Text>
+              <View style={[styles.tableCell, styles.ilsCell]}>
+                <Text style={styles.tableCellText}>₪{expense.amount_in_ils.toFixed(2)}</Text>
               </View>
               <View style={[styles.tableCell, styles.amountCell]}>
                 <Text style={styles.tableCellText}>
                   {expense.amount} {expense.currency}
                 </Text>
               </View>
-              <View style={[styles.tableCell, styles.ilsCell]}>
-                <Text style={styles.tableCellText}>₪{expense.amount_in_ils.toFixed(2)}</Text>
+              <View style={[styles.tableCell, styles.descriptionCell]}>
+                <Text style={styles.tableCellText}>{expense.description}</Text>
+              </View>
+              <View style={[styles.tableCell, styles.categoryCell]}>
+                <Text style={styles.tableCellText}>{getCategoryLabel(expense.category)}</Text>
+              </View>
+              <View style={[styles.tableCell, styles.dateCell]}>
+                <Text style={styles.tableCellText}>
+                  {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                </Text>
+              </View>
+              <View style={[styles.tableCell, styles.numberCell]}>
+                <Text style={styles.tableCellText}>{index + 1}</Text>
               </View>
             </View>
           ))}
@@ -385,6 +385,15 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
       {/* Receipt Pages */}
       {expenses.map((expense, expenseIndex) => {
         const imageReceipts = expense.receipts?.filter(r => r.file_type === 'image') || [];
+        
+        // Debug log
+        console.log(`Expense ${expenseIndex + 1} (${expense.description}):`, {
+          hasReceipts: !!expense.receipts,
+          receiptsCount: expense.receipts?.length || 0,
+          imageReceiptsCount: imageReceipts.length,
+          receipts: expense.receipts,
+        });
+        
         if (imageReceipts.length === 0) return null;
 
         return imageReceipts.map((receipt, receiptIndex) => (
