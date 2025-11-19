@@ -4,13 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Download, Edit, Loader2 } from 'lucide-react';
+import { ArrowRight, Download, Edit, Loader2, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
-import { pdf } from '@react-pdf/renderer';
-import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
-import { ReportPdf } from '@/pdf/ReportPdf';
 
 interface Expense {
   id: string;
@@ -135,31 +132,9 @@ const ViewReport = () => {
     return labels[category] || category;
   };
 
-  const downloadPDF = async () => {
+  const printPDF = () => {
     if (!report) return;
-
-    try {
-      const blob = await pdf(
-        <ReportPdf report={report as any} expenses={expenses as any} profile={profile as any} />,
-      ).toBlob();
-
-      saveAs(
-        blob,
-        `דוח_נסיעה_${report.trip_destination}_${format(new Date(), 'dd-MM-yyyy')}.pdf`,
-      );
-
-      toast({
-        title: 'הדוח הורד בהצלחה',
-        description: 'הקובץ נשמר במחשב שלך',
-      });
-    } catch (error) {
-      console.error('Failed generating report PDF', error);
-      toast({
-        title: 'שגיאה',
-        description: 'לא ניתן להוריד את הדוח',
-        variant: 'destructive',
-      });
-    }
+    window.print();
   };
   if (loading) {
     return (
@@ -180,9 +155,123 @@ const ViewReport = () => {
   }, {} as Record<string, number>);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
+    <>
+      <style>{`
+        @media print {
+          /* Hide non-printable elements */
+          header, .no-print {
+            display: none !important;
+          }
+          
+          /* Remove backgrounds and borders */
+          body {
+            background: white !important;
+          }
+          
+          /* Page setup */
+          @page {
+            margin: 2cm;
+            size: A4;
+          }
+          
+          /* RTL alignment */
+          * {
+            direction: rtl !important;
+            text-align: right !important;
+          }
+          
+          /* Ensure print container is visible */
+          #report-print {
+            display: block !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Card styling for print */
+          .print-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb;
+            padding: 1rem;
+          }
+          
+          .print-card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.5rem;
+          }
+          
+          /* Expense table */
+          .print-expense {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+          }
+          
+          /* Category totals */
+          .print-summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          
+          .print-summary-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            font-weight: bold;
+            font-size: 1.125rem;
+            border-top: 2px solid #000;
+            margin-top: 0.5rem;
+          }
+          
+          /* Receipt images grid */
+          .print-receipts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+          }
+          
+          .print-receipt-item {
+            text-align: center;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          
+          .print-receipt-item img {
+            width: 5cm;
+            height: 5cm;
+            object-fit: cover;
+            border: 1px solid #e5e7eb;
+            display: block;
+            margin: 0 auto 0.5rem auto;
+          }
+          
+          .print-receipt-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+          }
+        }
+        
+        @media screen {
+          #report-print {
+            display: none;
+          }
+        }
+      `}</style>
+      
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="bg-card border-b sticky top-0 z-10 no-print">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -199,9 +288,9 @@ const ViewReport = () => {
                   ערוך דוח
                 </Button>
               )}
-              <Button onClick={downloadPDF}>
-                <Download className="w-4 h-4 ml-2" />
-                הורד PDF
+              <Button onClick={printPDF}>
+                <Printer className="w-4 h-4 ml-2" />
+                ייצא ל-PDF
               </Button>
             </div>
           </div>
@@ -316,7 +405,124 @@ const ViewReport = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Hidden print version */}
+      <div id="report-print">
+        <div style={{ padding: '20px' }}>
+          {/* Header */}
+          <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
+              דוח נסיעה - Travel Report
+            </h1>
+            {profile && (
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                {profile.full_name} | {profile.employee_id} | {profile.department}
+              </div>
+            )}
+          </div>
+          
+          {/* Report Status */}
+          <div className="print-card">
+            <div className="print-card-title">סטטוס הדוח</div>
+            <div style={{ fontSize: '18px', fontWeight: '600' }}>
+              {report?.status === 'draft' && 'טיוטה'}
+              {report?.status === 'open' && 'פתוח'}
+              {report?.status === 'pending' && 'ממתין לאישור'}
+              {report?.status === 'approved' && 'אושר'}
+              {report?.status === 'rejected' && 'נדחה'}
+              {report?.status === 'closed' && 'סגור'}
+            </div>
+          </div>
+          
+          {/* Trip Details */}
+          <div className="print-card">
+            <div className="print-card-title">פרטי הנסיעה</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>יעד:</div>
+                <div style={{ fontWeight: '500' }}>{report?.trip_destination}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>מטרה:</div>
+                <div style={{ fontWeight: '500' }}>{report?.trip_purpose}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>תאריך התחלה:</div>
+                <div style={{ fontWeight: '500' }}>
+                  {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>תאריך סיום:</div>
+                <div style={{ fontWeight: '500' }}>
+                  {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>משך הנסיעה:</div>
+                <div style={{ fontWeight: '500' }}>{calculateTripDuration()} ימים</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Expenses */}
+          <div className="print-card">
+            <div className="print-card-title">הוצאות ({expenses.length})</div>
+            {expenses.map((expense) => (
+              <div key={expense.id} className="print-expense">
+                <div>
+                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                    {expense.description}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {format(new Date(expense.expense_date), 'dd/MM/yyyy')} | {getCategoryLabel(expense.category)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: 'bold' }}>₪{expense.amount_in_ils.toFixed(2)}</div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {expense.amount} {expense.currency}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Summary */}
+          <div className="print-card">
+            <div className="print-card-title">סיכום</div>
+            {Object.entries(categoryTotals).map(([category, total]) => (
+              <div key={category} className="print-summary-row">
+                <span>{getCategoryLabel(category)}</span>
+                <span style={{ fontWeight: '500' }}>₪{total.toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="print-summary-total">
+              <span>סה"כ</span>
+              <span>₪{report?.total_amount_ils.toFixed(2)}</span>
+            </div>
+          </div>
+          
+          {/* Receipts Grid */}
+          {expenses.some(exp => exp.receipts && exp.receipts.length > 0) && (
+            <div className="print-card">
+              <div className="print-card-title">קבלות</div>
+              <div className="print-receipts-grid">
+                {expenses.flatMap((expense) => 
+                  (expense.receipts || []).map((receipt, idx) => (
+                    <div key={receipt.id} className="print-receipt-item">
+                      <img src={receipt.file_url} alt={`קבלה ${idx + 1}`} />
+                      <div className="print-receipt-label">קבלה #{idx + 1}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
+    </>
   );
 };
 
