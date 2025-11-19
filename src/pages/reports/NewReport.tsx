@@ -12,6 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { ArrowRight, Calendar, Camera, Download, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ReceiptFile {
   file: File;
@@ -79,6 +89,7 @@ export default function NewReport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [currentExpenseForUpload, setCurrentExpenseForUpload] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -415,6 +426,38 @@ export default function NewReport() {
     return expenses.reduce((sum, exp) => sum + exp.amount_in_ils, 0);
   };
 
+  const handleDelete = async () => {
+    if (!reportId || !isEditMode) return;
+
+    setLoading(true);
+    try {
+      // Delete the report (cascade will delete expenses and receipts)
+      const { error } = await supabase
+        .from('reports')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'הדוח נמחק בהצלחה',
+        description: 'הדוח והוצאותיו נמחקו מהמערכת',
+      });
+
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast({
+        title: 'שגיאה במחיקת הדוח',
+        description: error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   const handleSave = async (saveAsDraft: boolean = false, closeReport: boolean = false) => {
     if (!user) return;
 
@@ -613,6 +656,18 @@ export default function NewReport() {
               <h1 className="text-base sm:text-xl font-bold flex-1 sm:flex-none">{isEditMode ? 'עריכת דוח' : 'דוח חדש'}</h1>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto sm:mr-auto">
+              {isEditMode && (
+                <Button 
+                  variant="destructive" 
+                  size="icon"
+                  onClick={() => setShowDeleteDialog(true)} 
+                  disabled={loading} 
+                  className="h-10 w-10 sm:h-9 sm:w-9"
+                  title="מחק דוח"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
               <Button variant="outline" onClick={() => handleSave(false, false)} disabled={loading} className="flex-1 sm:flex-none h-10 sm:h-9 text-sm">
                 <Save className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                 <span className="hidden sm:inline">שמור</span>
@@ -1001,6 +1056,29 @@ export default function NewReport() {
           }
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+            <AlertDialogDescription>
+              פעולה זו תמחק לצמיתות את הדוח וכל ההוצאות והקבלות הקשורות אליו.
+              לא ניתן לשחזר את המידע לאחר המחיקה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={loading}>ביטול</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={loading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              מחק דוח
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
