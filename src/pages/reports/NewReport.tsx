@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, Calendar, Camera, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, Download, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface ReceiptFile {
@@ -410,7 +410,7 @@ export default function NewReport() {
     return expenses.reduce((sum, exp) => sum + exp.amount_in_ils, 0);
   };
 
-  const handleSave = async (submitForApproval: boolean = false) => {
+  const handleSave = async (saveAsDraft: boolean = false, closeReport: boolean = false) => {
     if (!user) return;
 
     // Validation
@@ -423,7 +423,7 @@ export default function NewReport() {
       return;
     }
 
-    if (submitForApproval && expenses.length === 0) {
+    if (closeReport && expenses.length === 0) {
       toast({
         title: 'שגיאה',
         description: 'יש להוסיף לפחות הוצאה אחת',
@@ -436,6 +436,16 @@ export default function NewReport() {
     try {
       let report;
       
+      // Determine status based on action
+      let newStatus: 'draft' | 'open' | 'closed';
+      if (closeReport) {
+        newStatus = 'closed';
+      } else if (saveAsDraft) {
+        newStatus = 'draft';
+      } else {
+        newStatus = 'open'; // Default is open
+      }
+      
       if (isEditMode && reportId) {
         // Update existing report
         const { data: updatedReport, error: reportError } = await supabase
@@ -445,8 +455,8 @@ export default function NewReport() {
             trip_start_date: tripStartDate,
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
-            status: submitForApproval ? 'open' : 'draft',
-            submitted_at: submitForApproval ? new Date().toISOString() : null,
+            status: newStatus,
+            submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
             updated_at: new Date().toISOString(),
           })
@@ -463,7 +473,7 @@ export default function NewReport() {
           .delete()
           .eq('report_id', reportId);
       } else {
-        // Create new report
+        // Create new report - default is 'open'
         const { data: newReport, error: reportError } = await supabase
           .from('reports')
           .insert({
@@ -472,8 +482,8 @@ export default function NewReport() {
             trip_start_date: tripStartDate,
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
-            status: submitForApproval ? 'open' : 'draft',
-            submitted_at: submitForApproval ? new Date().toISOString() : null,
+            status: newStatus,
+            submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
           })
           .select()
@@ -533,15 +543,28 @@ export default function NewReport() {
       }
 
       // Create history record
+      const action = closeReport 
+        ? 'edited' 
+        : (isEditMode ? 'edited' : (saveAsDraft ? 'created' : 'submitted'));
+      
       await supabase.from('report_history').insert({
         report_id: report.id,
-        action: isEditMode ? 'edited' : (submitForApproval ? 'submitted' : 'created'),
+        action: action,
         performed_by: user.id,
+        notes: closeReport ? 'הדוח סגור והופק' : null,
       });
 
+      const toastTitle = closeReport 
+        ? 'הדוח הופק בהצלחה' 
+        : (saveAsDraft ? 'הדוח נשמר כטיוטה' : (isEditMode ? 'הדוח עודכן בהצלחה' : 'הדוח נוצר בהצלחה'));
+      
+      const toastDescription = closeReport
+        ? 'הדוח נסגר והופק בהצלחה'
+        : (saveAsDraft ? 'ניתן להמשיך לערוך מאוחר יותר' : 'הדוח פתוח ופעיל');
+
       toast({
-        title: isEditMode ? 'הדוח עודכן בהצלחה' : (submitForApproval ? 'הדוח הוגש בהצלחה' : 'הדוח נשמר כטיוטה'),
-        description: submitForApproval ? 'הדוח נשלח לאישור' : 'ניתן להמשיך לערוך מאוחר יותר',
+        title: toastTitle,
+        description: toastDescription,
       });
 
       navigate(`/reports/${report.id}`);
@@ -582,13 +605,16 @@ export default function NewReport() {
               <h1 className="text-xl font-bold">{isEditMode ? 'עריכת דוח נסיעה' : 'דוח נסיעה חדש'}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => handleSave(false)} disabled={loading}>
+              <Button variant="outline" onClick={() => handleSave(false, false)} disabled={loading}>
                 <Save className="w-4 h-4 ml-2" />
-                שמור כטיוטה
+                שמור
               </Button>
-              <Button onClick={() => handleSave(true)} disabled={loading}>
-                <Save className="w-4 h-4 ml-2" />
-                שמור והגש לאישור
+              <Button onClick={() => handleSave(false, true)} disabled={loading}>
+                <Download className="w-4 h-4 ml-2" />
+                הפק דוח
+              </Button>
+              <Button variant="ghost" onClick={() => handleSave(true, false)} disabled={loading}>
+                שמור כטיוטה
               </Button>
             </div>
           </div>
