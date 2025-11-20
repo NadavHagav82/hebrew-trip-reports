@@ -212,6 +212,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           created_at: string
+          daily_allowance: number | null
           id: string
           notes: string | null
           rejection_reason: string | null
@@ -229,6 +230,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
+          daily_allowance?: number | null
           id?: string
           notes?: string | null
           rejection_reason?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
+          daily_allowance?: number | null
           id?: string
           notes?: string | null
           rejection_reason?: string | null

@@ -42,6 +42,7 @@ interface Report {
   submitted_at: string | null;
   approved_at: string | null;
   created_at: string;
+  daily_allowance?: number;
 }
 
 interface Profile {
@@ -313,6 +314,14 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
             <Text style={styles.infoLabel}>משך הנסיעה:</Text>
             <Text style={styles.infoValue}>{calculateTripDuration(report)} ימים</Text>
           </View>
+          {report.daily_allowance && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>אש״ל ליום:</Text>
+              <Text style={styles.infoValue}>
+                ${report.daily_allowance} (סה״כ: ${report.daily_allowance * calculateTripDuration(report)})
+              </Text>
+            </View>
+          )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>תאריך יצירה:</Text>
             <Text style={styles.infoValue}>

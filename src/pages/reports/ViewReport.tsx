@@ -33,6 +33,7 @@ interface Report {
   approved_at: string | null;
   created_at: string;
   notes?: string;
+  daily_allowance?: number;
 }
 
 interface Profile {
@@ -442,6 +443,13 @@ const ViewReport = () => {
                   <span className="text-xs sm:text-sm text-muted-foreground block mb-1">משך הנסיעה:</span>
                   <p className="font-bold text-sm sm:text-base text-primary">{calculateTripDuration()} ימים</p>
                 </div>
+                {report.daily_allowance && (
+                  <div className="p-3 rounded-lg bg-accent/20 hover:bg-accent/30 transition-colors border border-accent/30">
+                    <span className="text-xs sm:text-sm text-muted-foreground block mb-1">אש״ל ליום:</span>
+                    <p className="font-bold text-sm sm:text-base">${report.daily_allowance}</p>
+                    <span className="text-xs text-muted-foreground">סה״כ: ${report.daily_allowance * calculateTripDuration()}</span>
+                  </div>
+                )}
               </div>
               {report.notes && (
                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
