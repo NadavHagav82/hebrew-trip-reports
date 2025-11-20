@@ -197,9 +197,37 @@ const ViewReport = () => {
     return colors[category] || 'bg-muted text-muted-foreground';
   };
 
-  const printPDF = () => {
+  const printPDF = async () => {
     if (!report) return;
-    window.print();
+    
+    try {
+      console.log('Export PDF: Starting PDF generation...');
+      const pdfData = await generatePDF();
+      if (!pdfData) {
+        console.error('Export PDF: PDF generation returned null');
+        return;
+      }
+
+      console.log('Export PDF: PDF generated successfully, downloading...');
+      const url = URL.createObjectURL(pdfData.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `דוח-נסיעה-${report.trip_destination.replace(/[^א-תa-zA-Z0-9]/g, '-')}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'הקובץ הורד בהצלחה',
+        description: 'ה-PDF נוצר ונשמר במכשיר שלך',
+      });
+    } catch (error) {
+      console.error('Export PDF: Error occurred:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן ליצור את קובץ ה-PDF',
+        variant: 'destructive',
+      });
+    }
   };
 
   const categoryLabels = {
