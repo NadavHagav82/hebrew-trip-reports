@@ -231,8 +231,66 @@ const ViewReport = () => {
       <div className="min-h-screen bg-background font-sans">
         {/* Header */}
         <header className="bg-card border-b sticky top-0 z-10 no-print">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
+          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+            {/* Mobile Layout */}
+            <div className="flex md:hidden flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                  <h1 className="text-lg font-bold">צפייה בדוח</h1>
+                </div>
+                <StatusBadge status={report.status} />
+              </div>
+              
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {report.status === 'open' && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/reports/edit/${report.id}`)}
+                      className="whitespace-nowrap"
+                    >
+                      <Edit className="w-4 h-4 ml-1" />
+                      עריכה
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await supabase
+                            .from('reports')
+                            .update({ status: 'closed' })
+                            .eq('id', report.id);
+                          toast({ title: 'הדוח נסגר בהצלחה' });
+                          loadReport();
+                        } catch (error) {
+                          toast({ title: 'שגיאה', variant: 'destructive' });
+                        }
+                      }}
+                      className="whitespace-nowrap"
+                    >
+                      <Download className="w-4 h-4 ml-1" />
+                      סגור
+                    </Button>
+                  </>
+                )}
+                <Button 
+                  onClick={printPDF}
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  <Printer className="w-4 h-4 ml-1" />
+                  ייצא PDF
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden md:flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -274,47 +332,47 @@ const ViewReport = () => {
         </header>
 
         {/* Screen View */}
-        <div id="report-pdf" className="container mx-auto px-4 py-8 max-w-4xl no-print">
-          <Card className="mb-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>סטטוס הדוח</CardTitle>
+        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl no-print">
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="pb-3 sm:pb-6">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-base sm:text-lg">סטטוס הדוח</CardTitle>
                 <StatusBadge status={report.status} />
               </div>
             </CardHeader>
           </Card>
 
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>פרטי הנסיעה</CardTitle>
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">פרטי הנסיעה</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <span className="text-sm text-muted-foreground">יעד:</span>
-                  <p className="font-medium">{report.trip_destination}</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground">יעד:</span>
+                  <p className="font-medium text-sm sm:text-base">{report.trip_destination}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">מטרה:</span>
-                  <p className="font-medium">{report.trip_purpose}</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground">מטרה:</span>
+                  <p className="font-medium text-sm sm:text-base">{report.trip_purpose}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">תאריך התחלה:</span>
-                  <p className="font-medium">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground">תאריך התחלה:</span>
+                  <p className="font-medium text-sm sm:text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">תאריך סיום:</span>
-                  <p className="font-medium">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground">תאריך סיום:</span>
+                  <p className="font-medium text-sm sm:text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">משך הנסיעה:</span>
-                  <p className="font-medium">{calculateTripDuration()} ימים</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground">משך הנסיעה:</span>
+                  <p className="font-medium text-sm sm:text-base">{calculateTripDuration()} ימים</p>
                 </div>
               </div>
               {report.notes && (
-                <div className="mt-4 pt-4 border-t">
-                  <span className="text-sm text-muted-foreground">הערות:</span>
-                  <p className="font-medium whitespace-pre-wrap">{report.notes}</p>
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                  <span className="text-xs sm:text-sm text-muted-foreground">הערות:</span>
+                  <p className="font-medium text-sm sm:text-base whitespace-pre-wrap">{report.notes}</p>
                 </div>
               )}
             </CardContent>
