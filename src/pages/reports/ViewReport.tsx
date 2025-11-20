@@ -163,6 +163,17 @@ const ViewReport = () => {
     return icons[category] || Package;
   };
 
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      flights: 'bg-category-flights text-category-flights-fg',
+      accommodation: 'bg-category-accommodation text-category-accommodation-fg',
+      food: 'bg-category-food text-category-food-fg',
+      transportation: 'bg-category-transportation text-category-transportation-fg',
+      miscellaneous: 'bg-category-miscellaneous text-category-miscellaneous-fg',
+    };
+    return colors[category] || 'bg-muted text-muted-foreground';
+  };
+
   const printPDF = () => {
     if (!report) return;
     window.print();
@@ -477,13 +488,14 @@ const ViewReport = () => {
               <div className="space-y-3">
                 {expenses.map((expense) => {
                   const CategoryIcon = getCategoryIcon(expense.category);
+                  const categoryColor = getCategoryColor(expense.category);
                   return (
                     <div key={expense.id} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className="font-semibold text-base">{expense.description}</span>
-                            <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium flex items-center gap-1">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1 ${categoryColor}`}>
                               <CategoryIcon className="w-3 h-3" />
                               {getCategoryLabel(expense.category)}
                             </span>
@@ -524,10 +536,13 @@ const ViewReport = () => {
               <div className="space-y-3">
                 {Object.entries(categoryTotals).map(([category, total]) => {
                   const CategoryIcon = getCategoryIcon(category);
+                  const categoryColor = getCategoryColor(category);
                   return (
                     <div key={category} className="flex justify-between text-sm items-center">
                       <span className="text-muted-foreground flex items-center gap-2">
-                        <CategoryIcon className="w-4 h-4 text-primary" />
+                        <div className={`p-1 rounded ${categoryColor}`}>
+                          <CategoryIcon className="w-3.5 h-3.5" />
+                        </div>
                         {getCategoryLabel(category)}:
                       </span>
                       <span className="font-medium">₪{total.toFixed(2)}</span>

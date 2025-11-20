@@ -59,6 +59,14 @@ const categoryIcons = {
   miscellaneous: Package,
 };
 
+const categoryColors = {
+  flights: 'bg-category-flights text-category-flights-fg',
+  accommodation: 'bg-category-accommodation text-category-accommodation-fg',
+  food: 'bg-category-food text-category-food-fg',
+  transportation: 'bg-category-transportation text-category-transportation-fg',
+  miscellaneous: 'bg-category-miscellaneous text-category-miscellaneous-fg',
+};
+
 const currencyLabels = {
   USD: '$ דולר',
   EUR: '€ יורו',
@@ -990,9 +998,12 @@ export default function NewReport() {
                               <SelectValue>
                                 {expense.category && (() => {
                                   const CategoryIcon = categoryIcons[expense.category];
+                                  const categoryColor = categoryColors[expense.category];
                                   return (
                                     <div className="flex items-center gap-2">
-                                      <CategoryIcon className="w-4 h-4" />
+                                      <div className={`p-1 rounded ${categoryColor}`}>
+                                        <CategoryIcon className="w-3.5 h-3.5" />
+                                      </div>
                                       <span>{categoryLabels[expense.category]}</span>
                                     </div>
                                   );
@@ -1002,10 +1013,13 @@ export default function NewReport() {
                             <SelectContent>
                               {Object.entries(categoryLabels).map(([value, label]) => {
                                 const CategoryIcon = categoryIcons[value as keyof typeof categoryIcons];
+                                const categoryColor = categoryColors[value as keyof typeof categoryColors];
                                 return (
                                   <SelectItem key={value} value={value}>
                                     <div className="flex items-center gap-2">
-                                      <CategoryIcon className="w-4 h-4" />
+                                      <div className={`p-1 rounded ${categoryColor}`}>
+                                        <CategoryIcon className="w-3.5 h-3.5" />
+                                      </div>
                                       <span>{label}</span>
                                     </div>
                                   </SelectItem>
@@ -1092,10 +1106,13 @@ export default function NewReport() {
                 <div className="space-y-2">
                   {Object.entries(categoryTotals).map(([category, total]) => {
                     const CategoryIcon = categoryIcons[category as keyof typeof categoryIcons];
+                    const categoryColor = categoryColors[category as keyof typeof categoryColors];
                     return (
                       <div key={category} className="flex justify-between items-center">
                         <span className="flex items-center gap-2">
-                          <CategoryIcon className="w-4 h-4 text-primary" />
+                          <div className={`p-1.5 rounded ${categoryColor}`}>
+                            <CategoryIcon className="w-3.5 h-3.5" />
+                          </div>
                           {categoryLabels[category as keyof typeof categoryLabels]}
                         </span>
                         <span className="font-semibold">
