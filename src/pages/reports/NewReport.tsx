@@ -78,10 +78,46 @@ export default function NewReport() {
 
   // Trip details
   const [tripDestination, setTripDestination] = useState('');
+  const [dailyAllowance, setDailyAllowance] = useState(100);
   const [tripStartDate, setTripStartDate] = useState('');
   const [tripEndDate, setTripEndDate] = useState('');
   const [tripPurpose, setTripPurpose] = useState('');
   const [reportNotes, setReportNotes] = useState('');
+
+  // Countries with $125/day allowance
+  const highAllowanceCountries = [
+    'ארה"ב', 'ארהב', 'ארה״ב', 'אמריקה',
+    'קנדה',
+    'בריטניה', 'אנגליה', 'בריטני',
+    'אוסטרליה',
+    'ניו זילנד', 'ניוזילנד',
+    'יפן',
+    'סינגפור',
+    'הונג קונג', 'הונג-קונג', 'הונגקונג',
+    'שווייץ',
+    'נורבגיה',
+    'דנמרק',
+    'שוודיה',
+    'איסלנד',
+    'לוקסמבורג'
+  ];
+
+  // Calculate daily allowance based on country
+  const calculateDailyAllowance = (country: string): number => {
+    const normalizedCountry = country.trim();
+    const isHighAllowance = highAllowanceCountries.some(
+      highCountry => normalizedCountry.includes(highCountry) || highCountry.includes(normalizedCountry)
+    );
+    return isHighAllowance ? 125 : 100;
+  };
+
+  // Update daily allowance when destination changes
+  useEffect(() => {
+    if (tripDestination) {
+      const calculatedAllowance = calculateDailyAllowance(tripDestination);
+      setDailyAllowance(calculatedAllowance);
+    }
+  }, [tripDestination]);
 
   // Expenses
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -694,13 +730,37 @@ export default function NewReport() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="destination">יעד הנסיעה *</Label>
+              <Label htmlFor="destination">מדינת היעד *</Label>
               <Input
                 id="destination"
-                placeholder="לדוגמה: ניו יורק, ארה״ב"
+                placeholder="לדוגמה: ארה״ב, בולגריה, יפן"
                 value={tripDestination}
                 onChange={(e) => setTripDestination(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground mt-1">הזן את שם המדינה בלבד</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="dailyAllowance">אש״ל ליום (USD) *</Label>
+                <Input
+                  id="dailyAllowance"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="100"
+                  value={dailyAllowance}
+                  onChange={(e) => setDailyAllowance(Number(e.target.value))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">מחושב אוטומטית לפי מדינה, ניתן לעריכה</p>
+              </div>
+              <div>
+                <Label>סה״כ אש״ל לנסיעה</Label>
+                <div className="h-10 px-3 py-2 rounded-md border bg-muted flex items-center">
+                  <span className="font-semibold">
+                    ${dailyAllowance * calculateTripDuration()} ({calculateTripDuration()} ימים × ${dailyAllowance})
+                  </span>
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
