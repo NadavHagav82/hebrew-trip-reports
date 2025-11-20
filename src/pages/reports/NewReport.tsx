@@ -914,53 +914,55 @@ export default function NewReport() {
                             </div>
 
                             {expense.receipts.length > 0 && (
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="space-y-4">
                                 {expense.receipts.map((receipt, idx) => (
-                                  <div key={idx} className="relative group">
-                                    <div className="aspect-square rounded-lg border-2 overflow-hidden bg-muted">
-                                      {receipt.file.type.startsWith('image') ? (
-                                        <img
-                                          src={receipt.preview}
-                                          alt={`קבלה ${idx + 1}`}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center flex-col">
-                                          <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                                          <span className="text-xs mt-2">PDF</span>
+                                  <div key={idx} className="flex gap-3 items-start">
+                                    <div className="relative group flex-shrink-0">
+                                      <div className="w-32 h-32 rounded-lg border-2 overflow-hidden bg-muted">
+                                        {receipt.file.type.startsWith('image') ? (
+                                          <img
+                                            src={receipt.preview}
+                                            alt={`קבלה ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center flex-col">
+                                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                            <span className="text-xs mt-2">PDF</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute -top-2 -left-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => removeReceipt(expense.id, idx)}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                      {receipt.analyzing && (
+                                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                          <span className="text-xs">מנתח...</span>
+                                        </div>
+                                      )}
+                                      {receipt.analyzed && (
+                                        <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
+                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                          </svg>
                                         </div>
                                       )}
                                     </div>
-                                    <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="icon"
-                                      className="absolute -top-2 -left-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeReceipt(expense.id, idx)}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
                                     {!receipt.analyzed && !receipt.analyzing && (
                                       <Button
                                         type="button"
-                                        size="sm"
-                                        className="absolute bottom-1 left-1 right-1 text-xs h-7"
+                                        size="default"
+                                        className="mt-2"
                                         onClick={() => analyzeReceipt(expense.id, idx)}
                                       >
                                         ✨ אישור וניתוח
                                       </Button>
-                                    )}
-                                    {receipt.analyzing && (
-                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                        <span className="text-xs">מנתח...</span>
-                                      </div>
-                                    )}
-                                    {receipt.analyzed && (
-                                      <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                      </div>
                                     )}
                                   </div>
                                 ))}
