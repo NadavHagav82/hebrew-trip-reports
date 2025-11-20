@@ -513,24 +513,26 @@ const ViewReport = () => {
                   <Printer className="w-4 h-4 ml-1" />
                   ייצא PDF
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow">
-                      <Share2 className="w-4 h-4 ml-1" />
-                      שתף
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
-                      <Mail className="w-4 h-4 ml-2" />
-                      שלח במייל
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={shareViaWhatsApp}>
-                      <MessageCircle className="w-4 h-4 ml-2" />
-                      שתף ב-WhatsApp
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {report.status === 'closed' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow">
+                        <Share2 className="w-4 h-4 ml-1" />
+                        שתף
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                        <Mail className="w-4 h-4 ml-2" />
+                        שלח במייל
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={shareViaWhatsApp}>
+                        <MessageCircle className="w-4 h-4 ml-2" />
+                        שתף ב-WhatsApp
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
 
@@ -607,24 +609,26 @@ const ViewReport = () => {
                   <Printer className="w-4 h-4 ml-2" />
                   ייצא PDF
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="shadow-sm hover:shadow-md transition-shadow">
-                      <Share2 className="w-4 h-4 ml-2" />
-                      שתף
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
-                      <Mail className="w-4 h-4 ml-2" />
-                      שלח במייל
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={shareViaWhatsApp}>
-                      <MessageCircle className="w-4 h-4 ml-2" />
-                      שתף ב-WhatsApp
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {report.status === 'closed' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="shadow-sm hover:shadow-md transition-shadow">
+                        <Share2 className="w-4 h-4 ml-2" />
+                        שתף
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                        <Mail className="w-4 h-4 ml-2" />
+                        שלח במייל
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={shareViaWhatsApp}>
+                        <MessageCircle className="w-4 h-4 ml-2" />
+                        שתף ב-WhatsApp
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           </div>

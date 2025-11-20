@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Mail, MessageCircle, Share2, Loader2 } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -22,22 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface ReceiptFile {
   file: File;
@@ -264,11 +248,6 @@ export default function NewReport() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [currentExpenseForUpload, setCurrentExpenseForUpload] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
-  // Share dialog state
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -810,132 +789,6 @@ export default function NewReport() {
     }
   };
 
-  const generatePDF = (): string => {
-    const doc = new jsPDF();
-    
-    // Add Hebrew font support and RTL
-    doc.setR2L(true);
-    doc.setFont('helvetica');
-    
-    // Title
-    doc.setFontSize(20);
-    doc.text('דוח נסיעה', 105, 20, { align: 'center' });
-    
-    // Trip details
-    doc.setFontSize(12);
-    let yPos = 40;
-    doc.text(`יעד: ${tripDestination}`, 190, yPos, { align: 'right' });
-    yPos += 10;
-    doc.text(`תאריכים: ${tripStartDate} - ${tripEndDate}`, 190, yPos, { align: 'right' });
-    yPos += 10;
-    doc.text(`מטרת הנסיעה: ${tripPurpose}`, 190, yPos, { align: 'right' });
-    yPos += 10;
-    doc.text(`דמי לינה יומיים: $${dailyAllowance}`, 190, yPos, { align: 'right' });
-    yPos += 15;
-    
-    // Expenses table
-    if (expenses.length > 0) {
-      const tableData = expenses.map(exp => [
-        exp.expense_date,
-        categoryLabels[exp.category],
-        exp.description,
-        `${exp.amount} ${exp.currency}`,
-        `${exp.amount_in_ils.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪`,
-      ]);
-      
-      autoTable(doc, {
-        startY: yPos,
-        head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', 'סכום בשקלים']],
-        body: tableData,
-        styles: { font: 'helvetica', halign: 'right' },
-        headStyles: { fillColor: [59, 130, 246] },
-      });
-      
-      yPos = (doc as any).lastAutoTable.finalY + 10;
-    }
-    
-    // Total
-    doc.setFontSize(14);
-    doc.text(`סה"כ: ${calculateGrandTotal().toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪`, 190, yPos, { align: 'right' });
-    
-    // Convert to base64
-    return doc.output('datauristring').split(',')[1];
-  };
-
-  const shareViaWhatsApp = () => {
-    const message = encodeURIComponent(
-      `דוח נסיעה - ${tripDestination}\n` +
-      `תאריכים: ${tripStartDate} - ${tripEndDate}\n` +
-      `מטרה: ${tripPurpose}\n` +
-      `סה"כ הוצאות: ${calculateGrandTotal().toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪\n\n` +
-      `פרטים נוספים בדוח המלא.`
-    );
-    
-    window.open(`https://wa.me/?text=${message}`, '_blank');
-  };
-
-  const handleSendEmail = async () => {
-    if (!recipientEmail) {
-      toast({
-        title: 'שגיאה',
-        description: 'נא להזין כתובת מייל',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(recipientEmail)) {
-      toast({
-        title: 'שגיאה',
-        description: 'כתובת מייל לא תקינה',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setSendingEmail(true);
-      
-      // Generate PDF
-      const pdfBase64 = generatePDF();
-      
-      // Send email via edge function
-      const { error } = await supabase.functions.invoke('send-report-email', {
-        body: {
-          recipientEmail,
-          reportId: reportId || 'new',
-          pdfBase64,
-          reportDetails: {
-            destination: tripDestination,
-            startDate: tripStartDate,
-            endDate: tripEndDate,
-            purpose: tripPurpose,
-            totalAmount: calculateGrandTotal(),
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'המייל נשלח בהצלחה',
-        description: `הדוח נשלח ל-${recipientEmail}`,
-      });
-      
-      setShowEmailDialog(false);
-      setRecipientEmail('');
-    } catch (error: any) {
-      toast({
-        title: 'שגיאה בשליחת המייל',
-        description: error.message || 'נסה שוב',
-        variant: 'destructive',
-      });
-    } finally {
-      setSendingEmail(false);
-    }
-  };
 
   const calculateTripDuration = () => {
     if (!tripStartDate || !tripEndDate) return 0;
@@ -985,23 +838,6 @@ export default function NewReport() {
                 <span className="hidden sm:inline">הפק דוח</span>
                 <span className="sm:hidden">הפק</span>
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-10 w-10 sm:h-9 sm:w-9">
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
-                    <Mail className="w-4 h-4 ml-2" />
-                    שלח במייל
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={shareViaWhatsApp}>
-                    <MessageCircle className="w-4 h-4 ml-2" />
-                    שתף ב-WhatsApp
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -1474,48 +1310,6 @@ export default function NewReport() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Email Dialog */}
-      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>שלח דוח במייל</DialogTitle>
-            <DialogDescription>
-              הדוח יישלח כקובץ PDF מצורף למייל
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="email">כתובת מייל</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="example@company.com"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                dir="ltr"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)} disabled={sendingEmail}>
-              ביטול
-            </Button>
-            <Button onClick={handleSendEmail} disabled={sendingEmail}>
-              {sendingEmail ? (
-                <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  שולח...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4 ml-2" />
-                  שלח
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
