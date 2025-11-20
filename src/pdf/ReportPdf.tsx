@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     borderBottomWidth: 1,
     borderBottomColor: '#ecf0f1',
     paddingVertical: 8,
@@ -103,13 +103,14 @@ const styles = StyleSheet.create({
     width: '40%',
     fontSize: 10,
     textAlign: 'right',
-    paddingRight: 8,
+    paddingRight: 12,
+    fontWeight: 600,
   },
   infoValue: {
     width: '60%',
     fontSize: 10,
-    textAlign: 'right',
-    fontWeight: 600,
+    textAlign: 'left',
+    paddingLeft: 8,
   },
   table: {
     marginTop: 8,
