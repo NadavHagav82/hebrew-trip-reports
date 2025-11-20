@@ -348,21 +348,6 @@ export default function Dashboard() {
               <h1 className="text-lg sm:text-xl font-bold">דוחות נסיעה</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                onClick={() => navigate('/reports/new')} 
-                size="sm"
-                className="h-9 gap-1.5 shadow-sm hidden sm:flex"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="text-sm">דוח חדש</span>
-              </Button>
-              <Button 
-                onClick={() => navigate('/reports/new')} 
-                size="icon"
-                className="h-9 w-9 sm:hidden"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
               <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
                 {profile?.full_name || user?.email}
               </span>
@@ -385,6 +370,18 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Create New Report Button */}
+        <div className="mb-6">
+          <Button 
+            onClick={() => navigate('/reports/new')} 
+            size="lg"
+            className="w-full h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            דוח נסיעה חדש
+          </Button>
+        </div>
+
         {/* Statistics Cards */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-orange-300/50" onClick={() => setActiveTab('open')}>
