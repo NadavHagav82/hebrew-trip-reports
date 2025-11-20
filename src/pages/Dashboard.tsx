@@ -586,86 +586,132 @@ export default function Dashboard() {
 
       {/* Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-xl">עריכת פרופיל</DialogTitle>
-            <DialogDescription>
-              עדכן את הפרטים האישיים והגדרות האבטחה שלך
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background px-6 pt-6 pb-4 border-b">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
+                  <User className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold">הפרופיל שלי</DialogTitle>
+                  <DialogDescription className="text-sm">
+                    {profile?.full_name || user?.email}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
 
           <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="profile">פרטים אישיים</TabsTrigger>
-              <TabsTrigger value="security">אבטחה וחשבון</TabsTrigger>
-            </TabsList>
+            <div className="px-6 pt-4">
+              <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50">
+                <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <User className="w-4 h-4 ml-2" />
+                  פרטים אישיים
+                </TabsTrigger>
+                <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <span className="ml-2">🔐</span>
+                  אבטחה
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
-            <div className="overflow-y-auto flex-1 px-1">
-              <TabsContent value="profile" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium">שם משתמש</Label>
-                  <Input 
-                    id="username" 
-                    value={profile?.username || ''} 
-                    disabled 
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">לא ניתן לשינוי</p>
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              <TabsContent value="profile" className="space-y-5 mt-0 animate-fade-in">
+                <div className="bg-gradient-to-br from-muted/30 to-muted/10 p-4 rounded-xl border shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <span className="text-lg">👤</span>
+                    </div>
+                    <h3 className="font-semibold">פרטי המשתמש</h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="username" className="text-sm font-medium flex items-center gap-1.5">
+                      <span className="text-muted-foreground">@</span>
+                      שם משתמש
+                    </Label>
+                    <Input 
+                      id="username" 
+                      value={profile?.username || ''} 
+                      disabled 
+                      className="bg-background/60 border-dashed"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="employee_id" className="text-sm font-medium flex items-center gap-1.5">
+                      <span className="text-muted-foreground">#</span>
+                      מספר עובד
+                    </Label>
+                    <Input 
+                      id="employee_id" 
+                      value={profile?.employee_id || ''} 
+                      disabled 
+                      className="bg-background/60 border-dashed"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="employee_id" className="text-sm font-medium">מספר עובד</Label>
-                  <Input 
-                    id="employee_id" 
-                    value={profile?.employee_id || ''} 
-                    disabled 
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">לא ניתן לשינוי</p>
+                <div className="bg-gradient-to-br from-primary/5 to-background p-4 rounded-xl border-2 border-primary/20 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Edit className="w-4 h-4 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-primary">פרטים הניתנים לעריכה</h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name" className="text-sm font-medium">שם מלא *</Label>
+                    <Input 
+                      id="full_name" 
+                      value={editedProfile.full_name}
+                      onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
+                      placeholder="הזן שם מלא"
+                      className="h-11 shadow-sm border-2 focus:border-primary/50"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="department" className="text-sm font-medium">מחלקה / חברה *</Label>
+                    <Input 
+                      id="department" 
+                      value={editedProfile.department}
+                      onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
+                      placeholder="הזן שם מחלקה או חברה"
+                      className="h-11 shadow-sm border-2 focus:border-primary/50"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="full_name" className="text-sm font-medium">שם מלא *</Label>
-                  <Input 
-                    id="full_name" 
-                    value={editedProfile.full_name}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
-                    placeholder="הזן שם מלא"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="department" className="text-sm font-medium">מחלקה / חברה *</Label>
-                  <Input 
-                    id="department" 
-                    value={editedProfile.department}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
-                    placeholder="הזן שם מחלקה או חברה"
-                  />
-                </div>
-
-                <div className="pt-4 flex gap-2">
+                <div className="pt-2 flex gap-3">
                   <Button 
                     variant="outline" 
                     onClick={() => setShowProfileDialog(false)}
                     disabled={savingProfile}
-                    className="flex-1"
+                    className="flex-1 h-11"
                   >
                     ביטול
                   </Button>
                   <Button 
                     onClick={handleSaveProfile}
                     disabled={savingProfile || !editedProfile.full_name || !editedProfile.department}
-                    className="flex-1"
+                    className="flex-1 h-11 shadow-md hover:shadow-lg transition-shadow"
                   >
-                    {savingProfile ? 'שומר...' : 'שמור שינויים'}
+                    {savingProfile ? 'שומר...' : '✓ שמור שינויים'}
                   </Button>
                 </div>
               </TabsContent>
 
-              <TabsContent value="security" className="space-y-4 mt-4">
-                <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                  <h3 className="font-semibold text-sm">נדרש לאימות שינויים</h3>
+              <TabsContent value="security" className="space-y-5 mt-0 animate-fade-in">
+                <div className="bg-gradient-to-br from-orange-50 to-orange-50/30 dark:from-orange-950/20 dark:to-orange-950/5 p-4 rounded-xl border-2 border-orange-200 dark:border-orange-900 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                      <span className="text-lg">🔑</span>
+                    </div>
+                    <h3 className="font-semibold text-orange-900 dark:text-orange-100">אימות נדרש</h3>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="current_password" className="text-sm font-medium">סיסמה נוכחית *</Label>
                     <Input 
@@ -674,74 +720,90 @@ export default function Dashboard() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="הזן סיסמה נוכחית"
+                      className="h-11 bg-background shadow-sm"
                     />
+                    <p className="text-xs text-muted-foreground">נדרשת לאימות כל שינוי באבטחה</p>
                   </div>
                 </div>
 
-                <div className="space-y-3 p-4 border rounded-lg">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    📧 שינוי כתובת אימייל
-                  </h4>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-50/30 dark:from-blue-950/20 dark:to-blue-950/5 p-5 rounded-xl border-2 border-blue-200 dark:border-blue-900 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <span className="text-xl">📧</span>
+                    </div>
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100">שינוי כתובת אימייל</h4>
+                  </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new_email" className="text-sm">אימייל חדש</Label>
+                    <Label htmlFor="new_email" className="text-sm font-medium">אימייל חדש</Label>
                     <Input 
                       id="new_email" 
                       type="email"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
                       placeholder={user?.email || "הזן כתובת אימייל חדשה"}
+                      className="h-11 bg-background shadow-sm"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      האימייל הנוכחי: {user?.email}
-                    </p>
+                    <div className="bg-blue-100/50 dark:bg-blue-900/20 rounded-lg p-2.5">
+                      <p className="text-xs text-blue-900 dark:text-blue-100">
+                        📬 האימייל הנוכחי: <span className="font-medium">{user?.email}</span>
+                      </p>
+                    </div>
                   </div>
 
                   {(currentPassword && newEmail) && (
                     <Button 
                       onClick={handleChangeEmail}
                       disabled={savingProfile}
-                      className="w-full"
-                      variant="secondary"
+                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
                     >
-                      {savingProfile ? 'שולח אימות...' : 'שנה אימייל'}
+                      {savingProfile ? 'שולח אימות...' : '✉️ שנה אימייל'}
                     </Button>
                   )}
                 </div>
 
-                <div className="space-y-3 p-4 border rounded-lg">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    🔒 שינוי סיסמה
-                  </h4>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-50/30 dark:from-purple-950/20 dark:to-purple-950/5 p-5 rounded-xl border-2 border-purple-200 dark:border-purple-900 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <span className="text-xl">🔒</span>
+                    </div>
+                    <h4 className="font-semibold text-purple-900 dark:text-purple-100">שינוי סיסמה</h4>
+                  </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new_password" className="text-sm">סיסמה חדשה</Label>
+                    <Label htmlFor="new_password" className="text-sm font-medium">סיסמה חדשה</Label>
                     <Input 
                       id="new_password" 
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="לפחות 8 תווים"
+                      className="h-11 bg-background shadow-sm"
                     />
                     <PasswordStrengthIndicator password={newPassword} />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirm_password" className="text-sm">אישור סיסמה</Label>
+                    <Label htmlFor="confirm_password" className="text-sm font-medium">אישור סיסמה</Label>
                     <Input 
                       id="confirm_password" 
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="הזן שוב את הסיסמה החדשה"
+                      className="h-11 bg-background shadow-sm"
                     />
                     {confirmPassword && newPassword !== confirmPassword && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        ✗ הסיסמאות אינן תואמות
-                      </p>
+                      <div className="bg-red-100 dark:bg-red-900/20 rounded-lg p-2.5">
+                        <p className="text-xs text-red-700 dark:text-red-300 flex items-center gap-1.5">
+                          <span>✗</span> הסיסמאות אינן תואמות
+                        </p>
+                      </div>
                     )}
                     {confirmPassword && newPassword === confirmPassword && (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        ✓ הסיסמאות תואמות
-                      </p>
+                      <div className="bg-green-100 dark:bg-green-900/20 rounded-lg p-2.5">
+                        <p className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1.5">
+                          <span>✓</span> הסיסמאות תואמות
+                        </p>
+                      </div>
                     )}
                   </div>
 
@@ -749,10 +811,9 @@ export default function Dashboard() {
                     <Button 
                       onClick={handleChangePassword}
                       disabled={savingProfile}
-                      className="w-full"
-                      variant="secondary"
+                      className="w-full h-11 bg-purple-600 hover:bg-purple-700 shadow-md hover:shadow-lg transition-all"
                     >
-                      {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
+                      {savingProfile ? 'מעדכן סיסמה...' : '🔐 עדכן סיסמה'}
                     </Button>
                   )}
                 </div>
