@@ -516,19 +516,19 @@ const ViewReport = () => {
                 {report.status === 'closed' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow">
+                      <Button variant="outline" size="sm" className="whitespace-nowrap">
                         <Share2 className="w-4 h-4 ml-1" />
                         שתף
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)} className="cursor-pointer">
                         <Mail className="w-4 h-4 ml-2" />
-                        שלח במייל
+                        <span>שלח במייל</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={shareViaWhatsApp}>
+                      <DropdownMenuItem onClick={shareViaWhatsApp} className="cursor-pointer">
                         <MessageCircle className="w-4 h-4 ml-2" />
-                        שתף ב-WhatsApp
+                        <span>שתף ב-WhatsApp</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -612,19 +612,19 @@ const ViewReport = () => {
                 {report.status === 'closed' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="shadow-sm hover:shadow-md transition-shadow">
+                      <Button>
                         <Share2 className="w-4 h-4 ml-2" />
                         שתף
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)} className="cursor-pointer">
                         <Mail className="w-4 h-4 ml-2" />
-                        שלח במייל
+                        <span>שלח במייל</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={shareViaWhatsApp}>
+                      <DropdownMenuItem onClick={shareViaWhatsApp} className="cursor-pointer">
                         <MessageCircle className="w-4 h-4 ml-2" />
-                        שתף ב-WhatsApp
+                        <span>שתף ב-WhatsApp</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
