@@ -854,14 +854,14 @@ export default function NewReport() {
               </div>
             ) : (
               <div className="space-y-4">
-                {expenses.map((expense, index) => (
+                {expenses.slice().reverse().map((expense, index) => (
                   <Card key={expense.id} className="border-2">
                     <div
                       className="p-4 cursor-pointer flex items-center justify-between hover:bg-muted/50"
                       onClick={() => setExpandedExpense(expandedExpense === expense.id ? null : expense.id)}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold">הוצאה #{index + 1}</span>
+                        <span className="font-semibold">הוצאה #{expenses.length - index}</span>
                         {expense.description && (
                           <>
                             <span className="text-muted-foreground">-</span>
