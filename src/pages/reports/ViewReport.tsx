@@ -508,9 +508,24 @@ const ViewReport = () => {
                     <span className="font-medium">₪{total.toFixed(2)}</span>
                   </div>
                 ))}
-                <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                  <span>סה"כ:</span>
-                  <span>₪{report.total_amount_ils.toFixed(2)}</span>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between font-bold text-lg mb-2">
+                    <span>סה"כ:</span>
+                    <span>₪{report.total_amount_ils.toFixed(2)}</span>
+                  </div>
+                  {Object.entries(grandTotalByCurrency).length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="text-sm text-muted-foreground mb-2 font-semibold">סה"כ לפי מטבעות:</div>
+                      <div className="space-y-1">
+                        {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
+                          <div key={currency} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{currency}:</span>
+                            <span className="font-medium">{amount.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

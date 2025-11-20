@@ -276,6 +276,13 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
     return acc;
   }, {} as Record<string, number>);
 
+  // Calculate grand total by currency
+  const grandTotalByCurrency = expenses.reduce((acc, exp) => {
+    if (!acc[exp.currency]) acc[exp.currency] = 0;
+    acc[exp.currency] += exp.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -395,6 +402,19 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
             <Text style={styles.totalLabel}>סה"כ:</Text>
             <Text style={styles.totalValue}>₪{report.total_amount_ils.toFixed(2)}</Text>
           </View>
+          {Object.entries(grandTotalByCurrency).length > 0 && (
+            <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#bdc3c7' }}>
+              <Text style={{ fontSize: 11, marginBottom: 8, textAlign: 'right', fontWeight: 600, color: '#2c3e50' }}>
+                סה"כ לפי מטבעות:
+              </Text>
+              {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
+                <View key={currency} style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>{currency}:</Text>
+                  <Text style={styles.summaryValue}>{amount.toFixed(2)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </Page>
 
