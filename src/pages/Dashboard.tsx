@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Eye, FileText, LogOut, Plus, Search, User } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -559,7 +559,10 @@ export default function Dashboard() {
                           onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
                         >
                           {report.status === 'draft' ? (
-                            'המשך עריכה'
+                            <>
+                              <Edit className="w-5 h-5 ml-2" />
+                              המשך עריכה
+                            </>
                           ) : (
                             <>
                               <Eye className="w-5 h-5 ml-2" />
