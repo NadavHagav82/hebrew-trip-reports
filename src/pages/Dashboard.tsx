@@ -451,16 +451,6 @@ export default function Dashboard() {
                     </span>
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="drafts" 
-                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-approved data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
-                  >
-                    <FilePen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span>טיוטות</span>
-                    <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
-                      {stats.draft}
-                    </span>
-                  </TabsTrigger>
-                  <TabsTrigger 
                     value="closed" 
                     className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-approved data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
                   >
@@ -468,6 +458,16 @@ export default function Dashboard() {
                     <span>סגורים</span>
                     <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
                       {stats.closed}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="drafts" 
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-draft data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                  >
+                    <FilePen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>טיוטות</span>
+                    <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
+                      {stats.draft}
                     </span>
                   </TabsTrigger>
                 </TabsList>
