@@ -375,10 +375,13 @@ export default function Dashboard() {
           <Button 
             onClick={() => navigate('/reports/new')} 
             size="lg"
-            className="w-full h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all gap-2"
+            className="w-full h-16 text-lg font-bold shadow-lg hover:shadow-xl transition-all gap-3 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary hover:via-primary/90 hover:to-primary/80 relative overflow-hidden group"
           >
-            <Plus className="w-5 h-5" />
-            דוח נסיעה חדש
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center ring-2 ring-white/30 group-hover:scale-110 transition-transform relative z-10">
+              <Plus className="w-6 h-6" />
+            </div>
+            <span className="relative z-10">דוח נסיעה חדש</span>
           </Button>
         </div>
 
