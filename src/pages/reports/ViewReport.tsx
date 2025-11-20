@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Download, Edit, Loader2, Printer } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -288,7 +288,7 @@ const ViewReport = () => {
                       }}
                       className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
-                      <Download className="w-4 h-4 ml-1" />
+                      <CheckCircle className="w-4 h-4 ml-1" />
                       סגור
                     </Button>
                   </>
@@ -368,7 +368,7 @@ const ViewReport = () => {
                       }}
                       className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
-                      <Download className="w-4 h-4 ml-2" />
+                      <CheckCircle className="w-4 h-4 ml-2" />
                       סגור דוח
                     </Button>
                   </>
