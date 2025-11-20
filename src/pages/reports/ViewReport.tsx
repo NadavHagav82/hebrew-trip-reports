@@ -303,7 +303,6 @@ const ViewReport = () => {
                           .from('reports')
                           .update({ status: 'open' })
                           .eq('id', report.id);
-                        toast({ title: 'הדוח נפתח מחדש בהצלחה' });
                         loadReport();
                       } catch (error) {
                         toast({ title: 'שגיאה', variant: 'destructive' });
@@ -383,7 +382,6 @@ const ViewReport = () => {
                           .from('reports')
                           .update({ status: 'open' })
                           .eq('id', report.id);
-                        toast({ title: 'הדוח נפתח מחדש בהצלחה' });
                         loadReport();
                       } catch (error) {
                         toast({ title: 'שגיאה', variant: 'destructive' });
