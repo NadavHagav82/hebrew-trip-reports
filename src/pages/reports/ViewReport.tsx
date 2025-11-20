@@ -335,27 +335,17 @@ const ViewReport = () => {
     try {
       setSendingEmail(true);
       
-      console.log('Email Send: Starting PDF generation...');
-      const pdfData = await generatePDF();
-      if (!pdfData) {
-        console.error('Email Send: PDF generation returned null');
-        throw new Error('Failed to generate PDF');
-      }
+      console.log('Email Send: Sending report data to edge function...');
       
-      console.log('Email Send: PDF generated, size:', pdfData.blob.size, 'bytes');
-      
-      // Send email via edge function
+      // Send email via edge function with raw data (no PDF generation on client)
       const { error } = await supabase.functions.invoke('send-report-email', {
         body: {
           recipientEmail,
           reportId: report.id,
-          pdfBase64: pdfData.base64,
-          reportDetails: {
-            destination: report.trip_destination,
-            startDate: report.trip_start_date,
-            endDate: report.trip_end_date,
-            purpose: report.trip_purpose,
-            totalAmount: report.total_amount_ils || 0,
+          reportData: {
+            report,
+            expenses,
+            profile,
           },
         },
       });
@@ -370,6 +360,7 @@ const ViewReport = () => {
       setShowEmailDialog(false);
       setRecipientEmail('');
     } catch (error: any) {
+      console.error('Email Send: Error occurred:', error);
       toast({
         title: 'שגיאה בשליחת המייל',
         description: error.message || 'נסה שוב',
