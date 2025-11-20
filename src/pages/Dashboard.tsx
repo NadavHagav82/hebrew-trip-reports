@@ -586,160 +586,179 @@ export default function Dashboard() {
 
       {/* Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>עריכת פרופיל</DialogTitle>
+            <DialogTitle className="text-xl">עריכת פרופיל</DialogTitle>
             <DialogDescription>
-              עדכן את הפרטים האישיים שלך
+              עדכן את הפרטים האישיים והגדרות האבטחה שלך
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">שם משתמש</Label>
-              <Input 
-                id="username" 
-                value={profile?.username || ''} 
-                disabled 
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">לא ניתן לשנות את שם המשתמש</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="employee_id">מספר עובד</Label>
-              <Input 
-                id="employee_id" 
-                value={profile?.employee_id || ''} 
-                disabled 
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">לא ניתן לשנות את מספר העובד</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="full_name">שם מלא *</Label>
-              <Input 
-                id="full_name" 
-                value={editedProfile.full_name}
-                onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
-                placeholder="הזן שם מלא"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="department">מחלקה / חברה *</Label>
-              <Input 
-                id="department" 
-                value={editedProfile.department}
-                onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
-                placeholder="הזן שם מחלקה או חברה"
-              />
-            </div>
-
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-4">אבטחה וחשבון</h3>
-              
-              <div className="space-y-2 mb-3">
-                <Label htmlFor="current_password">סיסמה נוכחית *</Label>
-                <Input 
-                  id="current_password" 
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="נדרשת לאימות שינויים"
-                />
-              </div>
-
-              <div className="border-t pt-3 mt-3">
-                <h4 className="text-sm font-medium mb-3">שינוי כתובת אימייל</h4>
-                <div className="space-y-2 mb-3">
-                  <Label htmlFor="new_email">אימייל חדש</Label>
+          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="profile">פרטים אישיים</TabsTrigger>
+              <TabsTrigger value="security">אבטחה וחשבון</TabsTrigger>
+            </TabsList>
+            
+            <div className="overflow-y-auto flex-1 px-1">
+              <TabsContent value="profile" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="text-sm font-medium">שם משתמש</Label>
                   <Input 
-                    id="new_email" 
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder={user?.email || "הזן כתובת אימייל חדשה"}
+                    id="username" 
+                    value={profile?.username || ''} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">לא ניתן לשינוי</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="employee_id" className="text-sm font-medium">מספר עובד</Label>
+                  <Input 
+                    id="employee_id" 
+                    value={profile?.employee_id || ''} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">לא ניתן לשינוי</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="full_name" className="text-sm font-medium">שם מלא *</Label>
+                  <Input 
+                    id="full_name" 
+                    value={editedProfile.full_name}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
+                    placeholder="הזן שם מלא"
                   />
                 </div>
 
-                {(currentPassword && newEmail) && (
+                <div className="space-y-2">
+                  <Label htmlFor="department" className="text-sm font-medium">מחלקה / חברה *</Label>
+                  <Input 
+                    id="department" 
+                    value={editedProfile.department}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
+                    placeholder="הזן שם מחלקה או חברה"
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-2">
                   <Button 
-                    onClick={handleChangeEmail}
+                    variant="outline" 
+                    onClick={() => setShowProfileDialog(false)}
                     disabled={savingProfile}
-                    className="w-full"
-                    variant="outline"
+                    className="flex-1"
                   >
-                    {savingProfile ? 'שולח אימות...' : 'שנה אימייל'}
+                    ביטול
                   </Button>
-                )}
-              </div>
+                  <Button 
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile || !editedProfile.full_name || !editedProfile.department}
+                    className="flex-1"
+                  >
+                    {savingProfile ? 'שומר...' : 'שמור שינויים'}
+                  </Button>
+                </div>
+              </TabsContent>
 
-              <div className="border-t pt-3 mt-3">
-                <h4 className="text-sm font-medium mb-3">שינוי סיסמה</h4>
-                <div className="space-y-2 mb-3">
-                  <Label htmlFor="new_password">סיסמה חדשה</Label>
-                  <Input 
-                    id="new_password" 
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="לפחות 8 תווים"
-                  />
-                  <PasswordStrengthIndicator password={newPassword} />
+              <TabsContent value="security" className="space-y-4 mt-4">
+                <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                  <h3 className="font-semibold text-sm">נדרש לאימות שינויים</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="current_password" className="text-sm font-medium">סיסמה נוכחית *</Label>
+                    <Input 
+                      id="current_password" 
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="הזן סיסמה נוכחית"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2 mb-3">
-                  <Label htmlFor="confirm_password">אישור סיסמה</Label>
-                  <Input 
-                    id="confirm_password" 
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="הזן שוב את הסיסמה החדשה"
-                  />
-                  {confirmPassword && newPassword !== confirmPassword && (
-                    <p className="text-xs text-destructive mt-1">
-                      הסיסמאות אינן תואמות
+                <div className="space-y-3 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    📧 שינוי כתובת אימייל
+                  </h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="new_email" className="text-sm">אימייל חדש</Label>
+                    <Input 
+                      id="new_email" 
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder={user?.email || "הזן כתובת אימייל חדשה"}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      האימייל הנוכחי: {user?.email}
                     </p>
-                  )}
-                  {confirmPassword && newPassword === confirmPassword && (
-                    <p className="text-xs text-green-500 mt-1">
-                      ✓ הסיסמאות תואמות
-                    </p>
+                  </div>
+
+                  {(currentPassword && newEmail) && (
+                    <Button 
+                      onClick={handleChangeEmail}
+                      disabled={savingProfile}
+                      className="w-full"
+                      variant="secondary"
+                    >
+                      {savingProfile ? 'שולח אימות...' : 'שנה אימייל'}
+                    </Button>
                   )}
                 </div>
 
-                {(currentPassword && newPassword && confirmPassword) && (
-                  <Button 
-                    onClick={handleChangePassword}
-                    disabled={savingProfile}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+                <div className="space-y-3 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    🔒 שינוי סיסמה
+                  </h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password" className="text-sm">סיסמה חדשה</Label>
+                    <Input 
+                      id="new_password" 
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="לפחות 8 תווים"
+                    />
+                    <PasswordStrengthIndicator password={newPassword} />
+                  </div>
 
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowProfileDialog(false)}
-              disabled={savingProfile}
-            >
-              ביטול
-            </Button>
-            <Button 
-              onClick={handleSaveProfile}
-              disabled={savingProfile || !editedProfile.full_name || !editedProfile.department}
-            >
-              {savingProfile ? 'שומר...' : 'שמור שינויים'}
-            </Button>
-          </DialogFooter>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password" className="text-sm">אישור סיסמה</Label>
+                    <Input 
+                      id="confirm_password" 
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="הזן שוב את הסיסמה החדשה"
+                    />
+                    {confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        ✗ הסיסמאות אינן תואמות
+                      </p>
+                    )}
+                    {confirmPassword && newPassword === confirmPassword && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        ✓ הסיסמאות תואמות
+                      </p>
+                    )}
+                  </div>
+
+                  {(currentPassword && newPassword && confirmPassword && newPassword === confirmPassword) && (
+                    <Button 
+                      onClick={handleChangePassword}
+                      disabled={savingProfile}
+                      className="w-full"
+                      variant="secondary"
+                    >
+                      {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
+                    </Button>
+                  )}
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
