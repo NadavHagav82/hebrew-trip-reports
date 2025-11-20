@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -425,15 +425,51 @@ export default function Dashboard() {
         </div>
 
         {/* Tabs and Filters */}
-        <Card>
+        <Card className="shadow-lg">
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full grid grid-cols-4 h-auto">
-                  <TabsTrigger value="all" className="text-xs sm:text-sm py-2">כל הדוחות</TabsTrigger>
-                  <TabsTrigger value="open" className="text-xs sm:text-sm py-2">פתוחים</TabsTrigger>
-                  <TabsTrigger value="drafts" className="text-xs sm:text-sm py-2">טיוטות</TabsTrigger>
-                  <TabsTrigger value="closed" className="text-xs sm:text-sm py-2">סגורים</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-4 h-auto bg-muted/50 p-1 gap-1">
+                  <TabsTrigger 
+                    value="all" 
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                  >
+                    <FileStack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>כל הדוחות</span>
+                    <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
+                      {reports.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="open" 
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-open data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>פתוחים</span>
+                    <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
+                      {stats.open}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="drafts" 
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-draft data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                  >
+                    <FilePen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>טיוטות</span>
+                    <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
+                      {stats.draft}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="closed" 
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-closed data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>סגורים</span>
+                    <span className="hidden sm:inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-background/20">
+                      {stats.closed}
+                    </span>
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
