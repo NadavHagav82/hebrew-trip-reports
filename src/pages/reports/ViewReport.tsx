@@ -198,6 +198,15 @@ const ViewReport = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap');
         
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
         @media print {
           body, * {
             font-family: 'Heebo', sans-serif !important;
@@ -228,30 +237,37 @@ const ViewReport = () => {
         }
       `}</style>
       
-      <div className="min-h-screen bg-background font-sans">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 font-sans">
         {/* Header */}
-        <header className="bg-card border-b sticky top-0 z-10 no-print">
+        <header className="bg-card/95 backdrop-blur-sm border-b shadow-sm sticky top-0 z-10 no-print">
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
             {/* Mobile Layout */}
             <div className="flex md:hidden flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => navigate('/')}
+                    className="hover:bg-accent"
+                  >
                     <ArrowRight className="w-4 h-4" />
                   </Button>
-                  <h1 className="text-lg font-bold">צפייה בדוח</h1>
+                  <h1 className="text-lg font-bold bg-gradient-to-l from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    צפייה בדוח
+                  </h1>
                 </div>
                 <StatusBadge status={report.status} />
               </div>
               
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {report.status === 'open' && (
                   <>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate(`/reports/edit/${report.id}`)}
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
                     >
                       <Edit className="w-4 h-4 ml-1" />
                       עריכה
@@ -270,7 +286,7 @@ const ViewReport = () => {
                           toast({ title: 'שגיאה', variant: 'destructive' });
                         }
                       }}
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <Download className="w-4 h-4 ml-1" />
                       סגור
@@ -293,7 +309,7 @@ const ViewReport = () => {
                         toast({ title: 'שגיאה', variant: 'destructive' });
                       }
                     }}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all"
                   >
                     <Edit className="w-4 h-4 ml-1" />
                     פתח דוח מחדש
@@ -303,7 +319,7 @@ const ViewReport = () => {
                   onClick={printPDF}
                   size="sm"
                   variant="outline"
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
                 >
                   <Printer className="w-4 h-4 ml-1" />
                   ייצא PDF
@@ -314,31 +330,45 @@ const ViewReport = () => {
             {/* Desktop Layout */}
             <div className="hidden md:flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/')}
+                  className="hover:bg-accent"
+                >
                   <ArrowRight className="w-4 h-4 ml-2" />
                   חזרה
                 </Button>
-                <h1 className="text-xl font-bold">צפייה בדוח</h1>
+                <h1 className="text-xl font-bold bg-gradient-to-l from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  צפייה בדוח
+                </h1>
               </div>
               <div className="flex items-center gap-2">
                 {report.status === 'open' && (
                   <>
-                    <Button variant="outline" onClick={() => navigate(`/reports/edit/${report.id}`)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate(`/reports/edit/${report.id}`)}
+                      className="shadow-sm hover:shadow-md transition-shadow"
+                    >
                       <Edit className="w-4 h-4 ml-2" />
                       עריכה
                     </Button>
-                    <Button onClick={async () => {
-                      try {
-                        await supabase
-                          .from('reports')
-                          .update({ status: 'closed' })
-                          .eq('id', report.id);
-                        toast({ title: 'הדוח נסגר בהצלחה' });
-                        loadReport();
-                      } catch (error) {
-                        toast({ title: 'שגיאה', variant: 'destructive' });
-                      }
-                    }}>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          await supabase
+                            .from('reports')
+                            .update({ status: 'closed' })
+                            .eq('id', report.id);
+                          toast({ title: 'הדוח נסגר בהצלחה' });
+                          loadReport();
+                        } catch (error) {
+                          toast({ title: 'שגיאה', variant: 'destructive' });
+                        }
+                      }}
+                      className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                    >
                       <Download className="w-4 h-4 ml-2" />
                       סגור דוח
                     </Button>
@@ -359,12 +389,16 @@ const ViewReport = () => {
                         toast({ title: 'שגיאה', variant: 'destructive' });
                       }
                     }}
+                    className="bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all"
                   >
                     <Edit className="w-4 h-4 ml-2" />
                     פתח דוח מחדש
                   </Button>
                 )}
-                <Button onClick={printPDF}>
+                <Button 
+                  onClick={printPDF}
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                >
                   <Printer className="w-4 h-4 ml-2" />
                   ייצא PDF
                 </Button>
@@ -375,46 +409,46 @@ const ViewReport = () => {
 
         {/* Screen View */}
         <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl no-print">
-          <Card className="mb-4 sm:mb-6">
-            <CardHeader className="pb-3 sm:pb-6">
+          <Card className="mb-4 sm:mb-6 shadow-md hover:shadow-lg transition-shadow border-l-4 border-l-primary">
+            <CardHeader className="pb-3 sm:pb-6 bg-gradient-to-l from-muted/30 to-transparent">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="text-base sm:text-lg">סטטוס הדוח</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-bold">סטטוס הדוח</CardTitle>
                 <StatusBadge status={report.status} />
               </div>
             </CardHeader>
           </Card>
 
-          <Card className="mb-4 sm:mb-6">
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="text-base sm:text-lg">פרטי הנסיעה</CardTitle>
+          <Card className="mb-4 sm:mb-6 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3 sm:pb-6 bg-gradient-to-l from-muted/30 to-transparent border-b">
+              <CardTitle className="text-base sm:text-lg font-bold">פרטי הנסיעה</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <span className="text-xs sm:text-sm text-muted-foreground">יעד:</span>
-                  <p className="font-medium text-sm sm:text-base">{report.trip_destination}</p>
+            <CardContent className="space-y-3 sm:space-y-4 pt-4 sm:pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">יעד:</span>
+                  <p className="font-semibold text-sm sm:text-base">{report.trip_destination}</p>
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm text-muted-foreground">מטרה:</span>
-                  <p className="font-medium text-sm sm:text-base">{report.trip_purpose}</p>
+                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">מטרה:</span>
+                  <p className="font-semibold text-sm sm:text-base">{report.trip_purpose}</p>
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm text-muted-foreground">תאריך התחלה:</span>
-                  <p className="font-medium text-sm sm:text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
+                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">תאריך התחלה:</span>
+                  <p className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm text-muted-foreground">תאריך סיום:</span>
-                  <p className="font-medium text-sm sm:text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
+                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">תאריך סיום:</span>
+                  <p className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
                 </div>
-                <div>
-                  <span className="text-xs sm:text-sm text-muted-foreground">משך הנסיעה:</span>
-                  <p className="font-medium text-sm sm:text-base">{calculateTripDuration()} ימים</p>
+                <div className="p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">משך הנסיעה:</span>
+                  <p className="font-bold text-sm sm:text-base text-primary">{calculateTripDuration()} ימים</p>
                 </div>
               </div>
               {report.notes && (
                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-                  <span className="text-xs sm:text-sm text-muted-foreground">הערות:</span>
-                  <p className="font-medium text-sm sm:text-base whitespace-pre-wrap">{report.notes}</p>
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-2">הערות:</span>
+                  <p className="font-medium text-sm sm:text-base whitespace-pre-wrap p-3 bg-muted/30 rounded-lg">{report.notes}</p>
                 </div>
               )}
             </CardContent>
