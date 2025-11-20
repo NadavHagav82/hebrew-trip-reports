@@ -277,6 +277,28 @@ const ViewReport = () => {
                     </Button>
                   </>
                 )}
+                {report.status === 'closed' && (
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await supabase
+                          .from('reports')
+                          .update({ status: 'open' })
+                          .eq('id', report.id);
+                        toast({ title: 'הדוח נפתח מחדש בהצלחה' });
+                        loadReport();
+                      } catch (error) {
+                        toast({ title: 'שגיאה', variant: 'destructive' });
+                      }
+                    }}
+                    className="whitespace-nowrap"
+                  >
+                    <Edit className="w-4 h-4 ml-1" />
+                    פתח דוח מחדש
+                  </Button>
+                )}
                 <Button 
                   onClick={printPDF}
                   size="sm"
@@ -321,6 +343,26 @@ const ViewReport = () => {
                       סגור דוח
                     </Button>
                   </>
+                )}
+                {report.status === 'closed' && (
+                  <Button 
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await supabase
+                          .from('reports')
+                          .update({ status: 'open' })
+                          .eq('id', report.id);
+                        toast({ title: 'הדוח נפתח מחדש בהצלחה' });
+                        loadReport();
+                      } catch (error) {
+                        toast({ title: 'שגיאה', variant: 'destructive' });
+                      }
+                    }}
+                  >
+                    <Edit className="w-4 h-4 ml-2" />
+                    פתח דוח מחדש
+                  </Button>
                 )}
                 <Button onClick={printPDF}>
                   <Printer className="w-4 h-4 ml-2" />
