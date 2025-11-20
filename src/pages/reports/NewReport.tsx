@@ -890,7 +890,20 @@ export default function NewReport() {
                       <div className="p-4 border-t space-y-4">
                         {/* Receipt Upload - First */}
                         <div>
-                          <Label className="text-base font-semibold">צלם או העלה קבלה</Label>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-base font-semibold">צלם או העלה קבלה</Label>
+                            {expense.receipts.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <div className={`text-sm px-3 py-1 rounded-full ${
+                                  expense.receipts.filter(r => r.analyzed).length === expense.receipts.length
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                }`}>
+                                  {expense.receipts.filter(r => r.analyzed).length}/{expense.receipts.length} נותחו
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           <div className="space-y-3 mt-2">
                             <div className="flex gap-2">
                               <Button
