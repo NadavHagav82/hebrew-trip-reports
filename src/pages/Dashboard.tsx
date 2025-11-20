@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
+import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 import { FileText, LogOut, Plus, Search, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -668,6 +669,7 @@ export default function Dashboard() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="לפחות 8 תווים"
                   />
+                  <PasswordStrengthIndicator password={newPassword} />
                 </div>
 
                 <div className="space-y-2 mb-3">
@@ -679,6 +681,16 @@ export default function Dashboard() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="הזן שוב את הסיסמה החדשה"
                   />
+                  {confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-xs text-destructive mt-1">
+                      הסיסמאות אינן תואמות
+                    </p>
+                  )}
+                  {confirmPassword && newPassword === confirmPassword && (
+                    <p className="text-xs text-green-500 mt-1">
+                      ✓ הסיסמאות תואמות
+                    </p>
+                  )}
                 </div>
 
                 {(currentPassword && newPassword && confirmPassword) && (
