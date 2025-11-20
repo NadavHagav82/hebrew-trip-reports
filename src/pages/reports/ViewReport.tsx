@@ -24,8 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { pdf } from '@react-pdf/renderer';
-import { ReportPdf } from '@/pdf/ReportPdf';
+import html2pdf from 'html2pdf.js';
 
 interface Expense {
   id: string;
@@ -210,27 +209,42 @@ const ViewReport = () => {
     miscellaneous: 'שונות',
   };
 
-  const generatePDF = async (): Promise<string> => {
-    if (!report) return '';
+  const generatePDF = async (): Promise<{ blob: Blob; base64: string } | null> => {
+    if (!report) return null;
     
     try {
-      // Generate PDF using ReportPdf component
-      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
-      const blob = await pdf(pdfDoc).toBlob();
-      
+      const printElement = document.getElementById('report-print-content');
+      if (!printElement) {
+        console.error('Print element not found');
+        return null;
+      }
+
+      // Generate PDF using html2pdf
+      const pdfBlob = await html2pdf()
+        .set({
+          margin: 5,
+          filename: `דוח-נסיעה-${report.trip_destination}.pdf`,
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        })
+        .from(printElement)
+        .outputPdf('blob');
+
       // Convert blob to base64
-      return new Promise((resolve, reject) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
-          const base64 = reader.result as string;
-          resolve(base64.split(',')[1]);
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(pdfBlob);
       });
+
+      return { blob: pdfBlob, base64 };
     } catch (error) {
       console.error('Error generating PDF:', error);
-      return '';
+      return null;
     }
   };
 
@@ -238,39 +252,28 @@ const ViewReport = () => {
     if (!report) return;
     
     try {
-      // Generate PDF
-      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
-      const blob = await pdf(pdfDoc).toBlob();
-      
+      const pdfData = await generatePDF();
+      if (!pdfData) {
+        throw new Error('Failed to generate PDF');
+      }
+
       // Create download link
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(pdfData.blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `דוח-נסיעה-${report.trip_destination}-${report.id.substring(0, 8)}.pdf`;
+      link.download = `דוח-נסיעה-${report.trip_destination.replace(/[^א-תa-zA-Z0-9]/g, '-')}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
       
       toast({
-        title: 'הקובץ הורד בהצלחה',
+        title: 'הקובץ הורד',
         description: 'כעת ניתן לשתף אותו ב-WhatsApp',
       });
-      
-      // Wait a bit then open WhatsApp with message
-      setTimeout(() => {
-        const message = encodeURIComponent(
-          `דוח נסיעה - ${report.trip_destination}\n` +
-          `תאריכים: ${report.trip_start_date} - ${report.trip_end_date}\n` +
-          `מטרה: ${report.trip_purpose}\n` +
-          `סה"כ הוצאות: ${report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 }) || 0} ₪\n\n` +
-          `מצורף דוח PDF מלא`
-        );
-        
-        window.open(`https://wa.me/?text=${message}`, '_blank');
-      }, 500);
     } catch (error) {
+      console.error('Error in shareViaWhatsApp:', error);
       toast({
-        title: 'שגיאה ביצירת הקובץ',
-        description: 'נסה שוב',
+        title: 'שגיאה',
+        description: 'לא ניתן ליצור את הקובץ',
         variant: 'destructive',
       });
     }
@@ -303,14 +306,17 @@ const ViewReport = () => {
       setSendingEmail(true);
       
       // Generate PDF
-      const pdfBase64 = await generatePDF();
+      const pdfData = await generatePDF();
+      if (!pdfData) {
+        throw new Error('Failed to generate PDF');
+      }
       
       // Send email via edge function
       const { error } = await supabase.functions.invoke('send-report-email', {
         body: {
           recipientEmail,
           reportId: report.id,
-          pdfBase64,
+          pdfBase64: pdfData.base64,
           reportDetails: {
             destination: report.trip_destination,
             startDate: report.trip_start_date,
