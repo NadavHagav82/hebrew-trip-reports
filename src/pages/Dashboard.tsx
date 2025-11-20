@@ -49,8 +49,10 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editedProfile, setEditedProfile] = useState({ full_name: '', department: '' });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -130,8 +132,10 @@ export default function Dashboard() {
         department: editedProfile.department,
       });
       setShowProfileDialog(false);
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setNewEmail('');
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -145,10 +149,10 @@ export default function Dashboard() {
   };
 
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         title: 'שגיאה',
-        description: 'יש למלא את שני שדות הסיסמה',
+        description: 'יש למלא את כל שדות הסיסמה',
         variant: 'destructive',
       });
       return;
@@ -157,16 +161,16 @@ export default function Dashboard() {
     if (newPassword !== confirmPassword) {
       toast({
         title: 'שגיאה',
-        description: 'הסיסמאות אינן תואמות',
+        description: 'הסיסמאות החדשות אינן תואמות',
         variant: 'destructive',
       });
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       toast({
         title: 'שגיאה',
-        description: 'הסיסמה חייבת להכיל לפחות 6 תווים',
+        description: 'הסיסמה חייבת להכיל לפחות 8 תווים',
         variant: 'destructive',
       });
       return;
@@ -174,6 +178,22 @@ export default function Dashboard() {
 
     setSavingProfile(true);
     try {
+      // Step 1: Verify current password by attempting re-authentication
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user?.email!,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        toast({
+          title: 'שגיאה',
+          description: 'הסיסמה הנוכחית שגויה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Step 2: Update to new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -185,12 +205,86 @@ export default function Dashboard() {
         description: 'הסיסמה החדשה שלך נשמרה',
       });
 
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
       console.error('Error updating password:', error);
       toast({
         title: 'שגיאה בעדכון הסיסמה',
+        description: error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    if (!currentPassword || !newEmail) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש למלא סיסמה נוכחית ואימייל חדש',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast({
+        title: 'שגיאה',
+        description: 'כתובת האימייל אינה תקינה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newEmail === user?.email) {
+      toast({
+        title: 'שגיאה',
+        description: 'האימייל החדש זהה לאימייל הנוכחי',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      // Step 1: Verify current password
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user?.email!,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        toast({
+          title: 'שגיאה',
+          description: 'הסיסמה הנוכחית שגויה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Step 2: Update email (Supabase will send verification email automatically)
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'נשלח אימות אימייל',
+        description: 'נשלח מייל אימות לכתובת החדשה. יש ללחוץ על הלינק במייל כדי לאשר את השינוי.',
+      });
+
+      setCurrentPassword('');
+      setNewEmail('');
+    } catch (error) {
+      console.error('Error updating email:', error);
+      toast({
+        title: 'שגיאה בעדכון האימייל',
         description: error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה',
         variant: 'destructive',
       });
@@ -525,40 +619,79 @@ export default function Dashboard() {
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-4">שינוי סיסמה</h3>
+              <h3 className="font-semibold mb-4">אבטחה וחשבון</h3>
               
               <div className="space-y-2 mb-3">
-                <Label htmlFor="new_password">סיסמה חדשה</Label>
+                <Label htmlFor="current_password">סיסמה נוכחית *</Label>
                 <Input 
-                  id="new_password" 
+                  id="current_password" 
                   type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="הזן סיסמה חדשה (לפחות 6 תווים)"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="נדרשת לאימות שינויים"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirm_password">אישור סיסמה</Label>
-                <Input 
-                  id="confirm_password" 
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="הזן שוב את הסיסמה החדשה"
-                />
+              <div className="border-t pt-3 mt-3">
+                <h4 className="text-sm font-medium mb-3">שינוי כתובת אימייל</h4>
+                <div className="space-y-2 mb-3">
+                  <Label htmlFor="new_email">אימייל חדש</Label>
+                  <Input 
+                    id="new_email" 
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder={user?.email || "הזן כתובת אימייל חדשה"}
+                  />
+                </div>
+
+                {(currentPassword && newEmail) && (
+                  <Button 
+                    onClick={handleChangeEmail}
+                    disabled={savingProfile}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {savingProfile ? 'שולח אימות...' : 'שנה אימייל'}
+                  </Button>
+                )}
               </div>
 
-              {(newPassword || confirmPassword) && (
-                <Button 
-                  onClick={handleChangePassword}
-                  disabled={savingProfile}
-                  className="w-full mt-3"
-                  variant="outline"
-                >
-                  {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
-                </Button>
-              )}
+              <div className="border-t pt-3 mt-3">
+                <h4 className="text-sm font-medium mb-3">שינוי סיסמה</h4>
+                <div className="space-y-2 mb-3">
+                  <Label htmlFor="new_password">סיסמה חדשה</Label>
+                  <Input 
+                    id="new_password" 
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="לפחות 8 תווים"
+                  />
+                </div>
+
+                <div className="space-y-2 mb-3">
+                  <Label htmlFor="confirm_password">אישור סיסמה</Label>
+                  <Input 
+                    id="confirm_password" 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="הזן שוב את הסיסמה החדשה"
+                  />
+                </div>
+
+                {(currentPassword && newPassword && confirmPassword) && (
+                  <Button 
+                    onClick={handleChangePassword}
+                    disabled={savingProfile}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
