@@ -37,7 +37,7 @@ interface Expense {
   category: 'flights' | 'accommodation' | 'food' | 'transportation' | 'miscellaneous';
   description: string;
   amount: number;
-  currency: 'USD' | 'EUR' | 'ILS' | 'PLN' | 'GBP' | 'BGN' | 'CZK' | 'HUF' | 'RON' | 'SEK' | 'NOK' | 'DKK' | 'CHF' | 'JPY' | 'CNY';
+  currency: 'USD' | 'EUR' | 'ILS' | 'GBP' | 'CHF' | 'PLN' | 'BGN' | 'CZK' | 'HUF' | 'RON' | 'SEK' | 'NOK' | 'DKK' | 'ISK' | 'HRK' | 'RSD' | 'UAH' | 'TRY' | 'CAD' | 'MXN' | 'BRL' | 'ARS' | 'CLP' | 'COP' | 'PEN' | 'UYU' | 'JPY' | 'CNY' | 'KRW' | 'HKD' | 'SGD' | 'THB' | 'MYR' | 'IDR' | 'PHP' | 'VND' | 'TWD' | 'INR' | 'ZAR' | 'EGP' | 'MAD' | 'TND' | 'KES' | 'NGN' | 'GHS' | 'AUD' | 'NZD' | 'AED' | 'SAR' | 'QAR' | 'KWD' | 'JOD';
   amount_in_ils: number;
   receipts: ReceiptFile[];
   notes?: string;
@@ -68,11 +68,12 @@ const categoryColors = {
 };
 
 const currencyLabels = {
+  // Europe
   USD: '$ דולר',
   EUR: '€ יורו',
-  ILS: '₪ שקל',
-  PLN: 'zł זלוטי',
-  GBP: '£ לירה',
+  GBP: '£ לירה בריטית',
+  CHF: 'CHF פרנק שוויצרי',
+  PLN: 'zł זלוטי פולני',
   BGN: 'лв לב בולגרי',
   CZK: 'Kč קורונה צ\'כית',
   HUF: 'Ft פורינט הונגרי',
@@ -80,27 +81,112 @@ const currencyLabels = {
   SEK: 'kr קרונה שוודית',
   NOK: 'kr קרונה נורבגית',
   DKK: 'kr קרונה דנית',
-  CHF: 'CHF פרנק שוויצרי',
+  ISK: 'kr קרונה איסלנדית',
+  HRK: 'kn קונה קרואטית',
+  RSD: 'din דינר סרבי',
+  UAH: '₴ הריבניה אוקראינית',
+  TRY: '₺ לירה טורקית',
+  // Latin America
+  CAD: '$ דולר קנדי',
+  MXN: '$ פסו מקסיקני',
+  BRL: 'R$ ריאל ברזילאי',
+  ARS: '$ פסו ארגנטינאי',
+  CLP: '$ פסו צ\'יליאני',
+  COP: '$ פסו קולומביאני',
+  PEN: 'S/ סול פרואני',
+  UYU: '$ פסו אורוגוואי',
+  // Far East
   JPY: '¥ ין יפני',
   CNY: '¥ יואן סיני',
+  KRW: '₩ וון דרום קוריאני',
+  HKD: '$ דולר הונג קונג',
+  SGD: '$ דולר סינגפורי',
+  THB: '฿ באט תאילנדי',
+  MYR: 'RM רינגיט מלזי',
+  IDR: 'Rp רופיה אינדונזית',
+  PHP: '₱ פסו פיליפיני',
+  VND: '₫ דונג וייטנאמי',
+  TWD: 'NT$ דולר טאיוואני',
+  INR: '₹ רופי הודי',
+  // Africa
+  ZAR: 'R ראנד דרום אפריקאי',
+  EGP: '£ לירה מצרית',
+  MAD: 'dh דירהם מרוקאי',
+  TND: 'dt דינר תוניסאי',
+  KES: 'KSh שילינג קנייתי',
+  NGN: '₦ נאירה ניגרית',
+  GHS: '₵ סדי גאני',
+  // Australia & Oceania
+  AUD: '$ דולר אוסטרלי',
+  NZD: '$ דולר ניו זילנדי',
+  // Middle East
+  ILS: '₪ שקל ישראלי',
+  AED: 'dh דירהם אמירויות',
+  SAR: 'ر.س ריאל סעודי',
+  QAR: 'ر.ق ריאל קטארי',
+  KWD: 'د.ك דינר כוויתי',
+  JOD: 'د.ا דינר ירדני',
 };
 
 const currencyRates = {
+  // Europe
   USD: 3.60,
   EUR: 3.90,
-  ILS: 1.00,
-  PLN: 0.89,
   GBP: 4.58,
-  BGN: 2.00,      // Bulgarian Lev
-  CZK: 0.16,      // Czech Koruna
-  HUF: 0.010,     // Hungarian Forint
-  RON: 0.78,      // Romanian Leu
-  SEK: 0.34,      // Swedish Krona
-  NOK: 0.33,      // Norwegian Krone
-  DKK: 0.52,      // Danish Krone
-  CHF: 4.10,      // Swiss Franc
-  JPY: 0.024,     // Japanese Yen
-  CNY: 0.50,      // Chinese Yuan
+  CHF: 4.10,
+  PLN: 0.89,
+  BGN: 2.00,
+  CZK: 0.16,
+  HUF: 0.010,
+  RON: 0.78,
+  SEK: 0.34,
+  NOK: 0.33,
+  DKK: 0.52,
+  ISK: 0.026,
+  HRK: 0.52,
+  RSD: 0.033,
+  UAH: 0.087,
+  TRY: 0.11,
+  // Latin America
+  CAD: 2.58,
+  MXN: 0.18,
+  BRL: 0.62,
+  ARS: 0.0036,
+  CLP: 0.0037,
+  COP: 0.00082,
+  PEN: 0.95,
+  UYU: 0.082,
+  // Far East
+  JPY: 0.024,
+  CNY: 0.50,
+  KRW: 0.0027,
+  HKD: 0.46,
+  SGD: 2.67,
+  THB: 0.10,
+  MYR: 0.81,
+  IDR: 0.00023,
+  PHP: 0.062,
+  VND: 0.00014,
+  TWD: 0.11,
+  INR: 0.042,
+  // Africa
+  ZAR: 0.20,
+  EGP: 0.073,
+  MAD: 0.36,
+  TND: 1.15,
+  KES: 0.028,
+  NGN: 0.0024,
+  GHS: 0.24,
+  // Australia & Oceania
+  AUD: 2.33,
+  NZD: 2.13,
+  // Middle East
+  ILS: 1.00,
+  AED: 0.98,
+  SAR: 0.96,
+  QAR: 0.99,
+  KWD: 11.75,
+  JOD: 5.08,
 };
 
 export default function NewReport() {
