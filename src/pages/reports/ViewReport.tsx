@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import html2pdf from 'html2pdf.js';
+import { pdf } from '@react-pdf/renderer';
+import { ReportPdf } from '@/pdf/ReportPdf';
 
 interface Expense {
   id: string;
@@ -210,28 +211,18 @@ const ViewReport = () => {
   };
 
   const generatePDF = async (): Promise<{ blob: Blob; base64: string } | null> => {
-    if (!report) return null;
+    if (!report) {
+      console.error('PDF Generation: No report found');
+      return null;
+    }
 
     try {
-      const printElement = document.getElementById('report-print-content');
-      if (!printElement) {
-        console.error('Print element not found');
-        return null;
-      }
-
-      const options = {
-        margin: 5,
-        filename: `דוח-נסיעה-${report.trip_destination}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      };
-
-      // Use html2pdf worker to get jsPDF instance
-      const worker: any = (html2pdf as any)().set(options).from(printElement).toPdf();
-      const pdfInstance = await worker.get('pdf');
-      const arrayBuffer: ArrayBuffer = pdfInstance.output('arraybuffer');
-      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+      console.log('PDF Generation: Starting with @react-pdf/renderer...');
+      
+      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
+      const blob = await pdf(pdfDoc).toBlob();
+      
+      console.log('PDF Generation: Blob created, size:', blob.size);
 
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -243,9 +234,15 @@ const ViewReport = () => {
         reader.readAsDataURL(blob);
       });
 
+      console.log('PDF Generation: Success!');
       return { blob, base64 };
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('PDF Generation: Error occurred:', error);
+      toast({
+        title: 'שגיאה ביצירת PDF',
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
+        variant: 'destructive',
+      });
       return null;
     }
   };
@@ -254,12 +251,14 @@ const ViewReport = () => {
     if (!report) return;
     
     try {
+      console.log('WhatsApp Share: Starting PDF generation...');
       const pdfData = await generatePDF();
       if (!pdfData) {
-        throw new Error('Failed to generate PDF');
+        console.error('WhatsApp Share: PDF generation returned null');
+        return;
       }
 
-      // Create download link
+      console.log('WhatsApp Share: PDF generated successfully, creating download link...');
       const url = URL.createObjectURL(pdfData.blob);
       const link = document.createElement('a');
       link.href = url;
@@ -267,12 +266,13 @@ const ViewReport = () => {
       link.click();
       URL.revokeObjectURL(url);
       
+      console.log('WhatsApp Share: File downloaded');
       toast({
         title: 'הקובץ הורד',
         description: 'כעת ניתן לשתף אותו ב-WhatsApp',
       });
     } catch (error) {
-      console.error('Error in shareViaWhatsApp:', error);
+      console.error('WhatsApp Share: Error occurred:', error);
       toast({
         title: 'שגיאה',
         description: 'לא ניתן ליצור את הקובץ',
@@ -307,11 +307,14 @@ const ViewReport = () => {
     try {
       setSendingEmail(true);
       
-      // Generate PDF
+      console.log('Email Send: Starting PDF generation...');
       const pdfData = await generatePDF();
       if (!pdfData) {
+        console.error('Email Send: PDF generation returned null');
         throw new Error('Failed to generate PDF');
       }
+      
+      console.log('Email Send: PDF generated, size:', pdfData.blob.size, 'bytes');
       
       // Send email via edge function
       const { error } = await supabase.functions.invoke('send-report-email', {
