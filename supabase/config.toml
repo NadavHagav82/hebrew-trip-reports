@@ -2,3 +2,6 @@ project_id = "lksseuxzptdqtgppxnlo"
 
 [functions.analyze-receipt]
 verify_jwt = true
+
+[functions.send-report-email]
+verify_jwt = true
