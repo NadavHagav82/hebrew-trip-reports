@@ -24,8 +24,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { pdf } from '@react-pdf/renderer';
+import { ReportPdf } from '@/pdf/ReportPdf';
 
 interface Expense {
   id: string;
@@ -210,74 +210,70 @@ const ViewReport = () => {
     miscellaneous: 'שונות',
   };
 
-  const generatePDF = (): string => {
+  const generatePDF = async (): Promise<string> => {
     if (!report) return '';
     
-    const doc = new jsPDF();
-    
-    // Add Hebrew font support and RTL
-    doc.setR2L(true);
-    doc.setFont('helvetica');
-    
-    // Title
-    doc.setFontSize(20);
-    doc.text('דוח נסיעה', 105, 20, { align: 'center' });
-    
-    // Trip details
-    doc.setFontSize(12);
-    let yPos = 40;
-    doc.text(`יעד: ${report.trip_destination}`, 190, yPos, { align: 'right' });
-    yPos += 10;
-    doc.text(`תאריכים: ${report.trip_start_date} - ${report.trip_end_date}`, 190, yPos, { align: 'right' });
-    yPos += 10;
-    doc.text(`מטרת הנסיעה: ${report.trip_purpose}`, 190, yPos, { align: 'right' });
-    yPos += 10;
-    if (report.daily_allowance) {
-      doc.text(`דמי לינה יומיים: $${report.daily_allowance}`, 190, yPos, { align: 'right' });
-      yPos += 15;
-    }
-    
-    // Expenses table
-    if (expenses.length > 0) {
-      const tableData = expenses.map(exp => [
-        exp.expense_date,
-        categoryLabels[exp.category as keyof typeof categoryLabels] || exp.category,
-        exp.description,
-        `${exp.amount} ${exp.currency}`,
-        `${exp.amount_in_ils.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪`,
-      ]);
+    try {
+      // Generate PDF using ReportPdf component
+      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
+      const blob = await pdf(pdfDoc).toBlob();
       
-      autoTable(doc, {
-        startY: yPos,
-        head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', 'סכום בשקלים']],
-        body: tableData,
-        styles: { font: 'helvetica', halign: 'right' },
-        headStyles: { fillColor: [59, 130, 246] },
+      // Convert blob to base64
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          resolve(base64.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
       });
-      
-      yPos = (doc as any).lastAutoTable.finalY + 10;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      return '';
     }
-    
-    // Total
-    doc.setFontSize(14);
-    doc.text(`סה"כ: ${report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 }) || 0} ₪`, 190, yPos, { align: 'right' });
-    
-    // Convert to base64
-    return doc.output('datauristring').split(',')[1];
   };
 
-  const shareViaWhatsApp = () => {
+  const shareViaWhatsApp = async () => {
     if (!report) return;
     
-    const message = encodeURIComponent(
-      `דוח נסיעה - ${report.trip_destination}\n` +
-      `תאריכים: ${report.trip_start_date} - ${report.trip_end_date}\n` +
-      `מטרה: ${report.trip_purpose}\n` +
-      `סה"כ הוצאות: ${report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 }) || 0} ₪\n\n` +
-      `פרטים נוספים בדוח המלא.`
-    );
-    
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+    try {
+      // Generate PDF
+      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
+      const blob = await pdf(pdfDoc).toBlob();
+      
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `דוח-נסיעה-${report.trip_destination}-${report.id.substring(0, 8)}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'הקובץ הורד בהצלחה',
+        description: 'כעת ניתן לשתף אותו ב-WhatsApp',
+      });
+      
+      // Wait a bit then open WhatsApp with message
+      setTimeout(() => {
+        const message = encodeURIComponent(
+          `דוח נסיעה - ${report.trip_destination}\n` +
+          `תאריכים: ${report.trip_start_date} - ${report.trip_end_date}\n` +
+          `מטרה: ${report.trip_purpose}\n` +
+          `סה"כ הוצאות: ${report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 }) || 0} ₪\n\n` +
+          `מצורף דוח PDF מלא`
+        );
+        
+        window.open(`https://wa.me/?text=${message}`, '_blank');
+      }, 500);
+    } catch (error) {
+      toast({
+        title: 'שגיאה ביצירת הקובץ',
+        description: 'נסה שוב',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSendEmail = async () => {
@@ -307,7 +303,7 @@ const ViewReport = () => {
       setSendingEmail(true);
       
       // Generate PDF
-      const pdfBase64 = generatePDF();
+      const pdfBase64 = await generatePDF();
       
       // Send email via edge function
       const { error } = await supabase.functions.invoke('send-report-email', {
