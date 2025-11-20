@@ -309,6 +309,43 @@ export type Database = {
         | "CHF"
         | "JPY"
         | "CNY"
+        | "ISK"
+        | "HRK"
+        | "RSD"
+        | "UAH"
+        | "TRY"
+        | "CAD"
+        | "MXN"
+        | "BRL"
+        | "ARS"
+        | "CLP"
+        | "COP"
+        | "PEN"
+        | "UYU"
+        | "KRW"
+        | "HKD"
+        | "SGD"
+        | "THB"
+        | "MYR"
+        | "IDR"
+        | "PHP"
+        | "VND"
+        | "TWD"
+        | "INR"
+        | "ZAR"
+        | "EGP"
+        | "MAD"
+        | "TND"
+        | "KES"
+        | "NGN"
+        | "GHS"
+        | "AUD"
+        | "NZD"
+        | "AED"
+        | "SAR"
+        | "QAR"
+        | "KWD"
+        | "JOD"
       expense_status: "draft" | "open" | "closed"
       file_type_enum: "image" | "pdf"
       report_action:
@@ -467,6 +504,43 @@ export const Constants = {
         "CHF",
         "JPY",
         "CNY",
+        "ISK",
+        "HRK",
+        "RSD",
+        "UAH",
+        "TRY",
+        "CAD",
+        "MXN",
+        "BRL",
+        "ARS",
+        "CLP",
+        "COP",
+        "PEN",
+        "UYU",
+        "KRW",
+        "HKD",
+        "SGD",
+        "THB",
+        "MYR",
+        "IDR",
+        "PHP",
+        "VND",
+        "TWD",
+        "INR",
+        "ZAR",
+        "EGP",
+        "MAD",
+        "TND",
+        "KES",
+        "NGN",
+        "GHS",
+        "AUD",
+        "NZD",
+        "AED",
+        "SAR",
+        "QAR",
+        "KWD",
+        "JOD",
       ],
       expense_status: ["draft", "open", "closed"],
       file_type_enum: ["image", "pdf"],

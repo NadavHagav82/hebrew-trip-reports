@@ -30,30 +30,64 @@ serve(async (req) => {
 
     // Map countries to their local currencies
     const countryToCurrency: Record<string, string> = {
-      'בולגריה': 'BGN',
-      'bulgaria': 'BGN',
-      'פולין': 'PLN',
-      'poland': 'PLN',
-      'הונגריה': 'HUF',
-      'hungary': 'HUF',
-      'צ\'כיה': 'CZK',
-      'czech': 'CZK',
-      'רומניה': 'RON',
-      'romania': 'RON',
-      'שוודיה': 'SEK',
-      'sweden': 'SEK',
-      'נורבגיה': 'NOK',
-      'norway': 'NOK',
-      'דנמרק': 'DKK',
-      'denmark': 'DKK',
-      'שוויץ': 'CHF',
-      'switzerland': 'CHF',
-      'יפן': 'JPY',
-      'japan': 'JPY',
-      'סין': 'CNY',
-      'china': 'CNY',
-      'ישראל': 'ILS',
-      'israel': 'ILS',
+      // Europe
+      'בולגריה': 'BGN', 'bulgaria': 'BGN',
+      'פולין': 'PLN', 'poland': 'PLN',
+      'הונגריה': 'HUF', 'hungary': 'HUF',
+      'צ\'כיה': 'CZK', 'czech': 'CZK',
+      'רומניה': 'RON', 'romania': 'RON',
+      'שוודיה': 'SEK', 'sweden': 'SEK',
+      'נורבגיה': 'NOK', 'norway': 'NOK',
+      'דנמרק': 'DKK', 'denmark': 'DKK',
+      'שוויץ': 'CHF', 'switzerland': 'CHF',
+      'איסלנד': 'ISK', 'iceland': 'ISK',
+      'קרואטיה': 'HRK', 'croatia': 'HRK',
+      'סרביה': 'RSD', 'serbia': 'RSD',
+      'אוקראינה': 'UAH', 'ukraine': 'UAH',
+      'טורקיה': 'TRY', 'turkey': 'TRY',
+      'בריטניה': 'GBP', 'uk': 'GBP', 'england': 'GBP', 'london': 'GBP',
+      // Latin America
+      'קנדה': 'CAD', 'canada': 'CAD',
+      'מקסיקו': 'MXN', 'mexico': 'MXN',
+      'ברזיל': 'BRL', 'brazil': 'BRL',
+      'ארגנטינה': 'ARS', 'argentina': 'ARS',
+      'צ\'ילה': 'CLP', 'chile': 'CLP',
+      'קולומביה': 'COP', 'colombia': 'COP',
+      'פרו': 'PEN', 'peru': 'PEN',
+      'אורוגוואי': 'UYU', 'uruguay': 'UYU',
+      // Far East
+      'יפן': 'JPY', 'japan': 'JPY', 'tokyo': 'JPY',
+      'סין': 'CNY', 'china': 'CNY', 'beijing': 'CNY',
+      'קוריאה': 'KRW', 'korea': 'KRW', 'seoul': 'KRW',
+      'הונג קונג': 'HKD', 'hong kong': 'HKD',
+      'סינגפור': 'SGD', 'singapore': 'SGD',
+      'תאילנד': 'THB', 'thailand': 'THB', 'bangkok': 'THB',
+      'מלזיה': 'MYR', 'malaysia': 'MYR',
+      'אינדונזיה': 'IDR', 'indonesia': 'IDR',
+      'פיליפינים': 'PHP', 'philippines': 'PHP',
+      'וייטנאם': 'VND', 'vietnam': 'VND',
+      'טאיוואן': 'TWD', 'taiwan': 'TWD',
+      'הודו': 'INR', 'india': 'INR',
+      // Africa
+      'דרום אפריקה': 'ZAR', 'south africa': 'ZAR',
+      'מצרים': 'EGP', 'egypt': 'EGP',
+      'מרוקו': 'MAD', 'morocco': 'MAD',
+      'תוניסיה': 'TND', 'tunisia': 'TND',
+      'קניה': 'KES', 'kenya': 'KES',
+      'ניגריה': 'NGN', 'nigeria': 'NGN',
+      'גאנה': 'GHS', 'ghana': 'GHS',
+      // Australia & Oceania
+      'אוסטרליה': 'AUD', 'australia': 'AUD',
+      'ניו זילנד': 'NZD', 'new zealand': 'NZD',
+      // Middle East
+      'ישראל': 'ILS', 'israel': 'ILS',
+      'אמירויות': 'AED', 'uae': 'AED', 'dubai': 'AED',
+      'סעודיה': 'SAR', 'saudi': 'SAR',
+      'קטאר': 'QAR', 'qatar': 'QAR',
+      'כווית': 'KWD', 'kuwait': 'KWD',
+      'ירדן': 'JOD', 'jordan': 'JOD',
+      // US
+      'ארצות הברית': 'USD', 'usa': 'USD', 'america': 'USD', 'united states': 'USD',
     };
 
     // Detect local currency based on trip destination
@@ -83,25 +117,53 @@ serve(async (req) => {
             
             **חשוב מאוד - זיהוי מטבעות:**
             1. חפש סמלי מטבע בקבלה:
-               - $ → USD
+               - $ → USD/CAD/AUD/NZD/MXN/ARS/CLP/COP/UYU/HKD/SGD (תלוי במדינה)
                - € → EUR
-               - £ → GBP
+               - £ → GBP/EGP
                - ₪ → ILS
                - zł → PLN
                - лв → BGN
                - Ft → HUF
                - Kč → CZK
                - lei → RON
-               - kr → SEK/NOK/DKK (תלוי במדינה)
+               - kr → SEK/NOK/DKK/ISK (תלוי במדינה)
                - CHF → CHF
                - ¥ → JPY/CNY
+               - ₩ → KRW
+               - ₺ → TRY
+               - ₴ → UAH
+               - ₹ → INR
+               - R$ → BRL
+               - S/ → PEN
+               - ฿ → THB
+               - RM → MYR
+               - Rp → IDR
+               - ₱ → PHP
+               - ₫ → VND
+               - NT$ → TWD
+               - R → ZAR
+               - dh → AED/MAD
+               - ر.س → SAR
+               - ر.ق → QAR
+               - د.ك → KWD
+               - د.ا → JOD
+               - din → RSD/TND
+               - kn → HRK
+               - KSh → KES
+               - ₦ → NGN
+               - ₵ → GHS
             
             2. אם מצאת $ או € → השתמש בזה
             3. אם אין $ או € → השתמש במטבע המקומי של מדינת היעד: ${suggestedCurrency}
             4. אם אין שום סימון מטבע → ברירת מחדל: ${suggestedCurrency}
             
             **מטבעות נתמכים:**
-            USD, EUR, ILS, GBP, PLN, BGN, CZK, HUF, RON, SEK, NOK, DKK, CHF, JPY, CNY
+            אירופה: USD, EUR, GBP, CHF, PLN, BGN, CZK, HUF, RON, SEK, NOK, DKK, ISK, HRK, RSD, UAH, TRY
+            אמריקה לטינית: CAD, MXN, BRL, ARS, CLP, COP, PEN, UYU
+            מזרח רחוק: JPY, CNY, KRW, HKD, SGD, THB, MYR, IDR, PHP, VND, TWD, INR
+            אפריקה: ZAR, EGP, MAD, TND, KES, NGN, GHS
+            אוסטרליה ואוקיאניה: AUD, NZD
+            מזרח תיכון: ILS, AED, SAR, QAR, KWD, JOD
             
             חלץ את הפרטים הבאים מהקבלה:
             - תאריך (בפורמט YYYY-MM-DD)
@@ -114,7 +176,7 @@ serve(async (req) => {
             {
               "date": "YYYY-MM-DD",
               "amount": number,
-              "currency": "USD|EUR|ILS|GBP|PLN|BGN|CZK|HUF|RON|SEK|NOK|DKK|CHF|JPY|CNY",
+              "currency": "USD|EUR|ILS|...",
               "category": "flights|accommodation|food|transportation|miscellaneous",
               "description": "string"
             }
