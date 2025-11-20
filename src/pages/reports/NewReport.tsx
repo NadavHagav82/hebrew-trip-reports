@@ -37,7 +37,7 @@ interface Expense {
   category: 'flights' | 'accommodation' | 'food' | 'transportation' | 'miscellaneous';
   description: string;
   amount: number;
-  currency: 'USD' | 'EUR' | 'ILS' | 'PLN' | 'GBP';
+  currency: 'USD' | 'EUR' | 'ILS' | 'PLN' | 'GBP' | 'BGN' | 'CZK' | 'HUF' | 'RON' | 'SEK' | 'NOK' | 'DKK' | 'CHF' | 'JPY' | 'CNY';
   amount_in_ils: number;
   receipts: ReceiptFile[];
   notes?: string;
@@ -73,6 +73,16 @@ const currencyLabels = {
   ILS: '₪ שקל',
   PLN: 'zł זלוטי',
   GBP: '£ לירה',
+  BGN: 'лв לב בולגרי',
+  CZK: 'Kč קורונה צ\'כית',
+  HUF: 'Ft פורינט הונגרי',
+  RON: 'lei ליאו רומני',
+  SEK: 'kr קרונה שוודית',
+  NOK: 'kr קרונה נורבגית',
+  DKK: 'kr קרונה דנית',
+  CHF: 'CHF פרנק שוויצרי',
+  JPY: '¥ ין יפני',
+  CNY: '¥ יואן סיני',
 };
 
 const currencyRates = {
@@ -81,6 +91,16 @@ const currencyRates = {
   ILS: 1.00,
   PLN: 0.89,
   GBP: 4.58,
+  BGN: 2.00,      // Bulgarian Lev
+  CZK: 0.16,      // Czech Koruna
+  HUF: 0.010,     // Hungarian Forint
+  RON: 0.78,      // Romanian Leu
+  SEK: 0.34,      // Swedish Krona
+  NOK: 0.33,      // Norwegian Krone
+  DKK: 0.52,      // Danish Krone
+  CHF: 4.10,      // Swiss Franc
+  JPY: 0.024,     // Japanese Yen
+  CNY: 0.50,      // Chinese Yuan
 };
 
 export default function NewReport() {
@@ -397,9 +417,12 @@ export default function NewReport() {
       reader.readAsDataURL(receipt.file);
       const imageBase64 = await base64Promise;
 
-      // Call AI analysis
+      // Call AI analysis with trip destination for currency detection
       const { data, error } = await supabase.functions.invoke('analyze-receipt', {
-        body: { imageBase64 }
+        body: { 
+          imageBase64,
+          tripDestination: tripDestination || ''
+        }
       });
 
       if (error) throw error;
@@ -605,7 +628,7 @@ export default function NewReport() {
               category: exp.category,
               description: exp.description,
               amount: exp.amount,
-              currency: exp.currency,
+              currency: exp.currency as any,
               amount_in_ils: exp.amount_in_ils,
               notes: exp.notes || null,
             })

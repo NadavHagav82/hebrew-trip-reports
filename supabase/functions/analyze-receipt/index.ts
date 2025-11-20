@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, tripDestination } = await req.json();
     
     if (!imageBase64) {
       return new Response(
@@ -21,11 +21,51 @@ serve(async (req) => {
       );
     }
 
-    console.log('Analyzing receipt with Lovable AI...');
+    console.log('Analyzing receipt with Lovable AI...', { tripDestination });
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
+    }
+
+    // Map countries to their local currencies
+    const countryToCurrency: Record<string, string> = {
+      'בולגריה': 'BGN',
+      'bulgaria': 'BGN',
+      'פולין': 'PLN',
+      'poland': 'PLN',
+      'הונגריה': 'HUF',
+      'hungary': 'HUF',
+      'צ\'כיה': 'CZK',
+      'czech': 'CZK',
+      'רומניה': 'RON',
+      'romania': 'RON',
+      'שוודיה': 'SEK',
+      'sweden': 'SEK',
+      'נורבגיה': 'NOK',
+      'norway': 'NOK',
+      'דנמרק': 'DKK',
+      'denmark': 'DKK',
+      'שוויץ': 'CHF',
+      'switzerland': 'CHF',
+      'יפן': 'JPY',
+      'japan': 'JPY',
+      'סין': 'CNY',
+      'china': 'CNY',
+      'ישראל': 'ILS',
+      'israel': 'ILS',
+    };
+
+    // Detect local currency based on trip destination
+    let suggestedCurrency = 'EUR'; // Default to EUR
+    if (tripDestination) {
+      const destination = tripDestination.toLowerCase().trim();
+      for (const [country, currency] of Object.entries(countryToCurrency)) {
+        if (destination.includes(country.toLowerCase())) {
+          suggestedCurrency = currency;
+          break;
+        }
+      }
     }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -40,10 +80,33 @@ serve(async (req) => {
           {
             role: 'system',
             content: `אתה עוזר שמנתח תמונות של קבלות וחשבוניות.
+            
+            **חשוב מאוד - זיהוי מטבעות:**
+            1. חפש סמלי מטבע בקבלה:
+               - $ → USD
+               - € → EUR
+               - £ → GBP
+               - ₪ → ILS
+               - zł → PLN
+               - лв → BGN
+               - Ft → HUF
+               - Kč → CZK
+               - lei → RON
+               - kr → SEK/NOK/DKK (תלוי במדינה)
+               - CHF → CHF
+               - ¥ → JPY/CNY
+            
+            2. אם מצאת $ או € → השתמש בזה
+            3. אם אין $ או € → השתמש במטבע המקומי של מדינת היעד: ${suggestedCurrency}
+            4. אם אין שום סימון מטבע → ברירת מחדל: ${suggestedCurrency}
+            
+            **מטבעות נתמכים:**
+            USD, EUR, ILS, GBP, PLN, BGN, CZK, HUF, RON, SEK, NOK, DKK, CHF, JPY, CNY
+            
             חלץ את הפרטים הבאים מהקבלה:
             - תאריך (בפורמט YYYY-MM-DD)
-            - סכום (מספר בלבד)
-            - מטבע (USD, EUR, ILS, PLN, או GBP)
+            - סכום (מספר בלבד, ללא סימני מטבע)
+            - מטבע (אחד מהמטבעות הנתמכים למעלה)
             - קטגוריה (flights, accommodation, food, transportation, או miscellaneous)
             - תיאור (תיאור קצר של מה נקנה)
             
@@ -51,7 +114,7 @@ serve(async (req) => {
             {
               "date": "YYYY-MM-DD",
               "amount": number,
-              "currency": "USD|EUR|ILS|PLN|GBP",
+              "currency": "USD|EUR|ILS|GBP|PLN|BGN|CZK|HUF|RON|SEK|NOK|DKK|CHF|JPY|CNY",
               "category": "flights|accommodation|food|transportation|miscellaneous",
               "description": "string"
             }
