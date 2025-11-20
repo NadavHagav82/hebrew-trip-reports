@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, Calendar, Camera, Download, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, Download, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -44,11 +44,19 @@ interface Expense {
 }
 
 const categoryLabels = {
-  flights: '🛫 טיסות',
-  accommodation: '🏨 לינה / חדרי ישיבות',
-  food: '🍽️ אוכל ואירוח',
-  transportation: '🚗 תחבורה מקומית',
-  miscellaneous: '📌 שונות',
+  flights: 'טיסות',
+  accommodation: 'לינה / חדרי ישיבות',
+  food: 'אוכל ואירוח',
+  transportation: 'תחבורה מקומית',
+  miscellaneous: 'שונות',
+};
+
+const categoryIcons = {
+  flights: Plane,
+  accommodation: Hotel,
+  food: Utensils,
+  transportation: Car,
+  miscellaneous: Package,
 };
 
 const currencyLabels = {
@@ -979,14 +987,30 @@ export default function NewReport() {
                             onValueChange={(value) => updateExpense(expense.id, 'category', value)}
                           >
                             <SelectTrigger>
-                              <SelectValue />
+                              <SelectValue>
+                                {expense.category && (() => {
+                                  const CategoryIcon = categoryIcons[expense.category];
+                                  return (
+                                    <div className="flex items-center gap-2">
+                                      <CategoryIcon className="w-4 h-4" />
+                                      <span>{categoryLabels[expense.category]}</span>
+                                    </div>
+                                  );
+                                })()}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(categoryLabels).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
+                              {Object.entries(categoryLabels).map(([value, label]) => {
+                                const CategoryIcon = categoryIcons[value as keyof typeof categoryIcons];
+                                return (
+                                  <SelectItem key={value} value={value}>
+                                    <div className="flex items-center gap-2">
+                                      <CategoryIcon className="w-4 h-4" />
+                                      <span>{label}</span>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1066,14 +1090,20 @@ export default function NewReport() {
               <div>
                 <p className="font-semibold mb-3">סיכום לפי קטגוריה:</p>
                 <div className="space-y-2">
-                  {Object.entries(categoryTotals).map(([category, total]) => (
-                    <div key={category} className="flex justify-between items-center">
-                      <span>{categoryLabels[category as keyof typeof categoryLabels]}</span>
-                      <span className="font-semibold">
-                        {total.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
-                      </span>
-                    </div>
-                  ))}
+                  {Object.entries(categoryTotals).map(([category, total]) => {
+                    const CategoryIcon = categoryIcons[category as keyof typeof categoryIcons];
+                    return (
+                      <div key={category} className="flex justify-between items-center">
+                        <span className="flex items-center gap-2">
+                          <CategoryIcon className="w-4 h-4 text-primary" />
+                          {categoryLabels[category as keyof typeof categoryLabels]}
+                        </span>
+                        <span className="font-semibold">
+                          {total.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
