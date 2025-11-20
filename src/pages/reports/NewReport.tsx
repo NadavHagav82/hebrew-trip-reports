@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, Calendar, Camera, Download, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -833,7 +833,7 @@ export default function NewReport() {
                 <span className="sm:hidden">שמור</span>
               </Button>
               <Button onClick={() => handleSave(false, true)} disabled={loading} className="flex-1 sm:flex-none h-10 sm:h-9 text-sm">
-                <Download className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
+                <FileOutput className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                 <span className="hidden sm:inline">הפק דוח</span>
                 <span className="sm:hidden">הפק</span>
               </Button>
