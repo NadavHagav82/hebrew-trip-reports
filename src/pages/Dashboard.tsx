@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { FileText, LogOut, Plus, Search, User } from 'lucide-react';
+import { Eye, FileText, LogOut, Plus, Search, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -550,11 +550,22 @@ export default function Dashboard() {
                         )}
 
                         <Button
-                          className="w-full h-12"
-                          variant={report.status === 'draft' ? 'default' : 'outline'}
+                          className={`w-full h-12 text-base font-semibold shadow-sm hover:shadow-md transition-all ${
+                            report.status === 'draft' 
+                              ? '' 
+                              : 'bg-primary hover:bg-primary/90 text-primary-foreground border-0'
+                          }`}
+                          variant={report.status === 'draft' ? 'default' : 'default'}
                           onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
                         >
-                          {report.status === 'draft' ? 'המשך עריכה' : 'צפה בדוח'}
+                          {report.status === 'draft' ? (
+                            'המשך עריכה'
+                          ) : (
+                            <>
+                              <Eye className="w-5 h-5 ml-2" />
+                              צפה בדוח
+                            </>
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
