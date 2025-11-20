@@ -195,11 +195,6 @@ export default function NewReport() {
       }));
 
       setExpenses(transformedExpenses);
-
-      toast({
-        title: 'דוח נטען בהצלחה',
-        description: 'ניתן להמשיך לערוך את הדוח',
-      });
     } catch (error: any) {
       toast({
         title: 'שגיאה',
