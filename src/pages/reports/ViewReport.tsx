@@ -675,39 +675,44 @@ const ViewReport = () => {
             <CardHeader className="pb-3 sm:pb-6 bg-gradient-to-l from-muted/30 to-transparent border-b">
               <CardTitle className="text-base sm:text-lg font-bold">פרטי הנסיעה</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4 pt-4 sm:pt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">יעד:</span>
-                  <p className="font-semibold text-sm sm:text-base">{report.trip_destination}</p>
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="font-semibold text-sm sm:text-base">{report.trip_destination}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">:יעד</span>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">מטרה:</span>
-                  <p className="font-semibold text-sm sm:text-base">{report.trip_purpose}</p>
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="font-semibold text-sm sm:text-base">{report.trip_purpose}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">:מטרת הנסיעה</span>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">תאריך התחלה:</span>
-                  <p className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</p>
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">:תאריך התחלה</span>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">תאריך סיום:</span>
-                  <p className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</p>
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">:תאריך סיום</span>
                 </div>
-                <div className="p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">משך הנסיעה:</span>
-                  <p className="font-bold text-sm sm:text-base text-primary">{calculateTripDuration()} ימים</p>
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="font-semibold text-sm sm:text-base text-primary">{calculateTripDuration()} ימים</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">:משך הנסיעה</span>
                 </div>
                 {report.daily_allowance && (
-                  <div className="p-3 rounded-lg bg-accent/20 hover:bg-accent/30 transition-colors border border-accent/30">
-                    <span className="text-xs sm:text-sm text-muted-foreground block mb-1">אש״ל ליום:</span>
-                    <p className="font-bold text-sm sm:text-base">${report.daily_allowance}</p>
-                    <span className="text-xs text-muted-foreground">סה״כ: ${report.daily_allowance * calculateTripDuration()}</span>
+                  <div className="flex items-center justify-between py-2 border-b border-border/50">
+                    <span className="font-semibold text-sm sm:text-base">
+                      ${report.daily_allowance} (סה״כ ${report.daily_allowance * calculateTripDuration()})
+                    </span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">:אש״ל ליום</span>
                   </div>
                 )}
+                <div className="flex items-center justify-between py-2 border-b border-border/50">
+                  <span className="font-semibold text-sm sm:text-base">{format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">:תאריך יצירה</span>
+                </div>
               </div>
               {report.notes && (
-                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-2">הערות:</span>
+                <div className="mt-4 sm:mt-6 pt-4 border-t">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-2">:הערות</span>
                   <p className="font-medium text-sm sm:text-base whitespace-pre-wrap p-3 bg-muted/30 rounded-lg">{report.notes}</p>
                 </div>
               )}
