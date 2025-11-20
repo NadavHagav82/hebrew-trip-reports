@@ -586,8 +586,8 @@ export default function Dashboard() {
 
       {/* Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col overflow-hidden">
-          <DialogHeader className="border-b pb-4">
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col">
+          <DialogHeader className="border-b pb-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="w-6 h-6 text-primary" />
@@ -601,8 +601,8 @@ export default function Dashboard() {
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 mb-4 flex-shrink-0">
               <TabsTrigger value="profile">
                 <User className="w-4 h-4 ml-2" />
                 פרטים אישיים
@@ -612,7 +612,7 @@ export default function Dashboard() {
               </TabsTrigger>
             </TabsList>
             
-            <div className="overflow-y-auto flex-1 -mx-6 px-6">
+            <div className="overflow-y-auto flex-1 min-h-0">
               <TabsContent value="profile" className="space-y-4 mt-0">
                 <Card>
                   <CardHeader className="pb-3">
