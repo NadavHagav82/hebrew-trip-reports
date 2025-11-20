@@ -348,7 +348,22 @@ export default function Dashboard() {
               <h1 className="text-lg sm:text-xl font-bold">דוחות נסיעה</h1>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
+              <Button 
+                onClick={() => navigate('/reports/new')} 
+                size="sm"
+                className="h-9 gap-1.5 shadow-sm hidden sm:flex"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm">דוח חדש</span>
+              </Button>
+              <Button 
+                onClick={() => navigate('/reports/new')} 
+                size="icon"
+                className="h-9 w-9 sm:hidden"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+              <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
                 {profile?.full_name || user?.email}
               </span>
               <Button 
@@ -371,45 +386,39 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 hover:border-orange-200" onClick={() => setActiveTab('open')}>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">דוחות פתוחים</p>
-                  <p className="text-3xl sm:text-4xl font-bold text-orange-600">{stats.open}</p>
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-orange-300/50" onClick={() => setActiveTab('open')}>
+            <CardContent className="p-3">
+              <div className="flex flex-col items-center justify-center gap-1">
+                <div className="w-8 h-8 bg-orange-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-lg">🟠</span>
                 </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-500/20 rounded-full flex items-center justify-center ring-2 ring-orange-200">
-                  <span className="text-2xl sm:text-3xl">🟠</span>
-                </div>
+                <p className="text-xs text-muted-foreground">פתוחים</p>
+                <p className="text-xl font-bold text-orange-600">{stats.open}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 hover:border-green-200" onClick={() => setActiveTab('closed')}>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">דוחות סגורים</p>
-                  <p className="text-3xl sm:text-4xl font-bold text-green-600">{stats.closed}</p>
+          <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-green-300/50" onClick={() => setActiveTab('closed')}>
+            <CardContent className="p-3">
+              <div className="flex flex-col items-center justify-center gap-1">
+                <div className="w-8 h-8 bg-green-600/10 rounded-full flex items-center justify-center">
+                  <span className="text-lg">🟢</span>
                 </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-600/20 rounded-full flex items-center justify-center ring-2 ring-green-200">
-                  <span className="text-2xl sm:text-3xl">🟢</span>
-                </div>
+                <p className="text-xs text-muted-foreground">סגורים</p>
+                <p className="text-xl font-bold text-green-600">{stats.closed}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 hover:border-gray-200" onClick={() => setActiveTab('drafts')}>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">טיוטות</p>
-                  <p className="text-3xl sm:text-4xl font-bold text-gray-600">{stats.draft}</p>
+          <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-gray-300/50" onClick={() => setActiveTab('drafts')}>
+            <CardContent className="p-3">
+              <div className="flex flex-col items-center justify-center gap-1">
+                <div className="w-8 h-8 bg-gray-500/10 rounded-full flex items-center justify-center">
+                  <span className="text-lg">🔘</span>
                 </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-500/20 rounded-full flex items-center justify-center ring-2 ring-gray-200">
-                  <span className="text-2xl sm:text-3xl">🔘</span>
-                </div>
+                <p className="text-xs text-muted-foreground">טיוטות</p>
+                <p className="text-xl font-bold text-gray-600">{stats.draft}</p>
               </div>
             </CardContent>
           </Card>
@@ -427,11 +436,6 @@ export default function Dashboard() {
                   <TabsTrigger value="closed" className="text-xs sm:text-sm py-2">סגורים</TabsTrigger>
                 </TabsList>
               </Tabs>
-
-              <Button onClick={() => navigate('/reports/new')} size="lg" className="w-full sm:w-auto h-12 sm:h-10">
-                <Plus className="w-5 h-5 ml-2" />
-                דוח נסיעה חדש
-              </Button>
             </div>
 
             {/* Search */}
