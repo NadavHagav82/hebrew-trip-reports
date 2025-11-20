@@ -612,8 +612,8 @@ export default function Dashboard() {
               </TabsTrigger>
             </TabsList>
             
-            <div className="overflow-y-auto flex-1 min-h-0">
-              <TabsContent value="profile" className="space-y-4 mt-0">
+            <div className="overflow-y-auto flex-1 min-h-0 custom-scrollbar">
+              <TabsContent value="profile" className="space-y-4 mt-0 pr-2">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
