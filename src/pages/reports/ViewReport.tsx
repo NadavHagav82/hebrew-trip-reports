@@ -463,31 +463,36 @@ const ViewReport = () => {
               <CardTitle>הוצאות ({expenses.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {expenses.map((expense) => (
-                  <div key={expense.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{expense.description}</span>
-                          <span className="text-sm px-2 py-0.5 bg-primary/10 text-primary rounded">
+                  <div key={expense.id} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-semibold text-base">{expense.description}</span>
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
                             {getCategoryLabel(expense.category)}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <span className="inline-block w-4 h-4 text-muted-foreground">📅</span>
                           {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                         </p>
                         {expense.notes && (
-                          <p className="text-sm text-muted-foreground mt-2 italic">
-                            הערה: {expense.notes}
+                          <p className="text-sm text-muted-foreground mt-2 italic border-r-2 border-muted pr-2">
+                            {expense.notes}
                           </p>
                         )}
                       </div>
-                      <div className="text-left">
-                        <p className="font-bold">₪{expense.amount_in_ils.toFixed(2)}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {expense.amount} {expense.currency}
-                        </p>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="text-xl font-bold text-foreground">
+                          ₪{expense.amount_in_ils.toFixed(2)}
+                        </div>
+                        <div className="text-sm bg-muted/50 px-2 py-0.5 rounded">
+                          <span className="font-medium">{expense.currency}</span>
+                          <span className="mx-1">•</span>
+                          <span>{expense.amount.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
