@@ -39,10 +39,6 @@ export default function Login() {
       });
       setLoading(false);
     } else {
-      toast({
-        title: 'התחברות הצליחה',
-        description: 'ברוך הבא למערכת',
-      });
       navigate('/');
     }
   };
