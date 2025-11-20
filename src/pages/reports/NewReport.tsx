@@ -155,6 +155,7 @@ export default function NewReport() {
       setTripEndDate(report.trip_end_date);
       setTripPurpose(report.trip_purpose);
       setReportNotes(report.notes || '');
+      setDailyAllowance(report.daily_allowance || 100);
 
       // Load expenses
       const { data: expensesData, error: expensesError } = await supabase
@@ -540,6 +541,7 @@ export default function NewReport() {
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
             notes: reportNotes,
+            daily_allowance: dailyAllowance,
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -568,6 +570,7 @@ export default function NewReport() {
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
             notes: reportNotes,
+            daily_allowance: dailyAllowance,
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
