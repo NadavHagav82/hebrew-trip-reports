@@ -49,6 +49,8 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editedProfile, setEditedProfile] = useState({ full_name: '', department: '' });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -128,10 +130,67 @@ export default function Dashboard() {
         department: editedProfile.department,
       });
       setShowProfileDialog(false);
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
         title: 'שגיאה בעדכון הפרופיל',
+        description: error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש למלא את שני שדות הסיסמה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'שגיאה',
+        description: 'הסיסמאות אינן תואמות',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'שגיאה',
+        description: 'הסיסמה חייבת להכיל לפחות 6 תווים',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'הסיסמה עודכנה בהצלחה',
+        description: 'הסיסמה החדשה שלך נשמרה',
+      });
+
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast({
+        title: 'שגיאה בעדכון הסיסמה',
         description: error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה',
         variant: 'destructive',
       });
@@ -463,6 +522,43 @@ export default function Dashboard() {
                 onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
                 placeholder="הזן שם מחלקה או חברה"
               />
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold mb-4">שינוי סיסמה</h3>
+              
+              <div className="space-y-2 mb-3">
+                <Label htmlFor="new_password">סיסמה חדשה</Label>
+                <Input 
+                  id="new_password" 
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="הזן סיסמה חדשה (לפחות 6 תווים)"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm_password">אישור סיסמה</Label>
+                <Input 
+                  id="confirm_password" 
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="הזן שוב את הסיסמה החדשה"
+                />
+              </div>
+
+              {(newPassword || confirmPassword) && (
+                <Button 
+                  onClick={handleChangePassword}
+                  disabled={savingProfile}
+                  className="w-full mt-3"
+                  variant="outline"
+                >
+                  {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
+                </Button>
+              )}
             </div>
           </div>
 
