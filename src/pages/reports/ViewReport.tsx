@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -150,6 +150,17 @@ const ViewReport = () => {
       miscellaneous: 'שונות',
     };
     return labels[category] || category;
+  };
+
+  const getCategoryIcon = (category: string) => {
+    const icons: Record<string, any> = {
+      flights: Plane,
+      accommodation: Hotel,
+      food: Utensils,
+      transportation: Car,
+      miscellaneous: Package,
+    };
+    return icons[category] || Package;
   };
 
   const printPDF = () => {
@@ -464,39 +475,43 @@ const ViewReport = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {expenses.map((expense) => (
-                  <div key={expense.id} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="font-semibold text-base">{expense.description}</span>
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
-                            {getCategoryLabel(expense.category)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <span className="inline-block w-4 h-4 text-muted-foreground">📅</span>
-                          {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                        </p>
-                        {expense.notes && (
-                          <p className="text-sm text-muted-foreground mt-2 italic border-r-2 border-muted pr-2">
-                            {expense.notes}
+                {expenses.map((expense) => {
+                  const CategoryIcon = getCategoryIcon(expense.category);
+                  return (
+                    <div key={expense.id} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="font-semibold text-base">{expense.description}</span>
+                            <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium flex items-center gap-1">
+                              <CategoryIcon className="w-3 h-3" />
+                              {getCategoryLabel(expense.category)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                           </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <div className="text-xl font-bold text-foreground">
-                          ₪{expense.amount_in_ils.toFixed(2)}
+                          {expense.notes && (
+                            <p className="text-sm text-muted-foreground mt-2 italic border-r-2 border-muted pr-2">
+                              {expense.notes}
+                            </p>
+                          )}
                         </div>
-                        <div className="text-sm bg-muted/50 px-2 py-0.5 rounded">
-                          <span className="font-medium">{expense.currency}</span>
-                          <span className="mx-1">•</span>
-                          <span>{expense.amount.toFixed(2)}</span>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="text-xl font-bold text-foreground">
+                            ₪{expense.amount_in_ils.toFixed(2)}
+                          </div>
+                          <div className="text-sm bg-muted/50 px-2 py-0.5 rounded">
+                            <span className="font-medium">{expense.currency}</span>
+                            <span className="mx-1">•</span>
+                            <span>{expense.amount.toFixed(2)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -507,12 +522,18 @@ const ViewReport = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {Object.entries(categoryTotals).map(([category, total]) => (
-                  <div key={category} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{getCategoryLabel(category)}:</span>
-                    <span className="font-medium">₪{total.toFixed(2)}</span>
-                  </div>
-                ))}
+                {Object.entries(categoryTotals).map(([category, total]) => {
+                  const CategoryIcon = getCategoryIcon(category);
+                  return (
+                    <div key={category} className="flex justify-between text-sm items-center">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <CategoryIcon className="w-4 h-4 text-primary" />
+                        {getCategoryLabel(category)}:
+                      </span>
+                      <span className="font-medium">₪{total.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
                 <div className="border-t pt-3">
                   <div className="flex justify-between font-bold text-lg mb-2">
                     <span>סה"כ:</span>
