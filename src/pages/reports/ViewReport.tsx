@@ -211,7 +211,7 @@ const ViewReport = () => {
 
   const generatePDF = async (): Promise<{ blob: Blob; base64: string } | null> => {
     if (!report) return null;
-    
+
     try {
       const printElement = document.getElementById('report-print-content');
       if (!printElement) {
@@ -219,18 +219,20 @@ const ViewReport = () => {
         return null;
       }
 
-      // Generate PDF using html2pdf
-      const pdfBlob = await html2pdf()
-        .set({
-          margin: 5,
-          filename: `דוח-נסיעה-${report.trip_destination}.pdf`,
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-        })
-        .from(printElement)
-        .outputPdf('blob');
+      const options = {
+        margin: 5,
+        filename: `דוח-נסיעה-${report.trip_destination}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      };
 
-      // Convert blob to base64
+      // Use html2pdf worker to get jsPDF instance
+      const worker: any = (html2pdf as any)().set(options).from(printElement).toPdf();
+      const pdfInstance = await worker.get('pdf');
+      const arrayBuffer: ArrayBuffer = pdfInstance.output('arraybuffer');
+      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -238,10 +240,10 @@ const ViewReport = () => {
           resolve(result.split(',')[1]);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(pdfBlob);
+        reader.readAsDataURL(blob);
       });
 
-      return { blob: pdfBlob, base64 };
+      return { blob, base64 };
     } catch (error) {
       console.error('Error generating PDF:', error);
       return null;
