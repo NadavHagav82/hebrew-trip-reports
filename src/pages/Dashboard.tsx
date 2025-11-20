@@ -586,16 +586,17 @@ export default function Dashboard() {
 
       {/* Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background px-6 pt-6 pb-4 border-b">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
-                  <User className="w-6 h-6 text-primary" />
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border-2">
+          <div className="bg-gradient-to-br from-primary via-primary/95 to-primary/90 px-6 pt-8 pb-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]"></div>
+            <DialogHeader className="relative z-10">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center ring-4 ring-white/30 shadow-xl">
+                  <User className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-bold">הפרופיל שלי</DialogTitle>
-                  <DialogDescription className="text-sm">
+                  <DialogTitle className="text-3xl font-bold text-white mb-1">הפרופיל שלי</DialogTitle>
+                  <DialogDescription className="text-base text-white/90 font-medium">
                     {profile?.full_name || user?.email}
                   </DialogDescription>
                 </div>
@@ -603,84 +604,100 @@ export default function Dashboard() {
             </DialogHeader>
           </div>
 
-          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
-            <div className="px-6 pt-4">
-              <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50">
-                <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col bg-gradient-to-b from-muted/20 to-background">
+            <div className="px-6 pt-5">
+              <TabsList className="grid w-full grid-cols-2 h-12 bg-muted/70 backdrop-blur-sm p-1 shadow-inner">
+                <TabsTrigger 
+                  value="profile" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-semibold rounded-md transition-all"
+                >
                   <User className="w-4 h-4 ml-2" />
                   פרטים אישיים
                 </TabsTrigger>
-                <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <span className="ml-2">🔐</span>
-                  אבטחה
+                <TabsTrigger 
+                  value="security" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-primary font-semibold rounded-md transition-all"
+                >
+                  <span className="ml-2 text-base">🔐</span>
+                  אבטחה וחשבון
                 </TabsTrigger>
               </TabsList>
             </div>
             
-            <div className="overflow-y-auto flex-1 px-6 py-4">
+            <div className="overflow-y-auto flex-1 px-6 py-5">
               <TabsContent value="profile" className="space-y-5 mt-0 animate-fade-in">
-                <div className="bg-gradient-to-br from-muted/30 to-muted/10 p-4 rounded-xl border shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <span className="text-lg">👤</span>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 p-5 rounded-2xl border-2 shadow-lg space-y-4">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-md">
+                      <span className="text-2xl">👤</span>
                     </div>
-                    <h3 className="font-semibold">פרטי המשתמש</h3>
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">פרטי המשתמש</h3>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="username" className="text-sm font-medium flex items-center gap-1.5">
-                      <span className="text-muted-foreground">@</span>
+                  <div className="space-y-3">
+                    <Label htmlFor="username" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <div className="w-6 h-6 rounded-md bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                        <span className="text-xs">@</span>
+                      </div>
                       שם משתמש
                     </Label>
                     <Input 
                       id="username" 
                       value={profile?.username || ''} 
                       disabled 
-                      className="bg-background/60 border-dashed"
+                      className="bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 h-11 text-base"
                     />
+                    <p className="text-xs text-muted-foreground pr-8">🔒 שדה זה לא ניתן לשינוי</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="employee_id" className="text-sm font-medium flex items-center gap-1.5">
-                      <span className="text-muted-foreground">#</span>
+                  <div className="space-y-3">
+                    <Label htmlFor="employee_id" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <div className="w-6 h-6 rounded-md bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                        <span className="text-xs">#</span>
+                      </div>
                       מספר עובד
                     </Label>
                     <Input 
                       id="employee_id" 
                       value={profile?.employee_id || ''} 
                       disabled 
-                      className="bg-background/60 border-dashed"
+                      className="bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 h-11 text-base"
                     />
+                    <p className="text-xs text-muted-foreground pr-8">🔒 שדה זה לא ניתן לשינוי</p>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-primary/5 to-background p-4 rounded-xl border-2 border-primary/20 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Edit className="w-4 h-4 text-primary" />
+                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background p-5 rounded-2xl border-2 border-primary/30 shadow-lg space-y-4">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-primary/20">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
+                      <Edit className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-primary">פרטים הניתנים לעריכה</h3>
+                    <h3 className="font-bold text-lg text-primary">ניתן לעריכה</h3>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name" className="text-sm font-medium">שם מלא *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="full_name" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      שם מלא *
+                    </Label>
                     <Input 
                       id="full_name" 
                       value={editedProfile.full_name}
                       onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
                       placeholder="הזן שם מלא"
-                      className="h-11 shadow-sm border-2 focus:border-primary/50"
+                      className="h-12 shadow-sm border-2 focus:border-primary focus:ring-2 focus:ring-primary/20 text-base"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="department" className="text-sm font-medium">מחלקה / חברה *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="department" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      מחלקה / חברה *
+                    </Label>
                     <Input 
                       id="department" 
                       value={editedProfile.department}
                       onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
                       placeholder="הזן שם מחלקה או חברה"
-                      className="h-11 shadow-sm border-2 focus:border-primary/50"
+                      className="h-12 shadow-sm border-2 focus:border-primary focus:ring-2 focus:ring-primary/20 text-base"
                     />
                   </div>
                 </div>
@@ -690,16 +707,16 @@ export default function Dashboard() {
                     variant="outline" 
                     onClick={() => setShowProfileDialog(false)}
                     disabled={savingProfile}
-                    className="flex-1 h-11"
+                    className="flex-1 h-12 font-semibold border-2 hover:bg-muted"
                   >
                     ביטול
                   </Button>
                   <Button 
                     onClick={handleSaveProfile}
                     disabled={savingProfile || !editedProfile.full_name || !editedProfile.department}
-                    className="flex-1 h-11 shadow-md hover:shadow-lg transition-shadow"
+                    className="flex-1 h-12 shadow-lg hover:shadow-xl transition-all font-bold text-base"
                   >
-                    {savingProfile ? 'שומר...' : '✓ שמור שינויים'}
+                    {savingProfile ? '⏳ שומר...' : '✓ שמור שינויים'}
                   </Button>
                 </div>
               </TabsContent>
