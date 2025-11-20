@@ -293,7 +293,22 @@ export type Database = {
         | "food"
         | "transportation"
         | "miscellaneous"
-      expense_currency: "USD" | "EUR" | "ILS" | "PLN" | "GBP"
+      expense_currency:
+        | "USD"
+        | "EUR"
+        | "ILS"
+        | "PLN"
+        | "GBP"
+        | "BGN"
+        | "CZK"
+        | "HUF"
+        | "RON"
+        | "SEK"
+        | "NOK"
+        | "DKK"
+        | "CHF"
+        | "JPY"
+        | "CNY"
       expense_status: "draft" | "open" | "closed"
       file_type_enum: "image" | "pdf"
       report_action:
@@ -436,7 +451,23 @@ export const Constants = {
         "transportation",
         "miscellaneous",
       ],
-      expense_currency: ["USD", "EUR", "ILS", "PLN", "GBP"],
+      expense_currency: [
+        "USD",
+        "EUR",
+        "ILS",
+        "PLN",
+        "GBP",
+        "BGN",
+        "CZK",
+        "HUF",
+        "RON",
+        "SEK",
+        "NOK",
+        "DKK",
+        "CHF",
+        "JPY",
+        "CNY",
+      ],
       expense_status: ["draft", "open", "closed"],
       file_type_enum: ["image", "pdf"],
       report_action: ["created", "submitted", "approved", "rejected", "edited"],
