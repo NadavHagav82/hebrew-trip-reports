@@ -4,10 +4,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, MessageCircle, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Expense {
   id: string;
@@ -51,6 +69,11 @@ const ViewReport = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  
+  // Share dialog state
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -178,6 +201,151 @@ const ViewReport = () => {
     if (!report) return;
     window.print();
   };
+
+  const categoryLabels = {
+    flights: 'טיסות',
+    accommodation: 'לינה / חדרי ישיבות',
+    food: 'אוכל ואירוח',
+    transportation: 'תחבורה מקומית',
+    miscellaneous: 'שונות',
+  };
+
+  const generatePDF = (): string => {
+    if (!report) return '';
+    
+    const doc = new jsPDF();
+    
+    // Add Hebrew font support and RTL
+    doc.setR2L(true);
+    doc.setFont('helvetica');
+    
+    // Title
+    doc.setFontSize(20);
+    doc.text('דוח נסיעה', 105, 20, { align: 'center' });
+    
+    // Trip details
+    doc.setFontSize(12);
+    let yPos = 40;
+    doc.text(`יעד: ${report.trip_destination}`, 190, yPos, { align: 'right' });
+    yPos += 10;
+    doc.text(`תאריכים: ${report.trip_start_date} - ${report.trip_end_date}`, 190, yPos, { align: 'right' });
+    yPos += 10;
+    doc.text(`מטרת הנסיעה: ${report.trip_purpose}`, 190, yPos, { align: 'right' });
+    yPos += 10;
+    if (report.daily_allowance) {
+      doc.text(`דמי לינה יומיים: $${report.daily_allowance}`, 190, yPos, { align: 'right' });
+      yPos += 15;
+    }
+    
+    // Expenses table
+    if (expenses.length > 0) {
+      const tableData = expenses.map(exp => [
+        exp.expense_date,
+        categoryLabels[exp.category as keyof typeof categoryLabels] || exp.category,
+        exp.description,
+        `${exp.amount} ${exp.currency}`,
+        `${exp.amount_in_ils.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪`,
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['תאריך', 'קטגוריה', 'תיאור', 'סכום', 'סכום בשקלים']],
+        body: tableData,
+        styles: { font: 'helvetica', halign: 'right' },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    }
+    
+    // Total
+    doc.setFontSize(14);
+    doc.text(`סה"כ: ${report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 }) || 0} ₪`, 190, yPos, { align: 'right' });
+    
+    // Convert to base64
+    return doc.output('datauristring').split(',')[1];
+  };
+
+  const shareViaWhatsApp = () => {
+    if (!report) return;
+    
+    const message = encodeURIComponent(
+      `דוח נסיעה - ${report.trip_destination}\n` +
+      `תאריכים: ${report.trip_start_date} - ${report.trip_end_date}\n` +
+      `מטרה: ${report.trip_purpose}\n` +
+      `סה"כ הוצאות: ${report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 }) || 0} ₪\n\n` +
+      `פרטים נוספים בדוח המלא.`
+    );
+    
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const handleSendEmail = async () => {
+    if (!report) return;
+    
+    if (!recipientEmail) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא להזין כתובת מייל',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+      toast({
+        title: 'שגיאה',
+        description: 'כתובת מייל לא תקינה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setSendingEmail(true);
+      
+      // Generate PDF
+      const pdfBase64 = generatePDF();
+      
+      // Send email via edge function
+      const { error } = await supabase.functions.invoke('send-report-email', {
+        body: {
+          recipientEmail,
+          reportId: report.id,
+          pdfBase64,
+          reportDetails: {
+            destination: report.trip_destination,
+            startDate: report.trip_start_date,
+            endDate: report.trip_end_date,
+            purpose: report.trip_purpose,
+            totalAmount: report.total_amount_ils || 0,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'המייל נשלח בהצלחה',
+        description: `הדוח נשלח ל-${recipientEmail}`,
+      });
+      
+      setShowEmailDialog(false);
+      setRecipientEmail('');
+    } catch (error: any) {
+      toast({
+        title: 'שגיאה בשליחת המייל',
+        description: error.message || 'נסה שוב',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -345,6 +513,24 @@ const ViewReport = () => {
                   <Printer className="w-4 h-4 ml-1" />
                   ייצא PDF
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow">
+                      <Share2 className="w-4 h-4 ml-1" />
+                      שתף
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                      <Mail className="w-4 h-4 ml-2" />
+                      שלח במייל
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={shareViaWhatsApp}>
+                      <MessageCircle className="w-4 h-4 ml-2" />
+                      שתף ב-WhatsApp
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -421,6 +607,24 @@ const ViewReport = () => {
                   <Printer className="w-4 h-4 ml-2" />
                   ייצא PDF
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="shadow-sm hover:shadow-md transition-shadow">
+                      <Share2 className="w-4 h-4 ml-2" />
+                      שתף
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowEmailDialog(true)}>
+                      <Mail className="w-4 h-4 ml-2" />
+                      שלח במייל
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={shareViaWhatsApp}>
+                      <MessageCircle className="w-4 h-4 ml-2" />
+                      שתף ב-WhatsApp
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -970,6 +1174,49 @@ const ViewReport = () => {
           </div>
         </div>
       </div>
+
+      {/* Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>שלח דוח במייל</DialogTitle>
+            <DialogDescription>
+              הדוח יישלח כקובץ PDF מצורף למייל
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="email">כתובת מייל</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="example@company.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                dir="ltr"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)} disabled={sendingEmail}>
+              ביטול
+            </Button>
+            <Button onClick={handleSendEmail} disabled={sendingEmail}>
+              {sendingEmail ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 ml-2" />
+                  שלח
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
