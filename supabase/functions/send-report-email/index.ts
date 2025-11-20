@@ -281,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       attachments: [
         {
           filename: `דוח-נסיעה-${reportDetails.destination.replace(/[^א-תa-zA-Z0-9]/g, '-')}.html`,
-          content: btoa(pdfHtmlContent),
+          content: btoa(String.fromCharCode(...new TextEncoder().encode(pdfHtmlContent))),
         },
       ],
     });
