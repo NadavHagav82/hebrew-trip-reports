@@ -371,44 +371,44 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('open')}>
-            <CardContent className="p-3 sm:p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 hover:border-orange-200" onClick={() => setActiveTab('open')}>
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">דוחות פתוחים</p>
-                  <p className="text-2xl font-bold">{stats.open}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">דוחות פתוחים</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-orange-600">{stats.open}</p>
                 </div>
-                <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-xl">🟠</span>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-500/20 rounded-full flex items-center justify-center ring-2 ring-orange-200">
+                  <span className="text-2xl sm:text-3xl">🟠</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('closed')}>
-            <CardContent className="p-3 sm:p-4">
+          <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 hover:border-green-200" onClick={() => setActiveTab('closed')}>
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">דוחות סגורים</p>
-                  <p className="text-2xl font-bold">{stats.closed}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">דוחות סגורים</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-green-600">{stats.closed}</p>
                 </div>
-                <div className="w-10 h-10 bg-green-600/10 rounded-full flex items-center justify-center">
-                  <span className="text-xl">🟢</span>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-600/20 rounded-full flex items-center justify-center ring-2 ring-green-200">
+                  <span className="text-2xl sm:text-3xl">🟢</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow active:scale-98" onClick={() => setActiveTab('drafts')}>
-            <CardContent className="p-3 sm:p-4">
+          <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 hover:border-gray-200" onClick={() => setActiveTab('drafts')}>
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">טיוטות</p>
-                  <p className="text-2xl font-bold">{stats.draft}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">טיוטות</p>
+                  <p className="text-3xl sm:text-4xl font-bold text-gray-600">{stats.draft}</p>
                 </div>
-                <div className="w-10 h-10 bg-gray-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-xl">🔘</span>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gray-500/20 rounded-full flex items-center justify-center ring-2 ring-gray-200">
+                  <span className="text-2xl sm:text-3xl">🔘</span>
                 </div>
               </div>
             </CardContent>
