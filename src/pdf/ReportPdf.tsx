@@ -461,7 +461,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           </View>
           {Object.entries(grandTotalByCurrency).length > 0 && (
             <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#93c5fd' }}>
-              <Text style={{ fontSize: 15, marginBottom: 10, textAlign: 'right', fontWeight: 700, color: '#475569' }}>
+              <Text style={{ fontSize: 15, marginBottom: 10, textAlign: 'right', fontWeight: 700, color: '#1f2937' }}>
                 סה"כ לפי מטבעות:
               </Text>
               {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
