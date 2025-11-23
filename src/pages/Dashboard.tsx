@@ -42,7 +42,6 @@ interface Profile {
   employee_id: string | null;
   department: string;
   accounting_manager_email?: string | null;
-  personal_email?: string | null;
 }
 
 export default function Dashboard() {
@@ -56,8 +55,7 @@ export default function Dashboard() {
   const [editedProfile, setEditedProfile] = useState({ 
     full_name: '', 
     department: '',
-    accounting_manager_email: '',
-    personal_email: ''
+    accounting_manager_email: ''
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -130,7 +128,6 @@ export default function Dashboard() {
         full_name: data.full_name || '',
         department: data.department || '',
         accounting_manager_email: data.accounting_manager_email || '',
-        personal_email: data.personal_email || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -148,7 +145,6 @@ export default function Dashboard() {
           full_name: editedProfile.full_name,
           department: editedProfile.department,
           accounting_manager_email: editedProfile.accounting_manager_email || null,
-          personal_email: editedProfile.personal_email || null,
         })
         .eq('id', user.id);
 
@@ -164,7 +160,6 @@ export default function Dashboard() {
         full_name: editedProfile.full_name,
         department: editedProfile.department,
         accounting_manager_email: editedProfile.accounting_manager_email,
-        personal_email: editedProfile.personal_email,
       });
       setShowProfileDialog(false);
       setCurrentPassword('');
@@ -789,25 +784,7 @@ export default function Dashboard() {
                         dir="ltr"
                       />
                       <p className="text-xs text-muted-foreground">
-                        דוחות מאושרים יישלחו אוטומטית לכתובת זו
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="personal_email" className="text-sm">
-                        מייל אישי לקבלת עדכונים
-                        <span className="text-xs text-muted-foreground mr-1">(אופציונלי)</span>
-                      </Label>
-                      <Input 
-                        id="personal_email" 
-                        type="email"
-                        value={editedProfile.personal_email}
-                        onChange={(e) => setEditedProfile({ ...editedProfile, personal_email: e.target.value })}
-                        placeholder="your.email@gmail.com"
-                        dir="ltr"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        תקבל עדכונים אוטומטית על מצב הדוחות שלך
+                        דוחות מאושרים יישלחו אוטומטית לכתובת זו. עדכונים על דוחות יישלחו למייל הרישום שלך.
                       </p>
                     </div>
                   </CardContent>

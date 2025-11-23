@@ -18,7 +18,6 @@ interface AuthContextType {
     manager_last_name: string | null;
     manager_email: string | null;
     accounting_manager_email: string | null;
-    personal_email: string | null;
   }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -69,7 +68,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     manager_last_name: string | null;
     manager_email: string | null;
     accounting_manager_email: string | null;
-    personal_email: string | null;
   }) => {
     const redirectUrl = `${window.location.origin}/`;
     

@@ -153,13 +153,16 @@ export default function ManagerDashboard() {
         notes: 'אושר על ידי מנהל'
       });
 
-      // Send email to accounting manager if user has accounting email
+      // Send email to accounting manager and user after approval
       try {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('accounting_manager_email, personal_email')
+          .select('accounting_manager_email')
           .eq('id', reportData.user_id)
           .single();
+
+        // Get user email
+        const { data: userData } = await supabase.auth.admin.getUserById(reportData.user_id);
 
         // Send to accounting manager
         if (profileData?.accounting_manager_email) {
@@ -171,12 +174,12 @@ export default function ManagerDashboard() {
           });
         }
 
-        // Send to user's personal email
-        if (profileData?.personal_email) {
+        // Send to user's registration email
+        if (userData?.user?.email) {
           await supabase.functions.invoke('send-accounting-report', {
             body: {
               reportId: reportId,
-              accountingEmail: profileData.personal_email,
+              accountingEmail: userData.user.email,
             }
           });
         }
