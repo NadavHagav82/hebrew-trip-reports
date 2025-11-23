@@ -1050,29 +1050,29 @@ const ViewReport = () => {
               fontSize: '15px'
             }}>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>שם העובד:</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'שם העובד:\u200F:'}</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{profile?.full_name || 'לא זמין'}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>חברה:</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'חברה:\u200F:'}</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{profile?.department || 'לא זמין'}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>יעד:</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'יעד:\u200F:'}</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{report?.trip_destination}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>מטרה:</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'מטרה:\u200F:'}</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{report?.trip_purpose}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>תאריכי נסיעה:</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'תאריכי נסיעה:\u200F:'}</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>
                   {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')} - {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
                 </span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>מטבע:</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'מטבע:\u200F:'}</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>ILS (₪)</span>
               </div>
             </div>
