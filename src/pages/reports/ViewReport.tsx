@@ -1416,7 +1416,7 @@ const ViewReport = () => {
           <DialogHeader>
             <DialogTitle>שלח דוח במייל</DialogTitle>
             <DialogDescription>
-              הדוח יישלח כקובץ HTML מצורף למייל לכל הנמענים
+              הדוח יישלח כקובץ PDF מצורף למייל לכל הנמענים
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
