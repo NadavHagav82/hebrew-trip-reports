@@ -820,10 +820,11 @@ export default function NewReport() {
         try {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('accounting_manager_email')
+            .select('accounting_manager_email, personal_email')
             .eq('id', user.id)
             .single();
 
+          // Send to accounting manager
           if (profileData?.accounting_manager_email) {
             await supabase.functions.invoke('send-accounting-report', {
               body: {
@@ -832,8 +833,18 @@ export default function NewReport() {
               }
             });
           }
+
+          // Send to user's personal email
+          if (profileData?.personal_email) {
+            await supabase.functions.invoke('send-accounting-report', {
+              body: {
+                reportId: report.id,
+                accountingEmail: profileData.personal_email,
+              }
+            });
+          }
         } catch (emailError) {
-          console.error('Error sending email to accounting:', emailError);
+          console.error('Error sending email:', emailError);
           // Don't block the flow if email fails
         }
       }
