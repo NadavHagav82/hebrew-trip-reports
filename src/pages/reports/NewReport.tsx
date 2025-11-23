@@ -815,6 +815,29 @@ export default function NewReport() {
         description: toastDescription,
       });
 
+      // Send email to accounting manager if report is closed and user has accounting email
+      if (closeReport) {
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('accounting_manager_email')
+            .eq('id', user.id)
+            .single();
+
+          if (profileData?.accounting_manager_email) {
+            await supabase.functions.invoke('send-accounting-report', {
+              body: {
+                reportId: report.id,
+                accountingEmail: profileData.accounting_manager_email,
+              }
+            });
+          }
+        } catch (emailError) {
+          console.error('Error sending email to accounting:', emailError);
+          // Don't block the flow if email fails
+        }
+      }
+
       navigate(`/reports/${report.id}`);
     } catch (error: any) {
       toast({

@@ -63,6 +63,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accounting_manager_email: string | null
           created_at: string
           department: string
           employee_id: string
@@ -76,6 +77,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          accounting_manager_email?: string | null
           created_at?: string
           department: string
           employee_id: string
@@ -89,6 +91,7 @@ export type Database = {
           username: string
         }
         Update: {
+          accounting_manager_email?: string | null
           created_at?: string
           department?: string
           employee_id?: string
