@@ -66,6 +66,7 @@ export type Database = {
           accounting_manager_email: string | null
           created_at: string
           department: string
+          email: string | null
           employee_id: string | null
           full_name: string
           id: string
@@ -78,6 +79,7 @@ export type Database = {
           accounting_manager_email?: string | null
           created_at?: string
           department: string
+          email?: string | null
           employee_id?: string | null
           full_name: string
           id: string
@@ -90,6 +92,7 @@ export type Database = {
           accounting_manager_email?: string | null
           created_at?: string
           department?: string
+          email?: string | null
           employee_id?: string | null
           full_name?: string
           id?: string
