@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
   },
   summaryRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     paddingVertical: 8,
   },
