@@ -184,7 +184,7 @@ export default function AccountingDashboard() {
                 <Calculator className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">דשבורד הנהלת חשבונות</h1>
+                <h1 className="text-xl font-bold">דשבורד מנהל.ת</h1>
                 <p className="text-sm text-muted-foreground">דוחות מאושרים לתשלום</p>
               </div>
             </div>

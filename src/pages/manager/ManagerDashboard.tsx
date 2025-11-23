@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign } from "lucide-react";
+import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign, CheckSquare } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -31,9 +32,11 @@ interface PendingReport {
 
 export default function ManagerDashboard() {
   const [reports, setReports] = useState<PendingReport[]>([]);
+  const [selectedReports, setSelectedReports] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isManager, setIsManager] = useState(false);
   const [processingReportId, setProcessingReportId] = useState<string | null>(null);
+  const [bulkApproving, setBulkApproving] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -109,7 +112,7 @@ export default function ManagerDashboard() {
           )
         `)
         .eq('status', 'pending_approval')
-        .order('submitted_at', { ascending: true });
+        .order('submitted_at', { ascending: false });
 
       if (error) throw error;
       setReports(data || []);
@@ -125,113 +128,160 @@ export default function ManagerDashboard() {
     }
   };
 
-  const handleApprove = async (reportId: string) => {
-    if (!user) return;
-    
-    setProcessingReportId(reportId);
-    try {
-      // Get the report details first to find the user
-      const reportData = reports.find(r => r.id === reportId);
-      if (!reportData) throw new Error('Report not found');
-
-      const { error } = await supabase
-        .from('reports')
-        .update({
-          status: 'closed',
-          approved_by: user.id,
-          approved_at: new Date().toISOString()
-        })
-        .eq('id', reportId);
-
-      if (error) throw error;
-
-      // Add to history
-      await supabase.from('report_history').insert({
-        report_id: reportId,
-        action: 'approved',
-        performed_by: user.id,
-        notes: 'אושר על ידי מנהל'
-      });
-
-      // Send email to accounting manager and user after approval
-      try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('accounting_manager_email, username')
-          .eq('id', reportData.user_id)
-          .single();
-
-        // Send to accounting manager
-        if (profileData?.accounting_manager_email) {
-          await supabase.functions.invoke('send-accounting-report', {
-            body: {
-              reportId: reportId,
-              accountingEmail: profileData.accounting_manager_email,
-            }
-          });
-        }
-
-        // Send to user's registration email (stored in username)
-        if (profileData?.username) {
-          await supabase.functions.invoke('send-accounting-report', {
-            body: {
-              reportId: reportId,
-              accountingEmail: profileData.username,
-            }
-          });
-        }
-      } catch (emailError) {
-        console.error('Error sending email:', emailError);
-        // Don't block the approval if email fails
+  const toggleReportSelection = (reportId: string) => {
+    setSelectedReports(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(reportId)) {
+        newSet.delete(reportId);
+      } else {
+        newSet.add(reportId);
       }
+      return newSet;
+    });
+  };
 
-      toast({
-        title: "דוח אושר",
-        description: "הדוח אושר בהצלחה ונשלח למנהל החשבונות",
-      });
-
-      loadPendingReports();
-    } catch (error) {
-      console.error('Error approving report:', error);
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן לאשר את הדוח",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingReportId(null);
+  const toggleSelectAll = () => {
+    if (selectedReports.size === reports.length) {
+      setSelectedReports(new Set());
+    } else {
+      setSelectedReports(new Set(reports.map(r => r.id)));
     }
   };
 
-  const handleReject = async (reportId: string) => {
-    if (!user) return;
+  const handleBulkApprove = async () => {
+    if (selectedReports.size === 0) {
+      toast({
+        title: "לא נבחרו דוחות",
+        description: "נא לבחור לפחות דוח אחד לאישור",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkApproving(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const reportId of selectedReports) {
+      try {
+        await approveReport(reportId, false);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to approve report ${reportId}:`, error);
+        failCount++;
+      }
+    }
+
+    setBulkApproving(false);
+    setSelectedReports(new Set());
     
-    const reason = prompt('סיבת הדחייה (אופציונלי):');
-    
+    if (failCount === 0) {
+      toast({
+        title: "הדוחות אושרו בהצלחה",
+        description: `${successCount} דוחות אושרו`,
+      });
+    } else {
+      toast({
+        title: "אישור חלקי",
+        description: `אושרו ${successCount} דוחות, ${failCount} נכשלו`,
+        variant: "destructive",
+      });
+    }
+
+    loadPendingReports();
+  };
+
+  const approveReport = async (reportId: string, showToast = true) => {
+    if (showToast) {
+      setProcessingReportId(reportId);
+    }
+
+    try {
+      const report = reports.find(r => r.id === reportId);
+      if (!report) throw new Error('דוח לא נמצא');
+
+      // Update report status
+      const { error: updateError } = await supabase
+        .from('reports')
+        .update({
+          status: 'closed',
+          approved_at: new Date().toISOString(),
+          approved_by: user?.id,
+        })
+        .eq('id', reportId);
+
+      if (updateError) throw updateError;
+
+      // Get user profile for email
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('username, accounting_manager_email')
+        .eq('id', report.user_id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Send emails
+      const { error: emailError } = await supabase.functions.invoke('send-accounting-report', {
+        body: {
+          userEmail: profileData.username,
+          accountingEmail: profileData.accounting_manager_email,
+          reportId: reportId,
+          reportDetails: {
+            destination: report.trip_destination,
+            startDate: report.trip_start_date,
+            endDate: report.trip_end_date,
+            totalAmount: report.total_amount_ils,
+            employeeName: report.profiles.full_name,
+          }
+        }
+      });
+
+      if (emailError) {
+        console.error('Email sending error:', emailError);
+      }
+
+      if (showToast) {
+        toast({
+          title: "הדוח אושר",
+          description: "הדוח אושר בהצלחה ונשלח להנהלת חשבונות",
+        });
+        loadPendingReports();
+      }
+    } catch (error) {
+      console.error('Error approving report:', error);
+      if (showToast) {
+        toast({
+          title: "שגיאה באישור הדוח",
+          description: error instanceof Error ? error.message : "אירעה שגיאה בלתי צפויה",
+          variant: "destructive",
+        });
+      }
+      throw error;
+    } finally {
+      if (showToast) {
+        setProcessingReportId(null);
+      }
+    }
+  };
+
+  const rejectReport = async (reportId: string) => {
     setProcessingReportId(reportId);
+    
     try {
       const { error } = await supabase
         .from('reports')
         .update({
           status: 'open',
-          rejection_reason: reason || 'נדחה על ידי מנהל',
           manager_approval_requested_at: null,
-          manager_approval_token: null
+          manager_approval_token: null,
         })
         .eq('id', reportId);
 
       if (error) throw error;
 
-      // Add to history
-      await supabase.from('report_history').insert({
-        report_id: reportId,
-        action: 'rejected',
-        performed_by: user.id,
-        notes: reason || 'נדחה על ידי מנהל'
-      });
-
       toast({
-        title: "דוח נדחה",
+        title: "הדוח נדחה",
         description: "הדוח הוחזר לעובד לתיקון",
       });
 
@@ -239,20 +289,13 @@ export default function ManagerDashboard() {
     } catch (error) {
       console.error('Error rejecting report:', error);
       toast({
-        title: "שגיאה",
-        description: "לא ניתן לדחות את הדוח",
+        title: "שגיאה בדחיית הדוח",
+        description: error instanceof Error ? error.message : "אירעה שגיאה בלתי צפויה",
         variant: "destructive",
       });
     } finally {
       setProcessingReportId(null);
     }
-  };
-
-  const calculateDaysWaiting = (submittedAt: string) => {
-    const submitted = new Date(submittedAt);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - submitted.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   if (loading) {
@@ -274,12 +317,12 @@ export default function ManagerDashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-primary-foreground" />
+              <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center">
+                <Shield className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">דשבורד מנהלים</h1>
-                <p className="text-sm text-muted-foreground">אישור דוחות נסיעה</p>
+                <h1 className="text-xl font-bold">דשבורד מנהל.ת</h1>
+                <p className="text-sm text-muted-foreground">אישור דוחות הצוות</p>
               </div>
             </div>
             <Button variant="outline" onClick={() => navigate('/')}>
@@ -301,7 +344,7 @@ export default function ManagerDashboard() {
                   <p className="text-3xl font-bold text-orange-600">{reports.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-orange-600" />
+                  <Calendar className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
             </CardContent>
@@ -311,9 +354,23 @@ export default function ManagerDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">סה"כ סכום</p>
-                  <p className="text-3xl font-bold">
-                    ₪{reports.reduce((sum, r) => sum + (r.total_amount_ils || 0), 0).toLocaleString()}
+                  <p className="text-sm text-muted-foreground">נבחרו לאישור</p>
+                  <p className="text-3xl font-bold text-blue-600">{selectedReports.size}</p>
+                </div>
+                <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
+                  <CheckSquare className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">סה"כ לאישור</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    ₪{reports.filter(r => selectedReports.has(r.id)).reduce((sum, r) => sum + (r.total_amount_ils || 0), 0).toLocaleString()}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center">
@@ -322,32 +379,56 @@ export default function ManagerDashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
+        {/* Bulk Actions */}
+        {selectedReports.size > 0 && (
+          <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">ממוצע ימי המתנה</p>
-                  <p className="text-3xl font-bold">
-                    {reports.length > 0
-                      ? Math.round(reports.reduce((sum, r) => sum + calculateDaysWaiting(r.submitted_at), 0) / reports.length)
-                      : 0}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <CheckSquare className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">
+                    נבחרו {selectedReports.size} דוחות
+                  </span>
                 </div>
-                <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-blue-600" />
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setSelectedReports(new Set())}
+                    disabled={bulkApproving}
+                  >
+                    בטל בחירה
+                  </Button>
+                  <Button 
+                    onClick={handleBulkApprove}
+                    disabled={bulkApproving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {bulkApproving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        מאשר...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 ml-2" />
+                        אשר הכל ({selectedReports.size})
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
 
         {/* Reports Table */}
         <Card>
           <CardHeader>
             <CardTitle>דוחות ממתינים לאישור</CardTitle>
             <CardDescription>
-              דוחות שהוגשו לאישור ממתינים לסקירה ואישור שלך
+              דוחות שהוגשו על ידי עובדים וממתינים לאישור שלך
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -355,104 +436,107 @@ export default function ManagerDashboard() {
               <div className="text-center py-12">
                 <Shield className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">אין דוחות ממתינים</h3>
-                <p className="text-muted-foreground">כל הדוחות אושרו. עבודה מצוינת! 🎉</p>
+                <p className="text-muted-foreground">
+                  כל הדוחות אושרו! 🎉
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedReports.size === reports.length && reports.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead>תאריך הגשה</TableHead>
                       <TableHead>עובד</TableHead>
                       <TableHead>מחלקה</TableHead>
                       <TableHead>יעד</TableHead>
-                      <TableHead>תאריכים</TableHead>
+                      <TableHead>תאריכי נסיעה</TableHead>
                       <TableHead>סכום</TableHead>
-                      <TableHead>הוגש</TableHead>
-                      <TableHead>ימי המתנה</TableHead>
                       <TableHead>פעולות</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reports.map((report) => {
-                      const daysWaiting = calculateDaysWaiting(report.submitted_at);
-                      return (
-                        <TableRow key={report.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{report.profiles.full_name}</div>
+                    {reports.map((report) => (
+                      <TableRow key={report.id} className={selectedReports.has(report.id) ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedReports.has(report.id)}
+                            onCheckedChange={() => toggleReportSelection(report.id)}
+                            disabled={bulkApproving}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(report.submitted_at), 'dd/MM/yyyy HH:mm', { locale: he })}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{report.profiles.full_name}</div>
+                            {report.profiles.employee_id && (
                               <div className="text-sm text-muted-foreground">
-                                {report.profiles.employee_id}
+                                מס' {report.profiles.employee_id}
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{report.profiles.department}</TableCell>
-                          <TableCell className="font-medium">{report.trip_destination}</TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {format(new Date(report.trip_start_date), 'dd/MM/yyyy', { locale: he })}
-                              {' - '}
-                              {format(new Date(report.trip_end_date), 'dd/MM/yyyy', { locale: he })}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-semibold">
-                              ₪{(report.total_amount_ils || 0).toLocaleString()}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(report.submitted_at), 'dd/MM/yyyy HH:mm', { locale: he })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={daysWaiting > 7 ? "destructive" : daysWaiting > 3 ? "secondary" : "outline"}>
-                              {daysWaiting} ימים
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => navigate(`/reports/${report.id}`)}
-                                title="צפייה בדוח"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() => handleApprove(report.id)}
-                                disabled={processingReportId === report.id}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                {processingReportId === report.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Check className="w-4 h-4 mr-1" />
-                                    אשר
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleReject(report.id)}
-                                disabled={processingReportId === report.id}
-                              >
-                                {processingReportId === report.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <X className="w-4 h-4 mr-1" />
-                                    דחה
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{report.profiles.department}</TableCell>
+                        <TableCell className="font-medium">{report.trip_destination}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {format(new Date(report.trip_start_date), 'dd/MM', { locale: he })}
+                            {' - '}
+                            {format(new Date(report.trip_end_date), 'dd/MM/yy', { locale: he })}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-semibold">
+                            ₪{(report.total_amount_ils || 0).toLocaleString()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => navigate(`/reports/${report.id}`)}
+                              disabled={processingReportId === report.id || bulkApproving}
+                            >
+                              <Eye className="w-4 h-4 ml-1" />
+                              צפייה
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => approveReport(report.id)}
+                              disabled={processingReportId === report.id || bulkApproving}
+                            >
+                              {processingReportId === report.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Check className="w-4 h-4 ml-1" />
+                                  אשר
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => rejectReport(report.id)}
+                              disabled={processingReportId === report.id || bulkApproving}
+                            >
+                              <X className="w-4 h-4 ml-1" />
+                              דחה
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
