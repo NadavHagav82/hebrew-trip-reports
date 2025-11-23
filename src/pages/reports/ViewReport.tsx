@@ -72,7 +72,7 @@ const ViewReport = () => {
   
   // Share dialog state
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientEmails, setRecipientEmails] = useState<string[]>(['']);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
@@ -312,21 +312,28 @@ const ViewReport = () => {
   const handleSendEmail = async () => {
     if (!report) return;
     
-    if (!recipientEmail) {
+    // Filter out empty emails and validate
+    const validEmails = recipientEmails
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
+    
+    if (validEmails.length === 0) {
       toast({
         title: 'שגיאה',
-        description: 'נא להזין כתובת מייל',
+        description: 'נא להזין לפחות כתובת מייל אחת',
         variant: 'destructive',
       });
       return;
     }
 
-    // Validate email
+    // Validate all emails
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(recipientEmail)) {
+    const invalidEmails = validEmails.filter(email => !emailRegex.test(email));
+    
+    if (invalidEmails.length > 0) {
       toast({
         title: 'שגיאה',
-        description: 'כתובת מייל לא תקינה',
+        description: `כתובות מייל לא תקינות: ${invalidEmails.join(', ')}`,
         variant: 'destructive',
       });
       return;
@@ -340,7 +347,7 @@ const ViewReport = () => {
       // Send email via edge function with raw data (no PDF generation on client)
       const { error } = await supabase.functions.invoke('send-report-email', {
         body: {
-          recipientEmail,
+          recipientEmails: validEmails,
           reportId: report.id,
           reportData: {
             report,
@@ -354,11 +361,11 @@ const ViewReport = () => {
 
       toast({
         title: 'המייל נשלח בהצלחה',
-        description: `הדוח נשלח ל-${recipientEmail}`,
+        description: `הדוח נשלח ל-${validEmails.length} נמענים`,
       });
       
       setShowEmailDialog(false);
-      setRecipientEmail('');
+      setRecipientEmails(['']);
     } catch (error: any) {
       console.error('Email Send: Error occurred:', error);
       toast({
@@ -1212,28 +1219,98 @@ const ViewReport = () => {
 
       {/* Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>שלח דוח במייל</DialogTitle>
             <DialogDescription>
-              הדוח יישלח כקובץ PDF מצורף למייל
+              הדוח יישלח כקובץ HTML מצורף למייל לכל הנמענים
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="email">כתובת מייל</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="example@company.com"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                dir="ltr"
-              />
+            <div className="space-y-2">
+              <Label>כתובות מייל</Label>
+              {recipientEmails.map((email, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="example@company.com"
+                    value={email}
+                    onChange={(e) => {
+                      const newEmails = [...recipientEmails];
+                      newEmails[index] = e.target.value;
+                      setRecipientEmails(newEmails);
+                    }}
+                    dir="ltr"
+                    className="flex-1"
+                  />
+                  {recipientEmails.length > 1 && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        const newEmails = recipientEmails.filter((_, i) => i !== index);
+                        setRecipientEmails(newEmails);
+                      }}
+                      disabled={sendingEmail}
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRecipientEmails([...recipientEmails, ''])}
+                disabled={sendingEmail}
+                className="w-full"
+              >
+                + הוסף נמען
+              </Button>
+            </div>
+            <div className="border-t pt-4 space-y-2">
+              <Label className="text-xs text-muted-foreground">תבניות מהירות</Label>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const hasEmpty = recipientEmails.some(e => e.trim() === '');
+                    if (hasEmpty) {
+                      const newEmails = recipientEmails.map(e => e.trim() === '' ? 'manager@company.com' : e);
+                      setRecipientEmails(newEmails);
+                    } else {
+                      setRecipientEmails([...recipientEmails, 'manager@company.com']);
+                    }
+                  }}
+                  disabled={sendingEmail}
+                >
+                  מנהל אחראי
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const hasEmpty = recipientEmails.some(e => e.trim() === '');
+                    if (hasEmpty) {
+                      const newEmails = recipientEmails.map(e => e.trim() === '' ? 'accounting@company.com' : e);
+                      setRecipientEmails(newEmails);
+                    } else {
+                      setRecipientEmails([...recipientEmails, 'accounting@company.com']);
+                    }
+                  }}
+                  disabled={sendingEmail}
+                >
+                  הנהלת חשבונות
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)} disabled={sendingEmail}>
+            <Button variant="outline" onClick={() => {
+              setShowEmailDialog(false);
+              setRecipientEmails(['']);
+            }} disabled={sendingEmail}>
               ביטול
             </Button>
             <Button onClick={handleSendEmail} disabled={sendingEmail}>
