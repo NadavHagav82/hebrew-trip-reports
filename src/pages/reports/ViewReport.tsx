@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, MessageCircle, Share2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -288,39 +288,6 @@ const ViewReport = () => {
     }
   };
 
-  const shareViaWhatsApp = async () => {
-    if (!report) return;
-    
-    try {
-      console.log('WhatsApp Share: Starting PDF generation...');
-      const pdfData = await generatePDF();
-      if (!pdfData) {
-        console.error('WhatsApp Share: PDF generation returned null');
-        return;
-      }
-
-      console.log('WhatsApp Share: PDF generated successfully, creating download link...');
-      const url = URL.createObjectURL(pdfData.blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `דוח-נסיעה-${report.trip_destination.replace(/[^א-תa-zA-Z0-9]/g, '-')}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-      
-      console.log('WhatsApp Share: File downloaded');
-      toast({
-        title: 'הקובץ הורד',
-        description: 'כעת ניתן לשתף אותו ב-WhatsApp',
-      });
-    } catch (error) {
-      console.error('WhatsApp Share: Error occurred:', error);
-      toast({
-        title: 'שגיאה',
-        description: 'לא ניתן ליצור את הקובץ',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handleSendEmail = async () => {
     if (!report) return;
@@ -749,10 +716,6 @@ const ViewReport = () => {
                         <Mail className="w-4 h-4 ml-2" />
                         <span>שלח במייל</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={shareViaWhatsApp} className="cursor-pointer">
-                        <MessageCircle className="w-4 h-4 ml-2" />
-                        <span>שתף ב-WhatsApp</span>
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -834,10 +797,6 @@ const ViewReport = () => {
                       <DropdownMenuItem onClick={() => setShowEmailDialog(true)} className="cursor-pointer">
                         <Mail className="w-4 h-4 ml-2" />
                         <span>שלח במייל</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={shareViaWhatsApp} className="cursor-pointer">
-                        <MessageCircle className="w-4 h-4 ml-2" />
-                        <span>שתף ב-WhatsApp</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
