@@ -362,9 +362,19 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
             <Text style={styles.infoValue}>{tripRange}</Text>
           </View>
           <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>מספר ימים</Text>
+            <Text style={styles.infoValue}>{calculateTripDuration(report)}</Text>
+          </View>
+          <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>מטרת הנסיעה</Text>
             <Text style={styles.infoValue}>{report.trip_purpose}</Text>
           </View>
+          {report.daily_allowance && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>דמי לינה יומיים</Text>
+              <Text style={styles.infoValue}>₪{report.daily_allowance.toFixed(2)}</Text>
+            </View>
+          )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>מטבע</Text>
             <Text style={styles.infoValue}>{mainCurrency}</Text>
