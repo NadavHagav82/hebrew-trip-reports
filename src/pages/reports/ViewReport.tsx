@@ -836,12 +836,6 @@ const ViewReport = () => {
                   <span className="text-xs text-sky-600 font-semibold uppercase tracking-wide block mb-1">מספר ימים</span>
                   <span className="font-bold text-lg text-gray-900">{calculateTripDuration()}</span>
                 </div>
-                {report.daily_allowance && (
-                  <div className="bg-gradient-to-br from-teal-50 to-white p-4 rounded-lg border border-teal-100">
-                    <span className="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-1">אש"ל יומי</span>
-                    <span className="font-bold text-lg text-gray-900">${report.daily_allowance.toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-lg border border-rose-100 sm:col-span-2">
                   <span className="text-xs text-rose-600 font-semibold uppercase tracking-wide block mb-1">מטרת הנסיעה</span>
                   <span className="font-bold text-lg text-gray-900">{report.trip_purpose}</span>
@@ -916,6 +910,79 @@ const ViewReport = () => {
             </CardContent>
           </Card>
 
+          {/* Daily Allowance Section */}
+          <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-t-blue-500">
+            <CardHeader className="pb-4 bg-gradient-to-l from-blue-50 to-transparent">
+              <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                אש"ל יומי
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border-2 border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={!!report.daily_allowance}
+                      onChange={async (e) => {
+                        const newValue = e.target.checked ? 100 : null;
+                        try {
+                          await supabase
+                            .from('reports')
+                            .update({ daily_allowance: newValue })
+                            .eq('id', report.id);
+                          loadReport();
+                          toast({
+                            title: e.target.checked ? 'אש"ל יומי הופעל' : 'אש"ל יומי בוטל',
+                          });
+                        } catch (error) {
+                          toast({ title: 'שגיאה', variant: 'destructive' });
+                        }
+                      }}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="font-bold text-blue-900">הוסף אש"ל יומי לדוח</span>
+                  </div>
+                  {report.daily_allowance && (
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="number"
+                        value={report.daily_allowance}
+                        onChange={async (e) => {
+                          const newValue = parseFloat(e.target.value) || 0;
+                          try {
+                            await supabase
+                              .from('reports')
+                              .update({ daily_allowance: newValue })
+                              .eq('id', report.id);
+                            loadReport();
+                          } catch (error) {
+                            toast({ title: 'שגיאה', variant: 'destructive' });
+                          }
+                        }}
+                        className="w-28 px-3 py-2 border-2 border-blue-300 rounded-lg font-bold text-blue-900 text-center"
+                      />
+                      <span className="text-blue-700 font-semibold">$ ליום</span>
+                    </div>
+                  )}
+                </div>
+                {report.daily_allowance && (
+                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 p-5 rounded-lg border-2 border-blue-300">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-xl text-blue-900">
+                        סה"כ אש"ל לתקופה ({calculateTripDuration()} ימים)
+                      </span>
+                      <span className="font-black text-3xl text-blue-900">
+                        ${(report.daily_allowance * calculateTripDuration()).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Summary */}
           <Card className="shadow-xl border-t-4 border-t-green-500 overflow-hidden">
             <CardHeader className="pb-4 bg-gradient-to-br from-green-600 to-emerald-700 text-white">
@@ -941,14 +1008,6 @@ const ViewReport = () => {
                     </div>
                   );
                 })}
-                {report.daily_allowance && (
-                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg shadow-sm border-2 border-blue-200">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-blue-800">סה"כ אש"ל לתקופה ({calculateTripDuration()} ימים)</span>
-                      <span className="font-bold text-xl text-blue-900">${(report.daily_allowance * calculateTripDuration()).toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 p-6 rounded-xl shadow-lg mt-6">
                   <div className="flex justify-between items-center">
                     <span className="font-black text-2xl text-white">סה"כ כולל:</span>
