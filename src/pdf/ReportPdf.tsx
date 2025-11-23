@@ -371,8 +371,8 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           </View>
           {report.daily_allowance && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>דמי לינה יומיים</Text>
-              <Text style={styles.infoValue}>₪{report.daily_allowance.toFixed(2)}</Text>
+              <Text style={styles.infoLabel}>אש"ל יומי</Text>
+              <Text style={styles.infoValue}>${report.daily_allowance.toFixed(2)}</Text>
             </View>
           )}
           <View style={styles.infoRow}>
