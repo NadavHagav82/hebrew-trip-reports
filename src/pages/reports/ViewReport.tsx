@@ -865,34 +865,28 @@ const ViewReport = () => {
             <CardContent className="pt-4 sm:pt-6">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">יעד:</span>
+                    <span className="text-sm text-muted-foreground font-medium">שם העובד:</span>
+                    <span className="font-semibold text-base"> {profile?.full_name || '-'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-border/30">
+                    <span className="text-sm text-muted-foreground font-medium">חברה:</span>
+                    <span className="font-semibold text-base"> {profile?.department || '-'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-border/30">
+                    <span className="text-sm text-muted-foreground font-medium">יעד:</span>
                     <span className="font-semibold text-base"> {report.trip_destination}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">מטרת הנסיעה:</span>
+                    <span className="text-sm text-muted-foreground font-medium">תאריכי נסיעה:</span>
+                    <span className="font-semibold text-base"> {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-border/30">
+                    <span className="text-sm text-muted-foreground font-medium">מטרת הנסיעה:</span>
                     <span className="font-semibold text-base"> {report.trip_purpose}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">תאריך התחלה:</span>
-                    <span className="font-semibold text-base"> {format(new Date(report.trip_start_date), "dd/MM/yyyy")}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">תאריך סיום:</span>
-                    <span className="font-semibold text-base"> {format(new Date(report.trip_end_date), "dd/MM/yyyy")}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">משך הנסיעה:</span>
-                    <span className="font-semibold text-base text-primary"> {calculateTripDuration()} ימים</span>
-                  </div>
-                  {report.daily_allowance && (
-                    <div className="flex justify-between items-center py-3 border-b border-border/30">
-                      <span className="text-sm text-muted-foreground font-medium">אש"ל ליום:</span>
-                      <span className="font-semibold text-base"> ${report.daily_allowance} (סה"כ ${report.daily_allowance * calculateTripDuration()})</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center py-3">
-                    <span className="text-sm text-muted-foreground font-medium">תאריך יצירה:</span>
-                    <span className="font-semibold text-base"> {format(new Date(report.created_at), "dd/MM/yyyy HH:mm")}</span>
+                    <span className="text-sm text-muted-foreground font-medium">מטבע:</span>
+                    <span className="font-semibold text-base"> {grandTotalByCurrency && Object.keys(grandTotalByCurrency)[0]}</span>
                   </div>
                 </div>
               {report.notes && (
