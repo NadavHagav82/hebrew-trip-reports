@@ -192,16 +192,16 @@ const styles = StyleSheet.create({
     width: '14%',
   },
   summaryBox: {
-    marginTop: 30,
-    padding: 24,
+    marginTop: 20,
+    padding: 16,
     backgroundColor: '#e0f2fe',
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: '#93c5fd',
   },
   summaryTitle: {
-    fontSize: 22,
-    marginBottom: 14,
+    fontSize: 15,
+    marginBottom: 10,
     textAlign: 'right',
     fontWeight: 700,
     color: '#3b82f6',
@@ -209,16 +209,16 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 5,
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: 10,
     textAlign: 'right',
     color: '#374151',
     fontWeight: 600,
   },
   summaryValue: {
-    fontSize: 14,
+    fontSize: 10,
     textAlign: 'right',
     fontWeight: 700,
     color: '#475569',
@@ -226,20 +226,20 @@ const styles = StyleSheet.create({
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#475569',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   totalLabel: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: 700,
     textAlign: 'right',
     color: '#ffffff',
   },
   totalValue: {
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: 700,
     textAlign: 'right',
     color: '#ffffff',
@@ -428,7 +428,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           <Text style={styles.summaryTitle}>סיכום לפי קטגוריות</Text>
           {Object.entries(categoryTotals).map(([category, total]) => (
             <View key={category} style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{getCategoryLabel(category)}:</Text>
+              <Text style={styles.summaryLabel}>{getCategoryLabel(category)}</Text>
               <Text style={styles.summaryValue}>₪{total.toFixed(2)}</Text>
             </View>
           ))}
@@ -443,7 +443,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
               </Text>
               {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
                 <View key={currency} style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>{currency}:</Text>
+                  <Text style={styles.summaryLabel}>{currency}</Text>
                   <Text style={styles.summaryValue}>{amount.toFixed(2)}</Text>
                 </View>
               ))}
