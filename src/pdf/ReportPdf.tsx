@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left',
     paddingLeft: 12,
-    color: '#111827',
-    fontWeight: 600,
+    color: '#000000',
+    fontWeight: 700,
   },
   table: {
     marginTop: 16,
