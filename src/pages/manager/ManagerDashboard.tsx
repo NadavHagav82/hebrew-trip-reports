@@ -130,6 +130,10 @@ export default function ManagerDashboard() {
     
     setProcessingReportId(reportId);
     try {
+      // Get the report details first to find the user
+      const reportData = reports.find(r => r.id === reportId);
+      if (!reportData) throw new Error('Report not found');
+
       const { error } = await supabase
         .from('reports')
         .update({
@@ -149,9 +153,30 @@ export default function ManagerDashboard() {
         notes: 'אושר על ידי מנהל'
       });
 
+      // Send email to accounting manager if user has accounting email
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('accounting_manager_email')
+          .eq('id', reportData.user_id)
+          .single();
+
+        if (profileData?.accounting_manager_email) {
+          await supabase.functions.invoke('send-accounting-report', {
+            body: {
+              reportId: reportId,
+              accountingEmail: profileData.accounting_manager_email,
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending email to accounting:', emailError);
+        // Don't block the approval if email fails
+      }
+
       toast({
         title: "דוח אושר",
-        description: "הדוח אושר בהצלחה",
+        description: "הדוח אושר בהצלחה ונשלח למנהל החשבונות",
       });
 
       loadPendingReports();

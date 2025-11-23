@@ -22,6 +22,7 @@ export default function Register() {
     manager_first_name: '',
     manager_last_name: '',
     manager_email: '',
+    accounting_manager_email: '',
   });
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
@@ -100,6 +101,7 @@ export default function Register() {
       manager_first_name: formData.is_manager ? null : formData.manager_first_name,
       manager_last_name: formData.is_manager ? null : formData.manager_last_name,
       manager_email: formData.is_manager ? null : formData.manager_email,
+      accounting_manager_email: formData.accounting_manager_email || null,
     });
 
     if (error) {
@@ -192,6 +194,23 @@ export default function Register() {
                 onChange={handleChange}
                 disabled={loading}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="accounting_manager_email">מייל מנהל חשבונות (אופציונלי)</Label>
+              <Input
+                id="accounting_manager_email"
+                name="accounting_manager_email"
+                type="email"
+                placeholder="accounting@company.com"
+                value={formData.accounting_manager_email}
+                onChange={handleChange}
+                disabled={loading}
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground">
+                דוחות מאושרים יישלחו אוטומטית לכתובת זו
+              </p>
             </div>
             
             <div className="space-y-3 border-t pt-4">
