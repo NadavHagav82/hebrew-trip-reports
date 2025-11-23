@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   headerBox: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#475569',
     padding: 30,
     marginBottom: 35,
     textAlign: 'right',
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#dbeafe',
+    color: '#e2e8f0',
     textAlign: 'right',
   },
   sectionTitle: {
@@ -91,9 +91,9 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 30,
     textAlign: 'right',
-    color: '#1e40af',
+    color: '#3b82f6',
     borderBottomWidth: 2,
-    borderBottomColor: '#60a5fa',
+    borderBottomColor: '#93c5fd',
     paddingBottom: 8,
     fontWeight: 700,
   },
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingRight: 16,
     fontWeight: 700,
-    color: '#1e3a8a',
+    color: '#475569',
   },
   infoValue: {
     width: '65%',
@@ -130,14 +130,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#3b82f6',
+    borderColor: '#93c5fd',
     backgroundColor: '#ffffff',
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#1e3a8a',
+    backgroundColor: '#475569',
     borderBottomWidth: 3,
-    borderBottomColor: '#1e40af',
+    borderBottomColor: '#64748b',
   },
   tableHeaderCell: {
     padding: 14,
@@ -191,17 +191,17 @@ const styles = StyleSheet.create({
   summaryBox: {
     marginTop: 30,
     padding: 24,
-    backgroundColor: '#bfdbfe',
+    backgroundColor: '#e0f2fe',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#3b82f6',
+    borderColor: '#93c5fd',
   },
   summaryTitle: {
     fontSize: 20,
     marginBottom: 14,
     textAlign: 'right',
     fontWeight: 700,
-    color: '#1e40af',
+    color: '#3b82f6',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
     fontWeight: 700,
-    color: '#1e3a8a',
+    color: '#475569',
   },
   totalRow: {
     flexDirection: 'row',
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    backgroundColor: '#1e3a8a',
+    backgroundColor: '#475569',
     borderRadius: 8,
   },
   totalLabel: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   receiptHeaderBox: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#475569',
     padding: 24,
     marginBottom: 30,
     textAlign: 'right',
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   receiptContainer: {
     marginBottom: 30,
     borderWidth: 2,
-    borderColor: '#3b82f6',
+    borderColor: '#93c5fd',
     borderRadius: 10,
     padding: 20,
     backgroundColor: '#ffffff',
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     marginBottom: 12,
     textAlign: 'right',
-    color: '#1e3a8a',
+    color: '#475569',
   },
   receiptDetails: {
     fontSize: 11,
@@ -432,8 +432,8 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
             <Text style={styles.totalValue}>₪{report.total_amount_ils?.toFixed(2) || '0.00'}</Text>
           </View>
           {Object.entries(grandTotalByCurrency).length > 0 && (
-            <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#3b82f6' }}>
-              <Text style={{ fontSize: 13, marginBottom: 10, textAlign: 'right', fontWeight: 700, color: '#1e3a8a' }}>
+            <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#93c5fd' }}>
+              <Text style={{ fontSize: 13, marginBottom: 10, textAlign: 'right', fontWeight: 700, color: '#475569' }}>
                 סה"כ לפי מטבעות:
               </Text>
               {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
