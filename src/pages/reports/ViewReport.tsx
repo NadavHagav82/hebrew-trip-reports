@@ -661,7 +661,7 @@ const ViewReport = () => {
         }
       `}</style>
       
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 font-sans">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 font-sans">
         {/* Header */}
         <header className="bg-card/95 backdrop-blur-sm border-b shadow-sm sticky top-0 z-10 no-print">
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -850,12 +850,12 @@ const ViewReport = () => {
         {/* Screen View */}
         <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl no-print">
           {/* Hero Section */}
-          <Card className="mb-6 shadow-xl border-none overflow-hidden bg-gradient-to-bl from-blue-600 via-blue-700 to-blue-900">
+          <Card className="mb-6 shadow-xl border-none overflow-hidden bg-gradient-to-bl from-slate-600 via-slate-700 to-slate-800">
             <CardContent className="p-6 sm:p-8 text-white">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-bold mb-2">דוח נסיעה עסקית</h2>
-                  <p className="text-blue-100 text-sm sm:text-base flex items-center gap-2">
+                  <p className="text-slate-200 text-sm sm:text-base flex items-center gap-2">
                     <span className="font-medium">{report.trip_destination}</span>
                     <span>•</span>
                     <span>{format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}</span>
@@ -867,35 +867,35 @@ const ViewReport = () => {
           </Card>
 
           {/* Trip Details */}
-          <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-t-blue-500">
-            <CardHeader className="pb-4 bg-gradient-to-l from-blue-50 to-transparent">
-              <CardTitle className="text-xl font-bold text-blue-900 flex items-center gap-2">
-                <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+          <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-t-slate-500">
+            <CardHeader className="pb-4 bg-gradient-to-l from-slate-50 to-transparent">
+              <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <div className="w-1 h-6 bg-slate-600 rounded-full"></div>
                 פרטי הנסיעה
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-lg border border-blue-100">
-                  <span className="text-xs text-blue-600 font-semibold uppercase tracking-wide block mb-1">שם העובד</span>
+                <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-lg border border-indigo-100">
+                  <span className="text-xs text-indigo-600 font-semibold uppercase tracking-wide block mb-1">שם העובד</span>
                   <span className="font-bold text-lg text-gray-900">{profile?.full_name || '-'}</span>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-white p-4 rounded-lg border border-purple-100">
                   <span className="text-xs text-purple-600 font-semibold uppercase tracking-wide block mb-1">חברה</span>
                   <span className="font-bold text-lg text-gray-900">{profile?.department || '-'}</span>
                 </div>
-                <div className="bg-gradient-to-br from-green-50 to-white p-4 rounded-lg border border-green-100">
-                  <span className="text-xs text-green-600 font-semibold uppercase tracking-wide block mb-1">יעד</span>
+                <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-lg border border-emerald-100">
+                  <span className="text-xs text-emerald-600 font-semibold uppercase tracking-wide block mb-1">יעד</span>
                   <span className="font-bold text-lg text-gray-900">{report.trip_destination}</span>
                 </div>
-                <div className="bg-gradient-to-br from-orange-50 to-white p-4 rounded-lg border border-orange-100">
-                  <span className="text-xs text-orange-600 font-semibold uppercase tracking-wide block mb-1">תאריכי נסיעה</span>
+                <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-lg border border-amber-100">
+                  <span className="text-xs text-amber-600 font-semibold uppercase tracking-wide block mb-1">תאריכי נסיעה</span>
                   <span className="font-bold text-base text-gray-900">
                     {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
                   </span>
                 </div>
-                <div className="bg-gradient-to-br from-pink-50 to-white p-4 rounded-lg border border-pink-100 sm:col-span-2">
-                  <span className="text-xs text-pink-600 font-semibold uppercase tracking-wide block mb-1">מטרת הנסיעה</span>
+                <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-lg border border-rose-100 sm:col-span-2">
+                  <span className="text-xs text-rose-600 font-semibold uppercase tracking-wide block mb-1">מטרת הנסיעה</span>
                   <span className="font-bold text-lg text-gray-900">{report.trip_purpose}</span>
                 </div>
               </div>
@@ -927,8 +927,8 @@ const ViewReport = () => {
                   const CategoryIcon = getCategoryIcon(expense.category);
                   const categoryColor = getCategoryColor(expense.category);
                   return (
-                    <div key={expense.id} className="group relative border-2 border-gray-100 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50 hover:from-blue-50 hover:to-purple-50 hover:border-blue-200 transition-all duration-300 hover:shadow-md">
-                      <div className="absolute top-3 left-3 bg-gray-100 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <div key={expense.id} className="group relative border-2 border-gray-100 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50 hover:from-slate-50 hover:to-indigo-50 hover:border-slate-200 transition-all duration-300 hover:shadow-md">
+                      <div className="absolute top-3 left-3 bg-gray-100 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold group-hover:bg-slate-600 group-hover:text-white transition-all">
                         {index + 1}
                       </div>
                       <div className="flex items-start justify-between gap-4 mr-6">
@@ -941,17 +941,17 @@ const ViewReport = () => {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 flex items-center gap-2 font-medium">
-                            <Calendar className="w-4 h-4 text-blue-500" />
+                            <Calendar className="w-4 h-4 text-slate-500" />
                             {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                           </p>
                           {expense.notes && (
-                            <p className="text-sm text-gray-600 mt-3 italic bg-blue-50 p-3 rounded-lg border-r-2 border-blue-400">
+                            <p className="text-sm text-gray-600 mt-3 italic bg-slate-50 p-3 rounded-lg border-r-2 border-slate-400">
                               {expense.notes}
                             </p>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
-                          <div className="text-2xl font-black text-blue-700 bg-blue-100 px-4 py-2 rounded-lg">
+                          <div className="text-2xl font-black text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">
                             ₪{expense.amount_in_ils.toFixed(2)}
                           </div>
                           <div className="text-sm bg-gray-100 px-3 py-1 rounded-full font-semibold text-gray-700">
@@ -993,20 +993,20 @@ const ViewReport = () => {
                     </div>
                   );
                 })}
-                <div className="bg-gradient-to-r from-blue-700 to-blue-900 p-6 rounded-xl shadow-lg mt-6">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 p-6 rounded-xl shadow-lg mt-6">
                   <div className="flex justify-between items-center">
                     <span className="font-black text-2xl text-white">סה"כ כולל:</span>
                     <span className="font-black text-3xl text-white">₪{report.total_amount_ils.toFixed(2)}</span>
                   </div>
                 </div>
                 {Object.entries(grandTotalByCurrency).length > 0 && (
-                  <div className="bg-white p-5 rounded-xl border-2 border-blue-100 mt-4">
-                    <div className="text-base text-blue-900 mb-3 font-bold">סה"כ לפי מטבעות:</div>
+                  <div className="bg-white p-5 rounded-xl border-2 border-slate-200 mt-4">
+                    <div className="text-base text-slate-800 mb-3 font-bold">סה"כ לפי מטבעות:</div>
                     <div className="space-y-2">
                       {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
-                        <div key={currency} className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
+                        <div key={currency} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
                           <span className="text-gray-700 font-semibold">{currency}</span>
-                          <span className="font-bold text-blue-900">{amount.toFixed(2)}</span>
+                          <span className="font-bold text-slate-800">{amount.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
