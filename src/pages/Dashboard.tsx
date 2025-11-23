@@ -41,6 +41,7 @@ interface Profile {
   full_name: string;
   employee_id: string;
   department: string;
+  accounting_manager_email?: string | null;
 }
 
 export default function Dashboard() {
@@ -51,7 +52,11 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('all');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [editedProfile, setEditedProfile] = useState({ full_name: '', department: '' });
+  const [editedProfile, setEditedProfile] = useState({ 
+    full_name: '', 
+    department: '',
+    accounting_manager_email: ''
+  });
   const [savingProfile, setSavingProfile] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -122,6 +127,7 @@ export default function Dashboard() {
       setEditedProfile({
         full_name: data.full_name || '',
         department: data.department || '',
+        accounting_manager_email: data.accounting_manager_email || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -138,6 +144,7 @@ export default function Dashboard() {
         .update({
           full_name: editedProfile.full_name,
           department: editedProfile.department,
+          accounting_manager_email: editedProfile.accounting_manager_email || null,
         })
         .eq('id', user.id);
 
@@ -152,6 +159,7 @@ export default function Dashboard() {
         ...profile,
         full_name: editedProfile.full_name,
         department: editedProfile.department,
+        accounting_manager_email: editedProfile.accounting_manager_email,
       });
       setShowProfileDialog(false);
       setCurrentPassword('');
@@ -749,6 +757,24 @@ export default function Dashboard() {
                         onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
                         placeholder="הזן שם מחלקה או חברה"
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="accounting_manager_email" className="text-sm">
+                        מייל מנהל חשבונות
+                        <span className="text-xs text-muted-foreground mr-1">(אופציונלי)</span>
+                      </Label>
+                      <Input 
+                        id="accounting_manager_email" 
+                        type="email"
+                        value={editedProfile.accounting_manager_email}
+                        onChange={(e) => setEditedProfile({ ...editedProfile, accounting_manager_email: e.target.value })}
+                        placeholder="accounting@company.com"
+                        dir="ltr"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        דוחות מאושרים יישלחו אוטומטית לכתובת זו
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
