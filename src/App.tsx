@@ -11,6 +11,7 @@ import NewReport from "./pages/reports/NewReport";
 import ViewReport from "./pages/reports/ViewReport";
 import ApproveReport from "./pages/ApproveReport";
 import ManageRoles from "./pages/admin/ManageRoles";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/reports/:id" element={<ViewReport />} />
             <Route path="/approve-report/:token" element={<ApproveReport />} />
             <Route path="/admin/roles" element={<ManageRoles />} />
+            <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
