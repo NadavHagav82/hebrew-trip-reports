@@ -941,6 +941,14 @@ const ViewReport = () => {
                     </div>
                   );
                 })}
+                {report.daily_allowance && (
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg shadow-sm border-2 border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-blue-800">סה"כ אש"ל לתקופה ({calculateTripDuration()} ימים)</span>
+                      <span className="font-bold text-xl text-blue-900">${(report.daily_allowance * calculateTripDuration()).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 p-6 rounded-xl shadow-lg mt-6">
                   <div className="flex justify-between items-center">
                     <span className="font-black text-2xl text-white">סה"כ כולל:</span>

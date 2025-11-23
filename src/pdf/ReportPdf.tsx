@@ -442,6 +442,12 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
               <Text style={styles.summaryValue}>₪{total.toFixed(2)}</Text>
             </View>
           ))}
+          {report.daily_allowance && (
+            <View style={[styles.summaryRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#93c5fd' }]}>
+              <Text style={[styles.summaryLabel, { color: '#3b82f6' }]}>סה"כ אש"ל לתקופה ({calculateTripDuration(report)} ימים)</Text>
+              <Text style={[styles.summaryValue, { color: '#3b82f6' }]}>${(report.daily_allowance * calculateTripDuration(report)).toFixed(2)}</Text>
+            </View>
+          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>סה"כ כולל:</Text>
             <Text style={styles.totalValue}>₪{report.total_amount_ils?.toFixed(2) || '0.00'}</Text>
