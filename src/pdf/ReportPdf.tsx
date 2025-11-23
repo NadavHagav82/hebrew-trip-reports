@@ -286,8 +286,8 @@ const styles = StyleSheet.create({
     fontWeight: 500,
   },
   receiptImage: {
-    maxWidth: '100%',
-    maxHeight: 500,
+    width: '100%',
+    maxHeight: 700,
     objectFit: 'contain',
     borderRadius: 6,
   },
