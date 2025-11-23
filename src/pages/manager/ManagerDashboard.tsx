@@ -157,12 +157,9 @@ export default function ManagerDashboard() {
       try {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('accounting_manager_email')
+          .select('accounting_manager_email, username')
           .eq('id', reportData.user_id)
           .single();
-
-        // Get user email
-        const { data: userData } = await supabase.auth.admin.getUserById(reportData.user_id);
 
         // Send to accounting manager
         if (profileData?.accounting_manager_email) {
@@ -174,12 +171,12 @@ export default function ManagerDashboard() {
           });
         }
 
-        // Send to user's registration email
-        if (userData?.user?.email) {
+        // Send to user's registration email (stored in username)
+        if (profileData?.username) {
           await supabase.functions.invoke('send-accounting-report', {
             body: {
               reportId: reportId,
-              accountingEmail: userData.user.email,
+              accountingEmail: profileData.username,
             }
           });
         }

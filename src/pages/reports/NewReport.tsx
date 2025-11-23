@@ -197,6 +197,13 @@ export default function NewReport() {
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
+  const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({
+    ILS: 1.0,
+    USD: 3.60,
+    EUR: 3.90,
+    GBP: 4.58,
+    // ... rest will be loaded from API
+  });
 
   // Trip details
   const [tripDestination, setTripDestination] = useState('');
@@ -257,6 +264,30 @@ export default function NewReport() {
       loadReport(id);
     }
   }, [id, user]);
+
+  // Load live exchange rates on mount
+  useEffect(() => {
+    loadExchangeRates();
+  }, []);
+
+  const loadExchangeRates = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-exchange-rates');
+      
+      if (error) {
+        console.error('Error loading exchange rates:', error);
+        return; // Keep default rates
+      }
+
+      if (data?.rates) {
+        setCurrencyRates(data.rates);
+        console.log('Live exchange rates loaded:', data.rates);
+      }
+    } catch (error) {
+      console.error('Failed to load exchange rates:', error);
+      // Keep default rates on error
+    }
+  };
 
   const loadReport = async (reportId: string) => {
     try {
@@ -335,9 +366,9 @@ export default function NewReport() {
         const updated = { ...exp, [field]: value };
         // Auto-convert to ILS
         if (field === 'amount' || field === 'currency') {
-          const amount = field === 'amount' ? value : exp.amount;
-          const currency = field === 'currency' ? value : exp.currency;
-          updated.amount_in_ils = amount * currencyRates[currency as keyof typeof currencyRates];
+            const amount = field === 'amount' ? value : exp.amount;
+            const currency = field === 'currency' ? value : exp.currency;
+            updated.amount_in_ils = amount * (currencyRates[currency as keyof typeof currencyRates] || 1);
         }
         return updated;
       }
@@ -528,7 +559,7 @@ export default function NewReport() {
             
             // Calculate ILS amount
             if (amount && currency) {
-              updated.amount_in_ils = parseFloat(amount) * currencyRates[currency as keyof typeof currencyRates];
+              updated.amount_in_ils = parseFloat(amount) * (currencyRates[currency as keyof typeof currencyRates] || 1);
             }
 
             // Mark receipt as analyzed
@@ -820,7 +851,7 @@ export default function NewReport() {
         try {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('accounting_manager_email')
+            .select('accounting_manager_email, username')
             .eq('id', user.id)
             .single();
 
@@ -834,12 +865,12 @@ export default function NewReport() {
             });
           }
 
-          // Send to user's registration email
-          if (user.email) {
+          // Send to user's registration email (stored in username)
+          if (profileData?.username) {
             await supabase.functions.invoke('send-accounting-report', {
               body: {
                 reportId: report.id,
-                accountingEmail: user.email,
+                accountingEmail: profileData.username,
               }
             });
           }

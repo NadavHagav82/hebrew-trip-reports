@@ -165,6 +165,15 @@ serve(async (req) => {
             אוסטרליה ואוקיאניה: AUD, NZD
             מזרח תיכון: ILS, AED, SAR, QAR, KWD, JOD
             
+            **קטגוריזציה חכמה:**
+            - flights: כרטיסי טיסה, כרטיס למטוס, טיסה, flight, airfare, airline
+            - accommodation: בית מלון, לינה, מלון, חדר ישיבות, hotel, accommodation, room, conference room
+            - food: מסעדה, אוכל, ארוחה, קפה, בית קפה, משקאות, restaurant, food, meal, coffee, drinks, lunch, dinner, breakfast
+            - transportation: מונית, אוטובוס, רכבת, אובר, השכרת רכב, דלק, taxi, uber, train, bus, car rental, fuel, gas, parking
+            - miscellaneous: כל דבר אחר, קניות, מתנות, שונות, miscellaneous, shopping, gifts
+            
+            בחר את הקטגוריה המתאימה ביותר בהתבסס על התוכן של הקבלה.
+            
             חלץ את הפרטים הבאים מהקבלה:
             - תאריך (בפורמט YYYY-MM-DD)
             - סכום (מספר בלבד, ללא סימני מטבע)
