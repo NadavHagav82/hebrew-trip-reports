@@ -140,6 +140,24 @@ export default function Register() {
       });
       setLoading(false);
     } else {
+      // Send notification to manager if employee has one
+      if (!formData.is_manager && formData.manager_id) {
+        try {
+          await supabase.functions.invoke('notify-manager-new-employee', {
+            body: {
+              employeeName: formData.full_name,
+              employeeEmail: formData.email,
+              employeeId: formData.employee_id || null,
+              department: formData.department,
+              managerId: formData.manager_id,
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send manager notification:', emailError);
+          // Don't fail registration if email fails
+        }
+      }
+
       toast({
         title: 'הרשמה הצליחה',
         description: 'החשבון נוצר בהצלחה. ניתן להתחבר למערכת',
