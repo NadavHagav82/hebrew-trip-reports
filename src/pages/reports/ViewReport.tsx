@@ -671,21 +671,11 @@ const ViewReport = () => {
                   <Button 
                     size="sm"
                     variant="outline"
-                    onClick={async () => {
-                      try {
-                        await supabase
-                          .from('reports')
-                          .update({ status: 'open' })
-                          .eq('id', report.id);
-                        loadReport();
-                      } catch (error) {
-                        toast({ title: 'שגיאה', variant: 'destructive' });
-                      }
-                    }}
+                    onClick={() => navigate(`/reports/edit/${report.id}`)}
                     className="whitespace-nowrap bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all"
                   >
                     <Edit className="w-4 h-4 ml-1" />
-                    פתח דוח מחדש
+                    עריכה
                   </Button>
                 )}
                 <Button 
@@ -750,21 +740,11 @@ const ViewReport = () => {
                 {report.status === 'closed' && (
                   <Button 
                     variant="outline"
-                    onClick={async () => {
-                      try {
-                        await supabase
-                          .from('reports')
-                          .update({ status: 'open' })
-                          .eq('id', report.id);
-                        loadReport();
-                      } catch (error) {
-                        toast({ title: 'שגיאה', variant: 'destructive' });
-                      }
-                    }}
+                    onClick={() => navigate(`/reports/edit/${report.id}`)}
                     className="bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all"
                   >
                     <Edit className="w-4 h-4 ml-2" />
-                    פתח דוח מחדש
+                    עריכה
                   </Button>
                 )}
                 <Button 
