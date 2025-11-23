@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     color: '#ffffff',
     marginBottom: 8,
     textAlign: 'right',
@@ -82,12 +82,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#e2e8f0',
     textAlign: 'right',
+    fontWeight: 600,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     marginBottom: 18,
     marginTop: 30,
     textAlign: 'right',
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#93c5fd',
     paddingBottom: 8,
-    fontWeight: 700,
+    fontWeight: 600,
   },
   infoTable: {
     marginBottom: 25,
@@ -112,18 +113,19 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     width: '35%',
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'right',
     paddingRight: 16,
-    fontWeight: 700,
+    fontWeight: 600,
     color: '#475569',
   },
   infoValue: {
     width: '65%',
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'left',
     paddingLeft: 12,
     color: '#1f2937',
+    fontWeight: 500,
   },
   table: {
     marginTop: 16,
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   tableHeaderText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#ffffff',
     fontWeight: 700,
     textAlign: 'right',
@@ -166,9 +168,10 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   tableCellText: {
-    fontSize: 11,
+    fontSize: 12,
     textAlign: 'right',
     color: '#1f2937',
+    fontWeight: 500,
   },
   numberCell: {
     width: '8%',
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
     borderColor: '#93c5fd',
   },
   summaryTitle: {
-    fontSize: 20,
+    fontSize: 22,
     marginBottom: 14,
     textAlign: 'right',
     fontWeight: 700,
@@ -209,12 +212,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   summaryLabel: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'right',
     color: '#374151',
+    fontWeight: 600,
   },
   summaryValue: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'right',
     fontWeight: 700,
     color: '#475569',
@@ -229,13 +233,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   totalLabel: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 700,
     textAlign: 'right',
     color: '#ffffff',
   },
   totalValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 700,
     textAlign: 'right',
     color: '#ffffff',
@@ -254,7 +258,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   receiptPageTitle: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#ffffff',
     textAlign: 'right',
     fontWeight: 700,
@@ -268,17 +272,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   receiptTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 700,
     marginBottom: 12,
     textAlign: 'right',
     color: '#475569',
   },
   receiptDetails: {
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 16,
     textAlign: 'right',
     color: '#6b7280',
+    fontWeight: 500,
   },
   receiptImage: {
     maxWidth: '100%',
@@ -433,7 +438,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           </View>
           {Object.entries(grandTotalByCurrency).length > 0 && (
             <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#93c5fd' }}>
-              <Text style={{ fontSize: 13, marginBottom: 10, textAlign: 'right', fontWeight: 700, color: '#475569' }}>
+              <Text style={{ fontSize: 15, marginBottom: 10, textAlign: 'right', fontWeight: 700, color: '#475569' }}>
                 סה"כ לפי מטבעות:
               </Text>
               {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
