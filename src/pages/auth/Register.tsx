@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
+
+interface Manager {
+  id: string;
+  full_name: string;
+  email: string;
+}
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -19,15 +27,46 @@ export default function Register() {
     employee_id: '',
     department: '',
     is_manager: false,
-    manager_first_name: '',
-    manager_last_name: '',
-    manager_email: '',
+    manager_id: '',
     accounting_manager_email: '',
   });
+  const [managers, setManagers] = useState<Manager[]>([]);
+  const [loadingManagers, setLoadingManagers] = useState(true);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadManagers();
+  }, []);
+
+  const loadManagers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username')
+        .eq('is_manager', true)
+        .order('full_name');
+
+      if (error) throw error;
+      
+      setManagers(data.map(m => ({ 
+        id: m.id, 
+        full_name: m.full_name, 
+        email: m.username 
+      })));
+    } catch (error) {
+      console.error('Error loading managers:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לטעון רשימת מנהלים',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingManagers(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -50,27 +89,14 @@ export default function Register() {
       return;
     }
 
-    // Validate manager details for non-managers
-    if (!formData.is_manager) {
-      if (!formData.manager_first_name || !formData.manager_last_name || !formData.manager_email) {
-        toast({
-          title: 'שגיאה',
-          description: 'יש למלא את פרטי המנהל המאשר',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      // Validate manager email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.manager_email)) {
-        toast({
-          title: 'שגיאה',
-          description: 'כתובת מייל המנהל לא תקינה',
-          variant: 'destructive',
-        });
-        return;
-      }
+    // Validate manager selection for non-managers
+    if (!formData.is_manager && !formData.manager_id) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש לבחור מנהל מאשר מהרשימה',
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (formData.password.length < 8) {
@@ -98,9 +124,7 @@ export default function Register() {
       employee_id: formData.employee_id || null,
       department: formData.department,
       is_manager: formData.is_manager,
-      manager_first_name: formData.is_manager ? null : formData.manager_first_name,
-      manager_last_name: formData.is_manager ? null : formData.manager_last_name,
-      manager_email: formData.is_manager ? null : formData.manager_email,
+      manager_id: formData.is_manager ? null : formData.manager_id,
       accounting_manager_email: formData.accounting_manager_email || null,
     });
 
@@ -230,42 +254,45 @@ export default function Register() {
               
               {!formData.is_manager && (
                 <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground font-medium">פרטי המנהל המאשר *</p>
-                  <div className="space-y-2">
-                    <Label htmlFor="manager_first_name">שם פרטי של המנהל *</Label>
-                    <Input
-                      id="manager_first_name"
-                      name="manager_first_name"
-                      placeholder="הזן שם פרטי"
-                      value={formData.manager_first_name}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="manager_last_name">שם משפחה של המנהל *</Label>
-                    <Input
-                      id="manager_last_name"
-                      name="manager_last_name"
-                      placeholder="הזן שם משפחה"
-                      value={formData.manager_last_name}
-                      onChange={handleChange}
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="manager_email">מייל המנהל *</Label>
-                    <Input
-                      id="manager_email"
-                      name="manager_email"
-                      type="email"
-                      placeholder="manager@company.com"
-                      value={formData.manager_email}
-                      onChange={handleChange}
-                      disabled={loading}
-                      dir="ltr"
-                    />
-                  </div>
+                  <p className="text-sm text-muted-foreground font-medium">בחירת מנהל מאשר *</p>
+                  {loadingManagers ? (
+                    <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      טוען רשימת מנהלים...
+                    </div>
+                  ) : managers.length === 0 ? (
+                    <div className="p-4 text-sm bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                      <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                        לא נמצאו מנהלים במערכת
+                      </p>
+                      <p className="text-yellow-700 dark:text-yellow-300">
+                        אנא פנה למנהל המערכת להוספת מנהל ראשון. לאחר מכן תוכל להירשם כעובד.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Select 
+                        value={formData.manager_id} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, manager_id: value }))}
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="בחר מנהל מהרשימה" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50 max-h-[200px]">
+                          {managers.map((manager) => (
+                            <SelectItem key={manager.id} value={manager.id}>
+                              {manager.full_name} ({manager.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        בחר את המנהל הישיר שלך מרשימת המנהלים הרשומים במערכת. 
+                        רק מנהלים רשומים יכולים לאשר דוחות.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -294,7 +321,11 @@ export default function Register() {
                 disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading || (loadingManagers && !formData.is_manager) || (!formData.is_manager && managers.length === 0)}
+            >
               {loading ? 'נרשם...' : 'הירשם'}
             </Button>
           </form>

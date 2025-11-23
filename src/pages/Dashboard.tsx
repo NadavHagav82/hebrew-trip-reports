@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -42,6 +43,8 @@ interface Profile {
   employee_id: string | null;
   department: string;
   accounting_manager_email?: string | null;
+  manager_id?: string | null;
+  is_manager?: boolean;
 }
 
 export default function Dashboard() {
@@ -52,10 +55,12 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('all');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [managers, setManagers] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
   const [editedProfile, setEditedProfile] = useState({ 
     full_name: '', 
     department: '',
-    accounting_manager_email: ''
+    accounting_manager_email: '',
+    manager_id: ''
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -74,6 +79,7 @@ export default function Dashboard() {
     }
     fetchReports();
     fetchProfile();
+    fetchManagers();
     checkAdminStatus();
     checkManagerStatus();
   }, [user, navigate]);
@@ -128,9 +134,30 @@ export default function Dashboard() {
         full_name: data.full_name || '',
         department: data.department || '',
         accounting_manager_email: data.accounting_manager_email || '',
+        manager_id: data.manager_id || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchManagers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username')
+        .eq('is_manager', true)
+        .order('full_name');
+
+      if (error) throw error;
+      
+      setManagers(data.map(m => ({ 
+        id: m.id, 
+        full_name: m.full_name, 
+        email: m.username 
+      })));
+    } catch (error) {
+      console.error('Error loading managers:', error);
     }
   };
 
@@ -145,6 +172,7 @@ export default function Dashboard() {
           full_name: editedProfile.full_name,
           department: editedProfile.department,
           accounting_manager_email: editedProfile.accounting_manager_email || null,
+          manager_id: (!profile.is_manager && editedProfile.manager_id) ? editedProfile.manager_id : null,
         })
         .eq('id', user.id);
 
@@ -160,6 +188,7 @@ export default function Dashboard() {
         full_name: editedProfile.full_name,
         department: editedProfile.department,
         accounting_manager_email: editedProfile.accounting_manager_email,
+        manager_id: editedProfile.manager_id,
       });
       setShowProfileDialog(false);
       setCurrentPassword('');
@@ -401,15 +430,26 @@ export default function Dashboard() {
                 <BarChart3 className="w-4 h-4 text-purple-600" />
               </Button>
               {isManager && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/manager/dashboard')}
-                  className="h-8 w-8 sm:h-9 sm:w-9 bg-orange-500/10 hover:bg-orange-500/20"
-                  title="דשבורד מנהלים"
-                >
-                  <Shield className="w-4 h-4 text-orange-600" />
-                </Button>
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/manager/dashboard')}
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-orange-500/10 hover:bg-orange-500/20"
+                    title="דשבורד מנהלים"
+                  >
+                    <Shield className="w-4 h-4 text-orange-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/manager/team')}
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-green-500/10 hover:bg-green-500/20"
+                    title="הצוות שלי"
+                  >
+                    <FileStack className="w-4 h-4 text-green-600" />
+                  </Button>
+                </>
               )}
               {isAdmin && (
                 <Button 
@@ -796,6 +836,33 @@ export default function Dashboard() {
                         דוחות מאושרים יישלחו אוטומטית לכתובת זו. עדכונים על דוחות יישלחו למייל הרישום שלך.
                       </p>
                     </div>
+
+                    {!profile?.is_manager && managers.length > 0 && (
+                      <div className="space-y-2">
+                        <Label htmlFor="manager_id" className="text-sm">
+                          מנהל ישיר
+                          <span className="text-xs text-muted-foreground mr-1">(נדרש לעובדים)</span>
+                        </Label>
+                        <Select 
+                          value={editedProfile.manager_id} 
+                          onValueChange={(value) => setEditedProfile({ ...editedProfile, manager_id: value })}
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="בחר מנהל מהרשימה" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-50 max-h-[200px]">
+                            {managers.map((manager) => (
+                              <SelectItem key={manager.id} value={manager.id}>
+                                {manager.full_name} ({manager.email})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          במקרה שהמנהל עזב, ניתן לשנות כאן את המנהל המאשר שלך
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

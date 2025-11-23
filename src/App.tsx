@@ -12,6 +12,7 @@ import ViewReport from "./pages/reports/ViewReport";
 import ApproveReport from "./pages/ApproveReport";
 import ManageRoles from "./pages/admin/ManageRoles";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import MyTeam from "./pages/manager/MyTeam";
 import AccountingDashboard from "./pages/accounting/AccountingDashboard";
 import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
 import NotFound from "./pages/NotFound";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/approve-report/:token" element={<ApproveReport />} />
             <Route path="/admin/roles" element={<ManageRoles />} />
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+            <Route path="/manager/team" element={<MyTeam />} />
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
             <Route path="/analytics" element={<ExpenseAnalytics />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
