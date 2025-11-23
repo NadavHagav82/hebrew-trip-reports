@@ -272,7 +272,7 @@ const calculateTripDuration = (report: Report) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
 
-export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
+export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile }) => {
   const categoryTotals = expenses.reduce((acc, exp) => {
     if (!acc[exp.category]) acc[exp.category] = 0;
     acc[exp.category] += exp.amount_in_ils;
@@ -286,6 +286,12 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
     return acc;
   }, {} as Record<string, number>);
 
+  const tripStart = format(new Date(report.trip_start_date), 'dd/MM/yyyy');
+  const tripEnd = format(new Date(report.trip_end_date), 'dd/MM/yyyy');
+  const tripRange = `${tripStart} - ${tripEnd}`;
+
+  const mainCurrency = expenses[0]?.currency || 'USD';
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -293,7 +299,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
         <View style={styles.headerBox}>
           <Text style={styles.title}>דוח נסיעה עסקית</Text>
           <Text style={styles.subtitle}>
-            נוצר ב: {format(new Date(), 'dd/MM/yyyy HH:mm')}
+            {report.trip_destination} | {tripRange}
           </Text>
         </View>
 
@@ -301,42 +307,28 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses }) => {
         <Text style={styles.sectionTitle}>פרטי הנסיעה</Text>
         <View style={styles.infoTable}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>שם החברה:</Text>
+            <Text style={styles.infoLabel}>שם העובד:</Text>
+            <Text style={styles.infoValue}>{profile?.full_name || '-'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>חברה:</Text>
+            <Text style={styles.infoValue}>{profile?.department || '-'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>יעד:</Text>
             <Text style={styles.infoValue}>{report.trip_destination}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>תאריכי נסיעה:</Text>
+            <Text style={styles.infoValue}>{tripRange}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>מטרת הנסיעה:</Text>
             <Text style={styles.infoValue}>{report.trip_purpose}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>תאריך התחלה:</Text>
-            <Text style={styles.infoValue}>
-              {format(new Date(report.trip_start_date), 'dd/MM/yyyy')}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>תאריך סיום:</Text>
-            <Text style={styles.infoValue}>
-              {format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>משך הנסיעה:</Text>
-            <Text style={styles.infoValue}>{calculateTripDuration(report)} ימים</Text>
-          </View>
-          {report.daily_allowance && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>אש״ל ליום:</Text>
-              <Text style={styles.infoValue}>
-                ${report.daily_allowance} (סה״כ: ${report.daily_allowance * calculateTripDuration(report)})
-              </Text>
-            </View>
-          )}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>תאריך יצירה:</Text>
-            <Text style={styles.infoValue}>
-              {format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}
-            </Text>
+            <Text style={styles.infoLabel}>מטבע:</Text>
+            <Text style={styles.infoValue}>{mainCurrency}</Text>
           </View>
         </View>
 
