@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, MessageCircle, Share2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, MessageCircle, Share2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -848,147 +848,157 @@ const ViewReport = () => {
         </header>
 
         {/* Screen View */}
-        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl no-print">
-          <Card className="mb-4 sm:mb-6 shadow-md hover:shadow-lg transition-shadow border-l-4 border-l-primary">
-            <CardHeader className="pb-3 sm:pb-6 bg-gradient-to-l from-muted/30 to-transparent">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="text-base sm:text-lg font-bold">סטטוס הדוח</CardTitle>
-                <StatusBadge status={report.status} />
-              </div>
-            </CardHeader>
-          </Card>
+        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl no-print">
+          {/* Header Card */}
+          <div className="bg-gradient-to-r from-[#1e3a8a] to-[#2563eb] rounded-lg shadow-xl mb-6 p-6 text-white text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">דוח נסיעה עסקית</h1>
+            <p className="text-lg opacity-90">
+              {report.trip_destination} | {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
+            </p>
+          </div>
 
-          <Card className="mb-4 sm:mb-6 shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3 sm:pb-6 bg-gradient-to-l from-muted/30 to-transparent border-b">
-              <CardTitle className="text-base sm:text-lg font-bold">פרטי הנסיעה</CardTitle>
+          {/* Trip Details Card */}
+          <Card className="mb-6 shadow-lg border-0">
+            <CardHeader className="pb-4 border-b-2 border-blue-600">
+              <CardTitle className="text-xl font-bold text-blue-900">פרטי הנסיעה</CardTitle>
             </CardHeader>
-            <CardContent className="pt-4 sm:pt-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">שם העובד</span>
-                    <span className="font-semibold text-base"> {profile?.full_name || '-'}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">חברה</span>
-                    <span className="font-semibold text-base"> {profile?.department || '-'}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">יעד</span>
-                    <span className="font-semibold text-base"> {report.trip_destination}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">תאריכי נסיעה</span>
-                    <span className="font-semibold text-base"> {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">מטרת הנסיעה</span>
-                    <span className="font-semibold text-base"> {report.trip_purpose}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">מטבע</span>
-                    <span className="font-semibold text-base"> {grandTotalByCurrency && Object.keys(grandTotalByCurrency)[0]}</span>
-                  </div>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 font-medium">שם העובד</span>
+                  <span className="font-semibold text-gray-900">{profile?.full_name || '-'}</span>
                 </div>
-              {report.notes && (
-                <div className="mt-4 sm:mt-6 pt-4 border-t">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-2">:הערות</span>
-                  <p className="font-medium text-sm sm:text-base whitespace-pre-wrap p-3 bg-muted/30 rounded-lg">{report.notes}</p>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 font-medium">חברה</span>
+                  <span className="font-semibold text-gray-900">{profile?.department || '-'}</span>
                 </div>
-              )}
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 font-medium">יעד</span>
+                  <span className="font-semibold text-gray-900">{report.trip_destination}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 font-medium">תאריכי נסיעה</span>
+                  <span className="font-semibold text-gray-900">
+                    {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 sm:col-span-2">
+                  <span className="text-gray-600 font-medium">מטרת הנסיעה</span>
+                  <span className="font-semibold text-gray-900">{report.trip_purpose}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-600 font-medium">מטבע</span>
+                  <span className="font-semibold text-gray-900">{grandTotalByCurrency && Object.keys(grandTotalByCurrency)[0]}</span>
+                </div>
+              </div>
+...
             </CardContent>
           </Card>
 
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>הוצאות ({expenses.length})</CardTitle>
+          <Card className="mb-6 shadow-lg border-0">
+            <CardHeader className="pb-4 border-b-2 border-blue-600">
+              <CardTitle className="text-xl font-bold text-blue-900">סיכום הוצאות</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {expenses.map((expense) => {
-                  const CategoryIcon = getCategoryIcon(expense.category);
-                  const categoryColor = getCategoryColor(expense.category);
-                  return (
-                    <div key={expense.id} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <span className="font-semibold text-base">{expense.description}</span>
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1 ${categoryColor}`}>
-                              <CategoryIcon className="w-3 h-3" />
-                              {getCategoryLabel(expense.category)}
+            <CardContent className="pt-6 overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#1e3a8a] text-white">
+                    <th className="px-4 py-3 text-right font-semibold text-sm">#</th>
+                    <th className="px-4 py-3 text-right font-semibold text-sm">תאריך</th>
+                    <th className="px-4 py-3 text-right font-semibold text-sm">תיאור</th>
+                    <th className="px-4 py-3 text-right font-semibold text-sm">סכום</th>
+                    <th className="px-4 py-3 text-right font-semibold text-sm">קטגוריה</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.map((expense, idx) => {
+                    const CategoryIcon = getCategoryIcon(expense.category);
+                    return (
+                      <tr key={expense.id} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                        <td className="px-4 py-3 text-sm">{idx + 1}</td>
+                        <td className="px-4 py-3 text-sm">{format(new Date(expense.expense_date), 'dd/MM/yyyy')}</td>
+                        <td className="px-4 py-3 text-sm font-medium">{expense.description}</td>
+                        <td className="px-4 py-3 text-sm font-semibold">
+                          {expense.amount.toFixed(2)} {expense.currency}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            <CategoryIcon className="w-3 h-3" />
+                            {getCategoryLabel(expense.category)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-6 shadow-lg border-0">
+            <CardHeader className="pb-4 border-b-2 border-blue-600">
+              <CardTitle className="text-xl font-bold text-blue-900">סיכום לפי קטגוריות</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-4 py-3 text-right font-semibold text-sm text-gray-700">קטגוריה</th>
+                    <th className="px-4 py-3 text-right font-semibold text-sm text-gray-700">סכום</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(categoryTotalsByCurrency).map(([category, data]) => {
+                    const CategoryIcon = getCategoryIcon(category);
+                    return (
+                      <tr key={category} className="border-b border-gray-200">
+                        <td className="px-4 py-3 text-sm flex items-center gap-2">
+                          <CategoryIcon className="w-4 h-4 text-blue-600" />
+                          {getCategoryLabel(category)}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold">
+                          {Object.entries(data.currencies).map(([currency, amount], idx) => (
+                            <span key={currency}>
+                              {idx > 0 && ' + '}
+                              {amount.toFixed(2)} {currency}
                             </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                          </p>
-                          {expense.notes && (
-                            <p className="text-sm text-muted-foreground mt-2 italic border-r-2 border-muted pr-2">
-                              {expense.notes}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          <div className="text-xl font-bold text-foreground">
-                            ₪{expense.amount_in_ils.toFixed(2)}
-                          </div>
-                          <div className="text-sm bg-muted/50 px-2 py-0.5 rounded">
-                            <span className="font-medium">{expense.currency}</span>
-                            <span className="mx-1">•</span>
-                            <span>{expense.amount.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          ))}
+                          {' = '}₪{data.totalILS.toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="bg-[#1e3a8a] text-white font-bold">
+                    <td className="px-4 py-4 text-base">סה"כ כולל</td>
+                    <td className="px-4 py-4 text-base">
+                      {Object.entries(grandTotalByCurrency).map(([currency, amount], idx) => (
+                        <span key={currency}>
+                          {idx > 0 && ' + '}
+                          {amount.toFixed(2)} {currency}
+                        </span>
+                      ))}
+                      {' = '}₪{report.total_amount_ils.toFixed(2)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>סיכום</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {Object.entries(categoryTotals).map(([category, total]) => {
-                  const CategoryIcon = getCategoryIcon(category);
-                  const categoryColor = getCategoryColor(category);
-                  return (
-                    <div key={category} className="flex justify-between text-sm items-center">
-                      <span className="text-muted-foreground flex items-center gap-2">
-                        <div className={`p-1 rounded ${categoryColor}`}>
-                          <CategoryIcon className="w-3.5 h-3.5" />
-                        </div>
-                        {getCategoryLabel(category)}:
-                      </span>
-                      <span className="font-medium">₪{total.toFixed(2)}</span>
-                    </div>
-                  );
-                })}
-                <div className="border-t pt-3">
-                  <div className="flex justify-between font-bold text-lg mb-2">
-                    <span>סה"כ:</span>
-                    <span>₪{report.total_amount_ils.toFixed(2)}</span>
-                  </div>
-                  {Object.entries(grandTotalByCurrency).length > 0 && (
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="text-sm text-muted-foreground mb-2 font-semibold">סה"כ לפי מטבעות:</div>
-                      <div className="space-y-1">
-                        {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
-                          <div key={currency} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{currency}:</span>
-                            <span className="font-medium">{amount.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Notes Card */}
+          {report.notes && (
+            <Card className="mb-6 shadow-lg border-0 bg-blue-50">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-bold text-blue-900 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  הערות
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700 leading-relaxed">{report.notes}</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
         
         {/* Print Version */}
