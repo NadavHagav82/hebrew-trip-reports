@@ -18,10 +18,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { pdf } from '@react-pdf/renderer';
 import { ReportPdf } from '@/pdf/ReportPdf';
-import { compressImage } from '@/utils/imageCompression';
 
 interface Expense {
   id: string;
@@ -82,9 +80,6 @@ const ViewReport = () => {
   const [showSaveListDialog, setShowSaveListDialog] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [savingList, setSavingList] = useState(false);
-  
-  // Image compression state
-  const [compressImages, setCompressImages] = useState(true);
 
   useEffect(() => {
     if (id) {
@@ -259,36 +254,7 @@ const ViewReport = () => {
     try {
       console.log('PDF Generation: Starting with @react-pdf/renderer...');
       
-      // Compress images if enabled
-      let processedExpenses = expenses;
-      if (compressImages) {
-        console.log('PDF Generation: Compressing images...');
-        processedExpenses = await Promise.all(
-          expenses.map(async (expense) => {
-            if (expense.receipts && expense.receipts.length > 0) {
-              const compressedReceipts = await Promise.all(
-                expense.receipts.map(async (receipt) => {
-                  if (receipt.file_type === 'image') {
-                    try {
-                      const compressed = await compressImage(receipt.file_url, 0.6, 1200);
-                      return { ...receipt, file_url: compressed };
-                    } catch (error) {
-                      console.warn('Failed to compress image, using original:', error);
-                      return receipt;
-                    }
-                  }
-                  return receipt;
-                })
-              );
-              return { ...expense, receipts: compressedReceipts };
-            }
-            return expense;
-          })
-        );
-        console.log('PDF Generation: Images compressed successfully');
-      }
-      
-      const pdfDoc = <ReportPdf report={report} expenses={processedExpenses} profile={profile} />;
+      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
       const blob = await pdf(pdfDoc).toBlob();
       
       console.log('PDF Generation: Blob created, size:', blob.size);
@@ -712,28 +678,15 @@ const ViewReport = () => {
                     עריכה
                   </Button>
                 )}
-                <div className="flex items-center gap-2 bg-card rounded-lg p-2 border">
-                  <Button 
-                    onClick={printPDF}
-                    size="sm"
-                    variant="outline"
-                    className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <Printer className="w-4 h-4 ml-1" />
-                    ייצא PDF
-                  </Button>
-                  <div className="flex items-center gap-1.5 pr-2 border-r">
-                    <Switch 
-                      id="compress-mobile"
-                      checked={compressImages}
-                      onCheckedChange={setCompressImages}
-                      className="data-[state=checked]:bg-green-600"
-                    />
-                    <Label htmlFor="compress-mobile" className="text-xs cursor-pointer whitespace-nowrap">
-                      דחוס תמונות
-                    </Label>
-                  </div>
-                </div>
+                <Button 
+                  onClick={printPDF}
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <Printer className="w-4 h-4 ml-1" />
+                  ייצא PDF
+                </Button>
                 {report.status === 'closed' && (
                   <Button 
                     variant="outline" 
@@ -794,26 +747,13 @@ const ViewReport = () => {
                     עריכה
                   </Button>
                 )}
-                <div className="flex items-center gap-3 bg-card rounded-lg p-2 border">
-                  <Button 
-                    onClick={printPDF}
-                    className="shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <Printer className="w-4 h-4 ml-2" />
-                    ייצא PDF
-                  </Button>
-                  <div className="flex items-center gap-2 pr-3 border-r">
-                    <Switch 
-                      id="compress-desktop"
-                      checked={compressImages}
-                      onCheckedChange={setCompressImages}
-                      className="data-[state=checked]:bg-green-600"
-                    />
-                    <Label htmlFor="compress-desktop" className="text-sm cursor-pointer whitespace-nowrap">
-                      דחוס תמונות
-                    </Label>
-                  </div>
-                </div>
+                <Button 
+                  onClick={printPDF}
+                  className="shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <Printer className="w-4 h-4 ml-2" />
+                  ייצא PDF
+                </Button>
                 {report.status === 'closed' && (
                   <Button onClick={() => setShowEmailDialog(true)}>
                     <Mail className="w-4 h-4 ml-2" />
