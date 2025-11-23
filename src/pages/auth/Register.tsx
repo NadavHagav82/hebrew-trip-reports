@@ -45,7 +45,7 @@ export default function Register() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, username')
+        .select('id, full_name, email')
         .eq('is_manager', true)
         .order('full_name');
 
@@ -54,7 +54,7 @@ export default function Register() {
       setManagers(data.map(m => ({ 
         id: m.id, 
         full_name: m.full_name, 
-        email: m.username 
+        email: m.email 
       })));
     } catch (error) {
       console.error('Error loading managers:', error);
