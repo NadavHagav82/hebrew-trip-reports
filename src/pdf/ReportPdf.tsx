@@ -369,12 +369,6 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
             <Text style={styles.infoLabel}>מטרת הנסיעה</Text>
             <Text style={styles.infoValue}>{report.trip_purpose}</Text>
           </View>
-          {report.daily_allowance && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>אש"ל יומי</Text>
-              <Text style={styles.infoValue}>${report.daily_allowance.toFixed(2)}</Text>
-            </View>
-          )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>מטבע</Text>
             <Text style={styles.infoValue}>{mainCurrency}</Text>
@@ -433,6 +427,25 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           ))}
         </View>
 
+        {/* Daily Allowance Section */}
+        {report.daily_allowance && (
+          <View style={[styles.summaryBox, { marginTop: 20, backgroundColor: '#dbeafe', borderColor: '#60a5fa' }]}>
+            <Text style={[styles.summaryTitle, { color: '#1e40af' }]}>אש"ל יומי</Text>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>אש"ל יומי</Text>
+              <Text style={styles.summaryValue}>${report.daily_allowance.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>מספר ימים</Text>
+              <Text style={styles.summaryValue}>{calculateTripDuration(report)}</Text>
+            </View>
+            <View style={[styles.summaryRow, { marginTop: 10, paddingTop: 10, borderTopWidth: 2, borderTopColor: '#60a5fa' }]}>
+              <Text style={[styles.summaryLabel, { color: '#1e40af', fontWeight: 700 }]}>סה"כ אש"ל לתקופה</Text>
+              <Text style={[styles.summaryValue, { color: '#1e40af', fontSize: 12, fontWeight: 700 }]}>${(report.daily_allowance * calculateTripDuration(report)).toFixed(2)}</Text>
+            </View>
+          </View>
+        )}
+
         {/* Summary */}
         <View style={styles.summaryBox}>
           <Text style={styles.summaryTitle}>סיכום לפי קטגוריות</Text>
@@ -442,12 +455,6 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
               <Text style={styles.summaryValue}>₪{total.toFixed(2)}</Text>
             </View>
           ))}
-          {report.daily_allowance && (
-            <View style={[styles.summaryRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#93c5fd' }]}>
-              <Text style={[styles.summaryLabel, { color: '#3b82f6' }]}>סה"כ אש"ל לתקופה ({calculateTripDuration(report)} ימים)</Text>
-              <Text style={[styles.summaryValue, { color: '#3b82f6' }]}>${(report.daily_allowance * calculateTripDuration(report)).toFixed(2)}</Text>
-            </View>
-          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>סה"כ כולל:</Text>
             <Text style={styles.totalValue}>₪{report.total_amount_ils?.toFixed(2) || '0.00'}</Text>
