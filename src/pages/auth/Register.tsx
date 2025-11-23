@@ -92,10 +92,12 @@ export default function Register() {
     // Find manager by email if not a manager
     let managerId = null;
     if (!formData.is_manager && formData.manager_email) {
+      const normalizedManagerEmail = formData.manager_email.trim();
+
       const { data: managerData, error: managerError } = await supabase
         .from('profiles')
         .select('id, is_manager')
-        .eq('email', formData.manager_email)
+        .ilike('email', normalizedManagerEmail)
         .eq('is_manager', true)
         .maybeSingle();
 
