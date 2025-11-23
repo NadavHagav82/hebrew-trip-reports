@@ -68,6 +68,10 @@ export type Database = {
           employee_id: string
           full_name: string
           id: string
+          is_manager: boolean
+          manager_email: string | null
+          manager_first_name: string | null
+          manager_last_name: string | null
           username: string
         }
         Insert: {
@@ -76,6 +80,10 @@ export type Database = {
           employee_id: string
           full_name: string
           id: string
+          is_manager?: boolean
+          manager_email?: string | null
+          manager_first_name?: string | null
+          manager_last_name?: string | null
           username: string
         }
         Update: {
@@ -84,6 +92,10 @@ export type Database = {
           employee_id?: string
           full_name?: string
           id?: string
+          is_manager?: boolean
+          manager_email?: string | null
+          manager_first_name?: string | null
+          manager_last_name?: string | null
           username?: string
         }
         Relationships: []
@@ -214,6 +226,8 @@ export type Database = {
           created_at: string
           daily_allowance: number | null
           id: string
+          manager_approval_requested_at: string | null
+          manager_approval_token: string | null
           notes: string | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["expense_status"]
@@ -232,6 +246,8 @@ export type Database = {
           created_at?: string
           daily_allowance?: number | null
           id?: string
+          manager_approval_requested_at?: string | null
+          manager_approval_token?: string | null
           notes?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
@@ -250,6 +266,8 @@ export type Database = {
           created_at?: string
           daily_allowance?: number | null
           id?: string
+          manager_approval_requested_at?: string | null
+          manager_approval_token?: string | null
           notes?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
@@ -346,7 +364,7 @@ export type Database = {
         | "QAR"
         | "KWD"
         | "JOD"
-      expense_status: "draft" | "open" | "closed"
+      expense_status: "draft" | "open" | "closed" | "pending_approval"
       file_type_enum: "image" | "pdf"
       report_action:
         | "created"
@@ -542,7 +560,7 @@ export const Constants = {
         "KWD",
         "JOD",
       ],
-      expense_status: ["draft", "open", "closed"],
+      expense_status: ["draft", "open", "closed", "pending_approval"],
       file_type_enum: ["image", "pdf"],
       report_action: ["created", "submitted", "approved", "rejected", "edited"],
     },

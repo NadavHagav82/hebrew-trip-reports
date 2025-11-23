@@ -45,10 +45,12 @@ interface Report {
   trip_start_date: string;
   trip_end_date: string;
   trip_purpose: string;
-  status: 'draft' | 'open' | 'closed';
+  status: 'draft' | 'open' | 'closed' | 'pending_approval';
   total_amount_ils: number;
   submitted_at: string | null;
   approved_at: string | null;
+  manager_approval_requested_at?: string | null;
+  manager_approval_token?: string | null;
   created_at: string;
   notes?: string;
   daily_allowance?: number;
@@ -58,6 +60,10 @@ interface Profile {
   full_name: string;
   employee_id: string;
   department: string;
+  is_manager: boolean;
+  manager_first_name?: string | null;
+  manager_last_name?: string | null;
+  manager_email?: string | null;
 }
 
 const ViewReport = () => {
@@ -377,6 +383,69 @@ const ViewReport = () => {
       setSendingEmail(false);
     }
   };
+
+  const handleCloseReport = async () => {
+    if (!report || !profile) return;
+
+    try {
+      // Check if user is a manager
+      if (profile.is_manager) {
+        // Manager can close report directly
+        await supabase
+          .from('reports')
+          .update({ status: 'closed', approved_at: new Date().toISOString() })
+          .eq('id', report.id);
+        
+        toast({
+          title: 'הדוח נסגר בהצלחה',
+          description: 'הדוח נסגר ואושר',
+        });
+      } else {
+        // Employee needs manager approval
+        if (!profile.manager_email || !profile.manager_first_name || !profile.manager_last_name) {
+          toast({
+            title: 'שגיאה',
+            description: 'לא נמצאו פרטי מנהל בפרופיל שלך',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Request approval from manager
+        const { error } = await supabase.functions.invoke('request-report-approval', {
+          body: {
+            reportId: report.id,
+            managerEmail: profile.manager_email,
+            managerName: `${profile.manager_first_name} ${profile.manager_last_name}`,
+            employeeName: profile.full_name,
+            reportDetails: {
+              destination: report.trip_destination,
+              startDate: format(new Date(report.trip_start_date), 'dd/MM/yyyy'),
+              endDate: format(new Date(report.trip_end_date), 'dd/MM/yyyy'),
+              purpose: report.trip_purpose,
+              totalAmount: report.total_amount_ils,
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: 'נשלחה בקשת אישור',
+          description: `הדוח נשלח לאישור של ${profile.manager_first_name} ${profile.manager_last_name}`,
+        });
+      }
+
+      loadReport();
+    } catch (error: any) {
+      console.error('Error closing report:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לסגור את הדוח',
+        variant: 'destructive',
+      });
+    }
+  };
   
 
   if (loading) {
@@ -498,21 +567,11 @@ const ViewReport = () => {
                     </Button>
                     <Button 
                       size="sm"
-                      onClick={async () => {
-                        try {
-                          await supabase
-                            .from('reports')
-                            .update({ status: 'closed' })
-                            .eq('id', report.id);
-                          loadReport();
-                        } catch (error) {
-                          toast({ title: 'שגיאה', variant: 'destructive' });
-                        }
-                      }}
+                      onClick={handleCloseReport}
                       className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <CheckCircle className="w-4 h-4 ml-1" />
-                      סגור
+                      {profile?.is_manager ? 'סגור ואשר' : 'שלח לאישור'}
                     </Button>
                   </>
                 )}
@@ -597,21 +656,11 @@ const ViewReport = () => {
                       עריכה
                     </Button>
                     <Button 
-                      onClick={async () => {
-                        try {
-                          await supabase
-                            .from('reports')
-                            .update({ status: 'closed' })
-                            .eq('id', report.id);
-                          loadReport();
-                        } catch (error) {
-                          toast({ title: 'שגיאה', variant: 'destructive' });
-                        }
-                      }}
+                      onClick={handleCloseReport}
                       className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <CheckCircle className="w-4 h-4 ml-2" />
-                      סגור דוח
+                      {profile?.is_manager ? 'סגור ואשר דוח' : 'שלח לאישור מנהל'}
                     </Button>
                   </>
                 )}

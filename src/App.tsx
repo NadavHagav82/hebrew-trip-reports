@@ -9,6 +9,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import NewReport from "./pages/reports/NewReport";
 import ViewReport from "./pages/reports/ViewReport";
+import ApproveReport from "./pages/ApproveReport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/reports/new" element={<NewReport />} />
             <Route path="/reports/edit/:id" element={<NewReport />} />
             <Route path="/reports/:id" element={<ViewReport />} />
+            <Route path="/approve-report/:token" element={<ApproveReport />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

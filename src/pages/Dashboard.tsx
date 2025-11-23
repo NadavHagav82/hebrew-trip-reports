@@ -25,11 +25,13 @@ interface Report {
   trip_destination: string;
   trip_start_date: string;
   trip_end_date: string;
-  status: 'draft' | 'open' | 'closed';
+  status: 'draft' | 'open' | 'closed' | 'pending_approval';
   total_amount_ils: number;
   submitted_at: string | null;
   approved_at: string | null;
   created_at: string;
+  manager_approval_requested_at?: string | null;
+  manager_approval_token?: string | null;
 }
 
 interface Profile {

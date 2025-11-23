@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { FileText } from 'lucide-react';
 
@@ -17,6 +18,10 @@ export default function Register() {
     full_name: '',
     employee_id: '',
     department: '',
+    is_manager: false,
+    manager_first_name: '',
+    manager_last_name: '',
+    manager_email: '',
   });
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
@@ -33,14 +38,38 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (Object.values(formData).some(value => !value)) {
+    // Validation for required fields
+    const requiredFields = ['email', 'password', 'confirmPassword', 'username', 'full_name', 'employee_id', 'department'];
+    if (requiredFields.some(field => !formData[field as keyof typeof formData])) {
       toast({
         title: 'שגיאה',
         description: 'יש למלא את כל השדות המסומנים ב-*',
         variant: 'destructive',
       });
       return;
+    }
+
+    // Validate manager details for non-managers
+    if (!formData.is_manager) {
+      if (!formData.manager_first_name || !formData.manager_last_name || !formData.manager_email) {
+        toast({
+          title: 'שגיאה',
+          description: 'יש למלא את פרטי המנהל המאשר',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Validate manager email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.manager_email)) {
+        toast({
+          title: 'שגיאה',
+          description: 'כתובת מייל המנהל לא תקינה',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     if (formData.password.length < 8) {
@@ -67,6 +96,10 @@ export default function Register() {
       full_name: formData.full_name,
       employee_id: formData.employee_id,
       department: formData.department,
+      is_manager: formData.is_manager,
+      manager_first_name: formData.is_manager ? null : formData.manager_first_name,
+      manager_last_name: formData.is_manager ? null : formData.manager_last_name,
+      manager_email: formData.is_manager ? null : formData.manager_email,
     });
 
     if (error) {
@@ -160,6 +193,62 @@ export default function Register() {
                 disabled={loading}
               />
             </div>
+            
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Checkbox 
+                  id="is_manager" 
+                  checked={formData.is_manager}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_manager: checked as boolean }))}
+                  disabled={loading}
+                />
+                <Label htmlFor="is_manager" className="font-medium cursor-pointer">
+                  אני מנהל (דוחות שלי לא דורשים אישור)
+                </Label>
+              </div>
+              
+              {!formData.is_manager && (
+                <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground font-medium">פרטי המנהל המאשר *</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="manager_first_name">שם פרטי של המנהל *</Label>
+                    <Input
+                      id="manager_first_name"
+                      name="manager_first_name"
+                      placeholder="הזן שם פרטי"
+                      value={formData.manager_first_name}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manager_last_name">שם משפחה של המנהל *</Label>
+                    <Input
+                      id="manager_last_name"
+                      name="manager_last_name"
+                      placeholder="הזן שם משפחה"
+                      value={formData.manager_last_name}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manager_email">מייל המנהל *</Label>
+                    <Input
+                      id="manager_email"
+                      name="manager_email"
+                      type="email"
+                      placeholder="manager@company.com"
+                      value={formData.manager_email}
+                      onChange={handleChange}
+                      disabled={loading}
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="password">סיסמה *</Label>
               <Input

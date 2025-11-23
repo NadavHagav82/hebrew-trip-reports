@@ -37,10 +37,12 @@ interface Report {
   trip_start_date: string;
   trip_end_date: string;
   trip_purpose: string;
-  status: 'draft' | 'open' | 'pending' | 'approved' | 'rejected' | 'closed';
+  status: 'draft' | 'open' | 'closed' | 'pending_approval';
   total_amount_ils: number;
   submitted_at: string | null;
   approved_at: string | null;
+  manager_approval_requested_at?: string | null;
+  manager_approval_token?: string | null;
   created_at: string;
   daily_allowance?: number;
 }

@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-type Status = 'draft' | 'open' | 'closed';
+type Status = 'draft' | 'open' | 'closed' | 'pending_approval';
 
 interface StatusBadgeProps {
   status: Status;
@@ -18,6 +18,11 @@ const statusConfig = {
     label: 'פתוח',
     className: 'bg-orange-500 text-white',
     icon: '🟠',
+  },
+  pending_approval: {
+    label: 'ממתין לאישור',
+    className: 'bg-yellow-500 text-white',
+    icon: '⏳',
   },
   closed: {
     label: 'סגור',
