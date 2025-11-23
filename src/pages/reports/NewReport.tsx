@@ -820,7 +820,7 @@ export default function NewReport() {
         try {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('accounting_manager_email, personal_email')
+            .select('accounting_manager_email')
             .eq('id', user.id)
             .single();
 
@@ -834,12 +834,12 @@ export default function NewReport() {
             });
           }
 
-          // Send to user's personal email
-          if (profileData?.personal_email) {
+          // Send to user's registration email
+          if (user.email) {
             await supabase.functions.invoke('send-accounting-report', {
               body: {
                 reportId: report.id,
-                accountingEmail: profileData.personal_email,
+                accountingEmail: user.email,
               }
             });
           }

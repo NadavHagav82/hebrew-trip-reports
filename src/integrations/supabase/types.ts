@@ -73,7 +73,6 @@ export type Database = {
           manager_email: string | null
           manager_first_name: string | null
           manager_last_name: string | null
-          personal_email: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -88,7 +87,6 @@ export type Database = {
           manager_email?: string | null
           manager_first_name?: string | null
           manager_last_name?: string | null
-          personal_email?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -103,7 +101,6 @@ export type Database = {
           manager_email?: string | null
           manager_first_name?: string | null
           manager_last_name?: string | null
-          personal_email?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username?: string
         }
