@@ -70,9 +70,7 @@ export type Database = {
           full_name: string
           id: string
           is_manager: boolean
-          manager_email: string | null
-          manager_first_name: string | null
-          manager_last_name: string | null
+          manager_id: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -84,9 +82,7 @@ export type Database = {
           full_name: string
           id: string
           is_manager?: boolean
-          manager_email?: string | null
-          manager_first_name?: string | null
-          manager_last_name?: string | null
+          manager_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -98,13 +94,19 @@ export type Database = {
           full_name?: string
           id?: string
           is_manager?: boolean
-          manager_email?: string | null
-          manager_first_name?: string | null
-          manager_last_name?: string | null
+          manager_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipts: {
         Row: {
