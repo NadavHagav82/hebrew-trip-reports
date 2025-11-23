@@ -838,8 +838,8 @@ const ViewReport = () => {
                 </div>
                 {report.daily_allowance && (
                   <div className="bg-gradient-to-br from-teal-50 to-white p-4 rounded-lg border border-teal-100">
-                    <span className="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-1">דמי לינה יומיים</span>
-                    <span className="font-bold text-lg text-gray-900">₪{report.daily_allowance.toFixed(2)}</span>
+                    <span className="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-1">אש"ל יומי</span>
+                    <span className="font-bold text-lg text-gray-900">${report.daily_allowance.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-lg border border-rose-100 sm:col-span-2">
