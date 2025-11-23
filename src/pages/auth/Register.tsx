@@ -23,6 +23,7 @@ export default function Register() {
     manager_last_name: '',
     manager_email: '',
     accounting_manager_email: '',
+    personal_email: '',
   });
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
@@ -40,7 +41,7 @@ export default function Register() {
     e.preventDefault();
 
     // Validation for required fields
-    const requiredFields = ['email', 'password', 'confirmPassword', 'username', 'full_name', 'employee_id', 'department'];
+    const requiredFields = ['email', 'password', 'confirmPassword', 'username', 'full_name', 'department'];
     if (requiredFields.some(field => !formData[field as keyof typeof formData])) {
       toast({
         title: 'שגיאה',
@@ -95,13 +96,14 @@ export default function Register() {
     const { error } = await signUp(formData.email, formData.password, {
       username: formData.username,
       full_name: formData.full_name,
-      employee_id: formData.employee_id,
+      employee_id: formData.employee_id || null,
       department: formData.department,
       is_manager: formData.is_manager,
       manager_first_name: formData.is_manager ? null : formData.manager_first_name,
       manager_last_name: formData.is_manager ? null : formData.manager_last_name,
       manager_email: formData.is_manager ? null : formData.manager_email,
       accounting_manager_email: formData.accounting_manager_email || null,
+      personal_email: formData.personal_email || null,
     });
 
     if (error) {
@@ -174,7 +176,7 @@ export default function Register() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="employee_id">מספר עובד *</Label>
+              <Label htmlFor="employee_id">מספר עובד (אופציונלי)</Label>
               <Input
                 id="employee_id"
                 name="employee_id"
@@ -197,7 +199,9 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="accounting_manager_email">מייל מנהל חשבונות (אופציונלי)</Label>
+              <Label htmlFor="accounting_manager_email">
+                מייל הנהלת חשבונות (אופציונלי)
+              </Label>
               <Input
                 id="accounting_manager_email"
                 name="accounting_manager_email"
@@ -210,6 +214,25 @@ export default function Register() {
               />
               <p className="text-xs text-muted-foreground">
                 דוחות מאושרים יישלחו אוטומטית לכתובת זו
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="personal_email">
+                מייל אישי לקבלת עדכונים (אופציונלי)
+              </Label>
+              <Input
+                id="personal_email"
+                name="personal_email"
+                type="email"
+                placeholder="your.email@gmail.com"
+                value={formData.personal_email}
+                onChange={handleChange}
+                disabled={loading}
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground">
+                תקבל עדכונים אוטומטית על מצב הדוחות שלך
               </p>
             </div>
             
