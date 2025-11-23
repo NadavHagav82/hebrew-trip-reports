@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface SendReportEmailRequest {
-  recipientEmail: string;
+  recipientEmails: string[];
   reportId: string;
   reportData: {
     report: any;
@@ -25,11 +25,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { recipientEmail, reportId, reportData }: SendReportEmailRequest = await req.json();
+    const { recipientEmails, reportId, reportData }: SendReportEmailRequest = await req.json();
 
-    console.log("Sending report email to:", recipientEmail);
+    console.log("Sending report email to:", recipientEmails);
     console.log("Report data received:", {
       reportId,
+      recipientsCount: recipientEmails.length,
       expensesCount: reportData.expenses.length,
       hasProfile: !!reportData.profile,
     });
@@ -257,7 +258,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     const emailResponse = await resend.emails.send({
       from: "דוחות נסיעות <onboarding@resend.dev>",
-      to: [recipientEmail],
+      to: recipientEmails,
       subject: `דוח נסיעה - ${reportDetails.destination}`,
       html: `
         <div dir="rtl" style="font-family: 'Heebo', Arial, sans-serif; direction: rtl; max-width: 600px; margin: 0 auto;">
@@ -286,7 +287,7 @@ const handler = async (req: Request): Promise<Response> => {
       ],
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully to", recipientEmails.length, "recipients:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,
