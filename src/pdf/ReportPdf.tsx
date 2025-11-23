@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: '#e2e8f0',
+    color: '#1f2937',
     textAlign: 'right',
     fontWeight: 600,
   },
@@ -214,14 +214,14 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 10,
     textAlign: 'right',
-    color: '#374151',
+    color: '#1f2937',
     fontWeight: 600,
   },
   summaryValue: {
     fontSize: 10,
     textAlign: 'right',
     fontWeight: 700,
-    color: '#475569',
+    color: '#1f2937',
   },
   totalRow: {
     flexDirection: 'row',
@@ -276,13 +276,13 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     marginBottom: 12,
     textAlign: 'right',
-    color: '#475569',
+    color: '#1f2937',
   },
   receiptDetails: {
     fontSize: 12,
     marginBottom: 16,
     textAlign: 'right',
-    color: '#6b7280',
+    color: '#374151',
     fontWeight: 500,
   },
   receiptImage: {
