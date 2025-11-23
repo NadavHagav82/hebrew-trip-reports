@@ -117,14 +117,14 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingRight: 16,
     fontWeight: 600,
-    color: '#4b5563',
+    color: '#1f2937',
   },
   infoValue: {
     width: '65%',
     fontSize: 13,
     textAlign: 'left',
     paddingLeft: 12,
-    color: '#000000',
+    color: '#111827',
     fontWeight: 700,
   },
   table: {
