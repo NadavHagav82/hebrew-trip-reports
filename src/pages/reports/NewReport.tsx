@@ -637,6 +637,44 @@ export default function NewReport() {
       return;
     }
 
+    // Validate expenses have all required fields
+    if (expenses.length > 0) {
+      for (let i = 0; i < expenses.length; i++) {
+        const expense = expenses[i];
+        const expenseNum = expenses.length - i;
+        
+        if (!expense.expense_date) {
+          toast({
+            title: 'שגיאה',
+            description: `הוצאה #${expenseNum}: יש למלא תאריך`,
+            variant: 'destructive',
+          });
+          setExpandedExpense(expense.id);
+          return;
+        }
+        
+        if (!expense.description || expense.description.trim() === '') {
+          toast({
+            title: 'שגיאה',
+            description: `הוצאה #${expenseNum}: יש למלא תיאור`,
+            variant: 'destructive',
+          });
+          setExpandedExpense(expense.id);
+          return;
+        }
+        
+        if (!expense.amount || expense.amount <= 0) {
+          toast({
+            title: 'שגיאה',
+            description: `הוצאה #${expenseNum}: יש למלא סכום תקין`,
+            variant: 'destructive',
+          });
+          setExpandedExpense(expense.id);
+          return;
+        }
+      }
+    }
+
     setLoading(true);
     try {
       let report;
