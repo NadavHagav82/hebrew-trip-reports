@@ -8,7 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { FileText } from 'lucide-react';
+import { FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -24,9 +27,35 @@ export default function Register() {
     accounting_manager_email: '',
   });
   const [loading, setLoading] = useState(false);
+  const [managers, setManagers] = useState<Array<{ id: string; email: string; full_name: string }>>([]);
+  const [loadingManagers, setLoadingManagers] = useState(false);
+  const [openManagerCombobox, setOpenManagerCombobox] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Load managers list
+  useEffect(() => {
+    const loadManagers = async () => {
+      setLoadingManagers(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .eq('is_manager', true)
+          .order('full_name');
+
+        if (error) throw error;
+        setManagers(data || []);
+      } catch (error) {
+        console.error('Error loading managers:', error);
+      } finally {
+        setLoadingManagers(false);
+      }
+    };
+
+    loadManagers();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -269,19 +298,56 @@ export default function Register() {
               {!formData.is_manager && (
                 <div className="space-y-2">
                   <Label htmlFor="manager_email">מייל מנהל מאשר *</Label>
-                  <Input
-                    id="manager_email"
-                    name="manager_email"
-                    type="email"
-                    placeholder="manager@company.com"
-                    value={formData.manager_email}
-                    onChange={handleChange}
-                    disabled={loading}
-                    dir="ltr"
-                  />
+                  <Popover open={openManagerCombobox} onOpenChange={setOpenManagerCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openManagerCombobox}
+                        className="w-full justify-between h-12 text-base"
+                        disabled={loading || loadingManagers}
+                      >
+                        {formData.manager_email || "בחר מנהל מאשר..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="חפש מנהל..." dir="rtl" />
+                        <CommandList>
+                          <CommandEmpty>לא נמצאו מנהלים</CommandEmpty>
+                          <CommandGroup>
+                            {managers.map((manager) => (
+                              <CommandItem
+                                key={manager.id}
+                                value={manager.email}
+                                onSelect={(currentValue) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    manager_email: currentValue === formData.manager_email ? "" : currentValue
+                                  }));
+                                  setOpenManagerCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.manager_email === manager.email ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{manager.full_name}</span>
+                                  <span className="text-sm text-muted-foreground">{manager.email}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <p className="text-xs text-muted-foreground">
-                    הזן את כתובת המייל של המנהל הישיר שלך. 
-                    רק מנהלים רשומים יכולים לאשר דוחות.
+                    בחר את המנהל הישיר שלך מהרשימה. רק מנהלים רשומים יכולים לאשר דוחות.
                   </p>
                 </div>
               )}
