@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,6 +70,7 @@ export default function Dashboard() {
     fetchReports();
     fetchProfile();
     checkAdminStatus();
+    checkManagerStatus();
   }, [user, navigate]);
 
   const checkAdminStatus = async () => {
@@ -76,6 +78,13 @@ export default function Dashboard() {
     const { data } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'admin' });
     setIsAdmin(!!data);
+  };
+
+  const checkManagerStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'manager' });
+    setIsManager(!!data);
   };
 
   const fetchReports = async () => {
@@ -363,6 +372,17 @@ export default function Dashboard() {
               <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
                 {profile?.full_name || user?.email}
               </span>
+              {isManager && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/manager/dashboard')}
+                  className="h-8 w-8 sm:h-9 sm:w-9 bg-orange-500/10 hover:bg-orange-500/20"
+                  title="דשבורד מנהלים"
+                >
+                  <Shield className="w-4 h-4 text-orange-600" />
+                </Button>
+              )}
               {isAdmin && (
                 <Button 
                   variant="ghost" 
