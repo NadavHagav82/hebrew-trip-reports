@@ -138,6 +138,44 @@ export type Database = {
           },
         ]
       }
+      recipient_lists: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          list_name: string
+          recipient_emails: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          list_name: string
+          recipient_emails: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          list_name?: string
+          recipient_emails?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipient_lists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_comments: {
         Row: {
           comment_text: string
