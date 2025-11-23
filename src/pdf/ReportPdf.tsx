@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: '#1f2937',
+    color: '#111827',
     textAlign: 'right',
     fontWeight: 600,
   },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingRight: 16,
     fontWeight: 600,
-    color: '#1f2937',
+    color: '#111827',
   },
   infoValue: {
     width: '65%',
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   tableCellText: {
     fontSize: 12,
     textAlign: 'right',
-    color: '#1f2937',
+    color: '#111827',
     fontWeight: 500,
   },
   numberCell: {
@@ -214,14 +214,14 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 10,
     textAlign: 'right',
-    color: '#1f2937',
+    color: '#111827',
     fontWeight: 600,
   },
   summaryValue: {
     fontSize: 10,
     textAlign: 'right',
     fontWeight: 700,
-    color: '#1f2937',
+    color: '#111827',
   },
   totalRow: {
     flexDirection: 'row',
@@ -276,13 +276,13 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     marginBottom: 12,
     textAlign: 'right',
-    color: '#1f2937',
+    color: '#111827',
   },
   receiptDetails: {
     fontSize: 12,
     marginBottom: 16,
     textAlign: 'right',
-    color: '#374151',
+    color: '#111827',
     fontWeight: 500,
   },
   receiptImage: {
