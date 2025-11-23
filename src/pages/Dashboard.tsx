@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -391,6 +391,15 @@ export default function Dashboard() {
                   <Calculator className="w-4 h-4 text-blue-600" />
                 </Button>
               )}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/analytics')}
+                className="h-8 w-8 sm:h-9 sm:w-9 bg-purple-500/10 hover:bg-purple-500/20"
+                title="אנליטיקה"
+              >
+                <BarChart3 className="w-4 h-4 text-purple-600" />
+              </Button>
               {isManager && (
                 <Button 
                   variant="ghost" 
