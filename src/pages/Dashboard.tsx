@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2 } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -39,9 +39,10 @@ interface Profile {
   id: string;
   username: string;
   full_name: string;
-  employee_id: string;
+  employee_id: string | null;
   department: string;
   accounting_manager_email?: string | null;
+  personal_email?: string | null;
 }
 
 export default function Dashboard() {
@@ -55,7 +56,8 @@ export default function Dashboard() {
   const [editedProfile, setEditedProfile] = useState({ 
     full_name: '', 
     department: '',
-    accounting_manager_email: ''
+    accounting_manager_email: '',
+    personal_email: ''
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -128,6 +130,7 @@ export default function Dashboard() {
         full_name: data.full_name || '',
         department: data.department || '',
         accounting_manager_email: data.accounting_manager_email || '',
+        personal_email: data.personal_email || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -145,6 +148,7 @@ export default function Dashboard() {
           full_name: editedProfile.full_name,
           department: editedProfile.department,
           accounting_manager_email: editedProfile.accounting_manager_email || null,
+          personal_email: editedProfile.personal_email || null,
         })
         .eq('id', user.id);
 
@@ -160,6 +164,7 @@ export default function Dashboard() {
         full_name: editedProfile.full_name,
         department: editedProfile.department,
         accounting_manager_email: editedProfile.accounting_manager_email,
+        personal_email: editedProfile.personal_email,
       });
       setShowProfileDialog(false);
       setCurrentPassword('');
@@ -380,6 +385,17 @@ export default function Dashboard() {
               <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
                 {profile?.full_name || user?.email}
               </span>
+              {profile?.accounting_manager_email && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/accounting/dashboard')}
+                  className="h-8 w-8 sm:h-9 sm:w-9 bg-blue-500/10 hover:bg-blue-500/20"
+                  title="דשבורד הנהלת חשבונות"
+                >
+                  <Calculator className="w-4 h-4 text-blue-600" />
+                </Button>
+              )}
               {isManager && (
                 <Button 
                   variant="ghost" 
@@ -761,7 +777,7 @@ export default function Dashboard() {
 
                     <div className="space-y-2">
                       <Label htmlFor="accounting_manager_email" className="text-sm">
-                        מייל מנהל חשבונות
+                        מייל הנהלת חשבונות
                         <span className="text-xs text-muted-foreground mr-1">(אופציונלי)</span>
                       </Label>
                       <Input 
@@ -774,6 +790,24 @@ export default function Dashboard() {
                       />
                       <p className="text-xs text-muted-foreground">
                         דוחות מאושרים יישלחו אוטומטית לכתובת זו
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="personal_email" className="text-sm">
+                        מייל אישי לקבלת עדכונים
+                        <span className="text-xs text-muted-foreground mr-1">(אופציונלי)</span>
+                      </Label>
+                      <Input 
+                        id="personal_email" 
+                        type="email"
+                        value={editedProfile.personal_email}
+                        onChange={(e) => setEditedProfile({ ...editedProfile, personal_email: e.target.value })}
+                        placeholder="your.email@gmail.com"
+                        dir="ltr"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        תקבל עדכונים אוטומטית על מצב הדוחות שלך
                       </p>
                     </div>
                   </CardContent>
