@@ -865,27 +865,27 @@ const ViewReport = () => {
             <CardContent className="pt-4 sm:pt-6">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">שם העובד:</span>
+                    <span className="text-sm text-muted-foreground font-medium">שם העובד</span>
                     <span className="font-semibold text-base"> {profile?.full_name || '-'}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">חברה:</span>
+                    <span className="text-sm text-muted-foreground font-medium">חברה</span>
                     <span className="font-semibold text-base"> {profile?.department || '-'}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">יעד:</span>
+                    <span className="text-sm text-muted-foreground font-medium">יעד</span>
                     <span className="font-semibold text-base"> {report.trip_destination}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">תאריכי נסיעה:</span>
+                    <span className="text-sm text-muted-foreground font-medium">תאריכי נסיעה</span>
                     <span className="font-semibold text-base"> {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">מטרת הנסיעה:</span>
+                    <span className="text-sm text-muted-foreground font-medium">מטרת הנסיעה</span>
                     <span className="font-semibold text-base"> {report.trip_purpose}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-border/30">
-                    <span className="text-sm text-muted-foreground font-medium">מטבע:</span>
+                    <span className="text-sm text-muted-foreground font-medium">מטבע</span>
                     <span className="font-semibold text-base"> {grandTotalByCurrency && Object.keys(grandTotalByCurrency)[0]}</span>
                   </div>
                 </div>
@@ -1050,29 +1050,29 @@ const ViewReport = () => {
               fontSize: '15px'
             }}>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'שם העובד:\u200F:'}</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>שם העובד</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{profile?.full_name || 'לא זמין'}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'חברה:\u200F:'}</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>חברה</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{profile?.department || 'לא זמין'}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'יעד:\u200F:'}</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>יעד</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{report?.trip_destination}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'מטרה:\u200F:'}</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>מטרה</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>{report?.trip_purpose}</span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'תאריכי נסיעה:\u200F:'}</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>תאריכי נסיעה</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>
                   {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')} - {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
                 </span>
               </div>
               <div>
-                <span style={{ color: '#6b7280', fontWeight: '500' }}>{'מטבע:\u200F:'}</span>
+                <span style={{ color: '#6b7280', fontWeight: '500' }}>מטבע</span>
                 <span style={{ marginRight: '8px', fontWeight: '600' }}>ILS (₪)</span>
               </div>
             </div>

@@ -307,27 +307,27 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
         <Text style={styles.sectionTitle}>פרטי הנסיעה</Text>
         <View style={styles.infoTable}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{'שם העובד:\u200F:'}</Text>
+            <Text style={styles.infoLabel}>שם העובד</Text>
             <Text style={styles.infoValue}>{profile?.full_name || '-'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{'חברה:\u200F:'}</Text>
+            <Text style={styles.infoLabel}>חברה</Text>
             <Text style={styles.infoValue}>{profile?.department || '-'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{'יעד:\u200F:'}</Text>
+            <Text style={styles.infoLabel}>יעד</Text>
             <Text style={styles.infoValue}>{report.trip_destination}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{'תאריכי נסיעה:\u200F:'}</Text>
+            <Text style={styles.infoLabel}>תאריכי נסיעה</Text>
             <Text style={styles.infoValue}>{tripRange}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{'מטרת הנסיעה:\u200F:'}</Text>
+            <Text style={styles.infoLabel}>מטרת הנסיעה</Text>
             <Text style={styles.infoValue}>{report.trip_purpose}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{'מטבע:\u200F:'}</Text>
+            <Text style={styles.infoLabel}>מטבע</Text>
             <Text style={styles.infoValue}>{mainCurrency}</Text>
           </View>
         </View>
