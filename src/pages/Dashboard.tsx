@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -56,6 +57,7 @@ export default function Dashboard() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -66,7 +68,15 @@ export default function Dashboard() {
     }
     fetchReports();
     fetchProfile();
+    checkAdminStatus();
   }, [user, navigate]);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+    setIsAdmin(!!data);
+  };
 
   const fetchReports = async () => {
     try {
@@ -353,6 +363,17 @@ export default function Dashboard() {
               <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
                 {profile?.full_name || user?.email}
               </span>
+              {isAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/admin/roles')}
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="ניהול משתמשים"
+                >
+                  <Shield className="w-4 h-4" />
+                </Button>
+              )}
               <Button 
                 variant="ghost" 
                 size="icon" 
