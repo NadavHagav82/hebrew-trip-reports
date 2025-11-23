@@ -366,8 +366,8 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           </View>
         </View>
 
-        {/* Expenses Table */}
-        <Text style={styles.sectionTitle}>סיכום הוצאות</Text>
+        {/* Expenses Table - Start on page 2 */}
+        <Text style={styles.sectionTitle} break>סיכום הוצאות</Text>
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <View style={[styles.tableHeaderCell, styles.ilsCell]}>
