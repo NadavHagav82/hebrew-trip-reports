@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   headerBox: {
-    backgroundColor: '#475569',
+    backgroundColor: '#1f2937',
     padding: 30,
     marginBottom: 35,
     textAlign: 'right',
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 30,
     textAlign: 'right',
-    color: '#334155',
+    color: '#111827',
     borderBottomWidth: 2,
     borderBottomColor: '#3b82f6',
     paddingBottom: 8,
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#475569',
+    backgroundColor: '#1f2937',
     borderBottomWidth: 3,
-    borderBottomColor: '#64748b',
+    borderBottomColor: '#374151',
   },
   tableHeaderCell: {
     padding: 14,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#475569',
+    backgroundColor: '#1f2937',
     borderRadius: 6,
   },
   totalLabel: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   receiptHeaderBox: {
-    backgroundColor: '#475569',
+    backgroundColor: '#1f2937',
     padding: 24,
     marginBottom: 30,
     textAlign: 'right',
