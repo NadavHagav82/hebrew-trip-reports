@@ -13,6 +13,10 @@ interface AuthContextType {
     full_name: string;
     employee_id: string;
     department: string;
+    is_manager: boolean;
+    manager_first_name: string | null;
+    manager_last_name: string | null;
+    manager_email: string | null;
   }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -58,6 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     full_name: string;
     employee_id: string;
     department: string;
+    is_manager: boolean;
+    manager_first_name: string | null;
+    manager_last_name: string | null;
+    manager_email: string | null;
   }) => {
     const redirectUrl = `${window.location.origin}/`;
     
