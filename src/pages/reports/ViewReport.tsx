@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, Share2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -16,12 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { pdf } from '@react-pdf/renderer';
@@ -704,20 +698,15 @@ const ViewReport = () => {
                   ייצא PDF
                 </Button>
                 {report.status === 'closed' && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap">
-                        <Share2 className="w-4 h-4 ml-1" />
-                        שתף
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)} className="cursor-pointer">
-                        <Mail className="w-4 h-4 ml-2" />
-                        <span>שלח במייל</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowEmailDialog(true)}
+                    className="whitespace-nowrap"
+                  >
+                    <Mail className="w-4 h-4 ml-1" />
+                    שלח במייל
+                  </Button>
                 )}
               </div>
             </div>
@@ -786,20 +775,10 @@ const ViewReport = () => {
                   ייצא PDF
                 </Button>
                 {report.status === 'closed' && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button>
-                        <Share2 className="w-4 h-4 ml-2" />
-                        שתף
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => setShowEmailDialog(true)} className="cursor-pointer">
-                        <Mail className="w-4 h-4 ml-2" />
-                        <span>שלח במייל</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button onClick={() => setShowEmailDialog(true)}>
+                    <Mail className="w-4 h-4 ml-2" />
+                    שלח במייל
+                  </Button>
                 )}
               </div>
             </div>
