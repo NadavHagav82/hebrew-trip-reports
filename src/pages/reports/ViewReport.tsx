@@ -832,6 +832,16 @@ const ViewReport = () => {
                     {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
                   </span>
                 </div>
+                <div className="bg-gradient-to-br from-sky-50 to-white p-4 rounded-lg border border-sky-100">
+                  <span className="text-xs text-sky-600 font-semibold uppercase tracking-wide block mb-1">מספר ימים</span>
+                  <span className="font-bold text-lg text-gray-900">{calculateTripDuration()}</span>
+                </div>
+                {report.daily_allowance && (
+                  <div className="bg-gradient-to-br from-teal-50 to-white p-4 rounded-lg border border-teal-100">
+                    <span className="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-1">דמי לינה יומיים</span>
+                    <span className="font-bold text-lg text-gray-900">₪{report.daily_allowance.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-lg border border-rose-100 sm:col-span-2">
                   <span className="text-xs text-rose-600 font-semibold uppercase tracking-wide block mb-1">מטרת הנסיעה</span>
                   <span className="font-bold text-lg text-gray-900">{report.trip_purpose}</span>
