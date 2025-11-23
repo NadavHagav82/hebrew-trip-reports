@@ -138,21 +138,6 @@ export default function ExpenseAnalytics() {
     }));
   };
 
-  const getDepartmentData = () => {
-    const deptTotals: Record<string, number> = {};
-    reports.forEach(report => {
-      const dept = report.profiles.department;
-      if (!deptTotals[dept]) {
-        deptTotals[dept] = 0;
-      }
-      deptTotals[dept] += report.total_amount_ils;
-    });
-
-    return Object.entries(deptTotals)
-      .map(([name, amount]) => ({ name, amount: Math.round(amount) }))
-      .sort((a, b) => b.amount - a.amount);
-  };
-
   const getTimelineData = () => {
     const timeline: Record<string, number> = {};
     reports.forEach(report => {
@@ -179,7 +164,6 @@ export default function ExpenseAnalytics() {
       : `רבעון ${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()}`;
 
     const categoryData = getCategoryData();
-    const deptData = getDepartmentData();
 
     const csvContent = [
       `דוח סיכום הוצאות - ${periodLabel}`,
@@ -187,10 +171,6 @@ export default function ExpenseAnalytics() {
       'סיכום לפי קטגוריה:',
       'קטגוריה,סכום (₪)',
       ...categoryData.map(d => `${d.name},${d.amount}`),
-      '',
-      'סיכום לפי מחלקה:',
-      'מחלקה,סכום (₪)',
-      ...deptData.map(d => `${d.name},${d.amount}`),
       '',
       `סה"כ כללי:,₪${getTotalAmount().toLocaleString()}`,
       `מספר דוחות:,${reports.length}`,
@@ -222,7 +202,6 @@ export default function ExpenseAnalytics() {
     : `רבעון ${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()}`;
 
   const categoryData = getCategoryData();
-  const deptData = getDepartmentData();
   const timelineData = getTimelineData();
   const totalAmount = getTotalAmount();
 
@@ -354,7 +333,7 @@ export default function ExpenseAnalytics() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Category Pie Chart */}
             <Card>
               <CardHeader>
@@ -384,28 +363,9 @@ export default function ExpenseAnalytics() {
               </CardContent>
             </Card>
 
-            {/* Department Bar Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle>הוצאות לפי מחלקה</CardTitle>
-                <CardDescription>השוואת הוצאות בין מחלקות</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={deptData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                    <YAxis />
-                    <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
-                    <Bar dataKey="amount" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
             {/* Timeline Chart */}
             {timelineData.length > 1 && (
-              <Card className="lg:col-span-2">
+              <Card>
                 <CardHeader>
                   <CardTitle>מגמת הוצאות לאורך זמן</CardTitle>
                   <CardDescription>סה"כ הוצאות ליום/חודש</CardDescription>
