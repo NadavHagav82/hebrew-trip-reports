@@ -62,88 +62,89 @@ interface ReportPdfProps {
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
-    padding: 40,
+    padding: 50,
     fontFamily: 'Heebo',
     backgroundColor: '#ffffff',
   },
   headerBox: {
     backgroundColor: '#1e3a8a',
-    padding: 20,
-    marginBottom: 30,
+    padding: 30,
+    marginBottom: 40,
     textAlign: 'right',
-    borderRadius: 10,
+    borderRadius: 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     color: '#ffffff',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'right',
     fontWeight: 700,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#dbeafe',
     textAlign: 'right',
   },
   sectionTitle: {
-    fontSize: 16,
-    marginBottom: 16,
-    marginTop: 28,
+    fontSize: 20,
+    marginBottom: 20,
+    marginTop: 35,
     textAlign: 'right',
     color: '#1e3a8a',
-    borderBottomWidth: 3,
-    borderBottomColor: '#3b82f6',
-    paddingBottom: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: '#60a5fa',
+    paddingBottom: 8,
     fontWeight: 700,
   },
   infoTable: {
-    marginBottom: 20,
-    backgroundColor: '#f9fafb',
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    marginBottom: 30,
+    backgroundColor: '#ffffff',
+    padding: 24,
+    borderRadius: 10,
   },
   infoRow: {
     flexDirection: 'row-reverse',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingVertical: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
   infoLabel: {
-    width: '40%',
-    fontSize: 11,
+    width: '35%',
+    fontSize: 12,
     textAlign: 'right',
-    paddingRight: 12,
+    paddingRight: 16,
     fontWeight: 700,
-    color: '#374151',
+    color: '#1e3a8a',
   },
   infoValue: {
-    width: '60%',
-    fontSize: 11,
+    width: '65%',
+    fontSize: 12,
     textAlign: 'left',
-    paddingLeft: 8,
+    paddingLeft: 12,
     color: '#1f2937',
   },
   table: {
-    marginTop: 12,
-    borderRadius: 8,
+    marginTop: 16,
+    borderRadius: 10,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#3b82f6',
+    backgroundColor: '#ffffff',
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#1e3a8a',
-    borderBottomWidth: 2,
+    borderBottomWidth: 3,
     borderBottomColor: '#1e40af',
   },
   tableHeaderCell: {
-    padding: 12,
+    padding: 14,
     textAlign: 'right',
   },
   tableHeaderText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#ffffff',
     fontWeight: 700,
     textAlign: 'right',
@@ -152,19 +153,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
   },
   tableRowEven: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f0f9ff',
   },
   tableCell: {
-    padding: 10,
+    padding: 12,
     textAlign: 'right',
   },
   tableCellText: {
-    fontSize: 10,
+    fontSize: 11,
     textAlign: 'right',
     color: '#1f2937',
   },
@@ -187,16 +189,16 @@ const styles = StyleSheet.create({
     width: '14%',
   },
   summaryBox: {
-    marginTop: 28,
-    padding: 20,
+    marginTop: 35,
+    padding: 26,
     backgroundColor: '#dbeafe',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#3b82f6',
   },
   summaryTitle: {
-    fontSize: 16,
-    marginBottom: 12,
+    fontSize: 18,
+    marginBottom: 16,
     textAlign: 'right',
     fontWeight: 700,
     color: '#1e3a8a',
@@ -204,15 +206,15 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   summaryLabel: {
-    fontSize: 11,
+    fontSize: 13,
     textAlign: 'right',
     color: '#374151',
   },
   summaryValue: {
-    fontSize: 11,
+    fontSize: 13,
     textAlign: 'right',
     fontWeight: 700,
     color: '#1e3a8a',
@@ -220,68 +222,70 @@ const styles = StyleSheet.create({
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 3,
-    borderTopColor: '#1e3a8a',
+    marginTop: 16,
+    paddingTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#1e3a8a',
+    borderRadius: 8,
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 700,
     textAlign: 'right',
-    color: '#1e3a8a',
+    color: '#ffffff',
   },
   totalValue: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 700,
     textAlign: 'right',
-    color: '#1e3a8a',
+    color: '#ffffff',
   },
   receiptPage: {
     flexDirection: 'column',
-    padding: 40,
+    padding: 50,
     fontFamily: 'Heebo',
     backgroundColor: '#ffffff',
   },
   receiptHeaderBox: {
     backgroundColor: '#1e3a8a',
-    padding: 16,
-    marginBottom: 24,
+    padding: 24,
+    marginBottom: 30,
     textAlign: 'right',
-    borderRadius: 10,
+    borderRadius: 12,
   },
   receiptPageTitle: {
-    fontSize: 18,
+    fontSize: 22,
     color: '#ffffff',
     textAlign: 'right',
     fontWeight: 700,
   },
   receiptContainer: {
-    marginBottom: 24,
+    marginBottom: 30,
     borderWidth: 2,
     borderColor: '#3b82f6',
-    borderRadius: 8,
-    padding: 16,
-    backgroundColor: '#f9fafb',
+    borderRadius: 10,
+    padding: 20,
+    backgroundColor: '#ffffff',
   },
   receiptTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: 700,
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'right',
     color: '#1e3a8a',
   },
   receiptDetails: {
-    fontSize: 10,
-    marginBottom: 12,
+    fontSize: 11,
+    marginBottom: 16,
     textAlign: 'right',
     color: '#6b7280',
   },
   receiptImage: {
     maxWidth: '100%',
-    maxHeight: 400,
+    maxHeight: 500,
     objectFit: 'contain',
-    borderRadius: 4,
+    borderRadius: 6,
   },
 });
 
@@ -335,7 +339,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
         </View>
 
         {/* Trip Details */}
-        <Text style={styles.sectionTitle}>פרטי הנסיעה</Text>
+        <Text style={styles.sectionTitle}>🌍  פרטי הנסיעה</Text>
         <View style={styles.infoTable}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>שם העובד</Text>
@@ -364,7 +368,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
         </View>
 
         {/* Expenses Table */}
-        <Text style={styles.sectionTitle}>סיכום הוצאות</Text>
+        <Text style={styles.sectionTitle}>📋  סיכום הוצאות</Text>
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <View style={[styles.tableHeaderCell, styles.ilsCell]}>
@@ -417,7 +421,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
 
         {/* Summary */}
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryTitle}>סיכום לפי קטגוריות</Text>
+          <Text style={styles.summaryTitle}>💰  סיכום לפי קטגוריות</Text>
           {Object.entries(categoryTotals).map(([category, total]) => (
             <View key={category} style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{getCategoryLabel(category)}:</Text>
@@ -425,8 +429,8 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
             </View>
           ))}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>סה"כ:</Text>
-            <Text style={styles.totalValue}>₪{report.total_amount_ils.toFixed(2)}</Text>
+            <Text style={styles.totalLabel}>סה"כ כולל:</Text>
+            <Text style={styles.totalValue}>₪{report.total_amount_ils?.toFixed(2) || '0.00'}</Text>
           </View>
           {Object.entries(grandTotalByCurrency).length > 0 && (
             <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#3b82f6' }}>
@@ -444,26 +448,18 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
         </View>
       </Page>
 
-      {/* Receipt Pages */}
+      {/* Receipt Pages - Start on new page */}
       {expenses.map((expense, expenseIndex) => {
         const imageReceipts = expense.receipts?.filter(r => r.file_type === 'image') || [];
-        
-        // Debug log
-        console.log(`Expense ${expenseIndex + 1} (${expense.description}):`, {
-          hasReceipts: !!expense.receipts,
-          receiptsCount: expense.receipts?.length || 0,
-          imageReceiptsCount: imageReceipts.length,
-          receipts: expense.receipts,
-        });
         
         if (imageReceipts.length === 0) return null;
 
         return imageReceipts.map((receipt, receiptIndex) => (
-          <Page key={`${expense.id}-${receipt.id}`} size="A4" style={styles.receiptPage}>
+          <Page key={`${expense.id}-${receipt.id}`} size="A4" style={styles.receiptPage} wrap={false} break>
             <View style={styles.receiptHeaderBox}>
-              <Text style={styles.receiptPageTitle}>צילומי חשבוניות ומסמכים</Text>
+              <Text style={styles.receiptPageTitle}>📸  פירוט הוצאות וקבלות</Text>
             </View>
-
+            
             <View style={styles.receiptContainer}>
               <Text style={styles.receiptTitle}>
                 חשבונית מס׳ {expenseIndex + 1} - {expense.description}
