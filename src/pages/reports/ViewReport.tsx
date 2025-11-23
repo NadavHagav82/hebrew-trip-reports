@@ -80,10 +80,17 @@ const ViewReport = () => {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [recipientEmails, setRecipientEmails] = useState<string[]>(['']);
   const [sendingEmail, setSendingEmail] = useState(false);
+  
+  // Saved lists state
+  const [savedLists, setSavedLists] = useState<any[]>([]);
+  const [showSaveListDialog, setShowSaveListDialog] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [savingList, setSavingList] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadReport();
+      loadSavedLists();
     }
   }, [id]);
 
@@ -442,6 +449,116 @@ const ViewReport = () => {
       toast({
         title: 'שגיאה',
         description: error.message || 'לא ניתן לסגור את הדוח',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const loadSavedLists = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('recipient_lists')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setSavedLists(data);
+        
+        // Load default list if exists
+        const defaultList = data.find(list => list.is_default);
+        if (defaultList && showEmailDialog) {
+          setRecipientEmails(defaultList.recipient_emails);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved lists:', error);
+    }
+  };
+
+  const handleSaveList = async () => {
+    if (!user?.id || !newListName.trim()) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא להזין שם לרשימה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const validEmails = recipientEmails.filter(e => e.trim().length > 0);
+    if (validEmails.length === 0) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא להוסיף לפחות כתובת מייל אחת',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingList(true);
+    try {
+      const { error } = await supabase
+        .from('recipient_lists')
+        .insert({
+          user_id: user.id,
+          list_name: newListName,
+          recipient_emails: validEmails,
+          is_default: false,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'הרשימה נשמרה',
+        description: `הרשימה "${newListName}" נשמרה בהצלחה`,
+      });
+
+      setNewListName('');
+      setShowSaveListDialog(false);
+      loadSavedLists();
+    } catch (error: any) {
+      console.error('Error saving list:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לשמור את הרשימה',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingList(false);
+    }
+  };
+
+  const handleLoadList = (list: any) => {
+    setRecipientEmails(list.recipient_emails);
+    toast({
+      title: 'רשימה נטענה',
+      description: `נטענה רשימת "${list.list_name}"`,
+    });
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    try {
+      const { error } = await supabase
+        .from('recipient_lists')
+        .delete()
+        .eq('id', listId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'הרשימה נמחקה',
+        description: 'הרשימה נמחקה בהצלחה',
+      });
+
+      loadSavedLists();
+    } catch (error: any) {
+      console.error('Error deleting list:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן למחוק את הרשימה',
         variant: 'destructive',
       });
     }
@@ -1317,7 +1434,46 @@ const ViewReport = () => {
                 + הוסף נמען
               </Button>
             </div>
-            <div className="border-t pt-4 space-y-2">
+            <div className="border-t pt-4 space-y-3">
+              {savedLists.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">רשימות שמורות</Label>
+                  <div className="space-y-2">
+                    {savedLists.map((list) => (
+                      <div key={list.id} className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLoadList(list)}
+                          disabled={sendingEmail}
+                          className="flex-1 justify-start"
+                        >
+                          {list.list_name} ({list.recipient_emails.length})
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteList(list.id)}
+                          disabled={sendingEmail}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSaveListDialog(true)}
+                disabled={sendingEmail || recipientEmails.filter(e => e.trim()).length === 0}
+                className="w-full"
+              >
+                שמור רשימה זו
+              </Button>
+              
               <Label className="text-xs text-muted-foreground">תבניות מהירות</Label>
               <div className="flex gap-2 flex-wrap">
                 <Button
@@ -1373,6 +1529,55 @@ const ViewReport = () => {
                   <Mail className="w-4 h-4 ml-2" />
                   שלח
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save List Dialog */}
+      <Dialog open={showSaveListDialog} onOpenChange={setShowSaveListDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>שמור רשימת נמענים</DialogTitle>
+            <DialogDescription>
+              שמור את רשימת הנמענים הנוכחית לשימוש חוזר
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="list_name">שם הרשימה</Label>
+              <Input
+                id="list_name"
+                placeholder="למשל: צוות הנהלת חשבונות"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                disabled={savingList}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              רשימה זו תכלול {recipientEmails.filter(e => e.trim()).length} נמענים
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSaveListDialog(false);
+                setNewListName('');
+              }}
+              disabled={savingList}
+            >
+              ביטול
+            </Button>
+            <Button onClick={handleSaveList} disabled={savingList}>
+              {savingList ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  שומר...
+                </>
+              ) : (
+                'שמור'
               )}
             </Button>
           </DialogFooter>
