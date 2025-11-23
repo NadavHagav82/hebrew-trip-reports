@@ -11,13 +11,14 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData: {
     username: string;
     full_name: string;
-    employee_id: string;
+    employee_id: string | null;
     department: string;
     is_manager: boolean;
     manager_first_name: string | null;
     manager_last_name: string | null;
     manager_email: string | null;
     accounting_manager_email: string | null;
+    personal_email: string | null;
   }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -61,13 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, userData: {
     username: string;
     full_name: string;
-    employee_id: string;
+    employee_id: string | null;
     department: string;
     is_manager: boolean;
     manager_first_name: string | null;
     manager_last_name: string | null;
     manager_email: string | null;
     accounting_manager_email: string | null;
+    personal_email: string | null;
   }) => {
     const redirectUrl = `${window.location.origin}/`;
     

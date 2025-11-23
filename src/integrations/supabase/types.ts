@@ -66,13 +66,14 @@ export type Database = {
           accounting_manager_email: string | null
           created_at: string
           department: string
-          employee_id: string
+          employee_id: string | null
           full_name: string
           id: string
           is_manager: boolean
           manager_email: string | null
           manager_first_name: string | null
           manager_last_name: string | null
+          personal_email: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -80,13 +81,14 @@ export type Database = {
           accounting_manager_email?: string | null
           created_at?: string
           department: string
-          employee_id: string
+          employee_id?: string | null
           full_name: string
           id: string
           is_manager?: boolean
           manager_email?: string | null
           manager_first_name?: string | null
           manager_last_name?: string | null
+          personal_email?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -94,13 +96,14 @@ export type Database = {
           accounting_manager_email?: string | null
           created_at?: string
           department?: string
-          employee_id?: string
+          employee_id?: string | null
           full_name?: string
           id?: string
           is_manager?: boolean
           manager_email?: string | null
           manager_first_name?: string | null
           manager_last_name?: string | null
+          personal_email?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username?: string
         }
