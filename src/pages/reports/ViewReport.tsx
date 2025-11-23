@@ -355,13 +355,27 @@ const ViewReport = () => {
     try {
       setSendingEmail(true);
       
-      console.log('Email Send: Sending report data to edge function...');
+      console.log('Email Send: Generating PDF...');
       
-      // Send email via edge function with raw data (no PDF generation on client)
+      // Generate PDF first
+      const pdfData = await generatePDF();
+      if (!pdfData) {
+        toast({
+          title: 'שגיאה',
+          description: 'לא ניתן ליצור את קובץ ה-PDF',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      console.log('Email Send: Sending PDF to edge function...');
+      
+      // Send email via edge function with PDF
       const { error } = await supabase.functions.invoke('send-report-email', {
         body: {
           recipientEmails: validEmails,
           reportId: report.id,
+          pdfBase64: pdfData.base64,
           reportData: {
             report,
             expenses,
@@ -849,38 +863,38 @@ const ViewReport = () => {
               <CardTitle className="text-base sm:text-lg font-bold">פרטי הנסיעה</CardTitle>
             </CardHeader>
             <CardContent className="pt-4 sm:pt-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <span className="font-semibold text-sm sm:text-base">{report.trip_destination}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">:יעד</span>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-3 border-b border-border/30">
+                  <span className="font-semibold text-base">{report.trip_destination}</span>
+                  <span className="text-sm text-muted-foreground font-medium">יעד</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <span className="font-semibold text-sm sm:text-base">{report.trip_purpose}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">:מטרת הנסיעה</span>
+                <div className="flex justify-between items-center py-3 border-b border-border/30">
+                  <span className="font-semibold text-base">{report.trip_purpose}</span>
+                  <span className="text-sm text-muted-foreground font-medium">מטרת הנסיעה</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <span className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">:תאריך התחלה</span>
+                <div className="flex justify-between items-center py-3 border-b border-border/30">
+                  <span className="font-semibold text-base">{format(new Date(report.trip_start_date), 'dd/MM/yyyy')}</span>
+                  <span className="text-sm text-muted-foreground font-medium">תאריך התחלה</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <span className="font-semibold text-sm sm:text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">:תאריך סיום</span>
+                <div className="flex justify-between items-center py-3 border-b border-border/30">
+                  <span className="font-semibold text-base">{format(new Date(report.trip_end_date), 'dd/MM/yyyy')}</span>
+                  <span className="text-sm text-muted-foreground font-medium">תאריך סיום</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <span className="font-semibold text-sm sm:text-base text-primary">{calculateTripDuration()} ימים</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">:משך הנסיעה</span>
+                <div className="flex justify-between items-center py-3 border-b border-border/30">
+                  <span className="font-semibold text-base text-primary">{calculateTripDuration()} ימים</span>
+                  <span className="text-sm text-muted-foreground font-medium">משך הנסיעה</span>
                 </div>
                 {report.daily_allowance && (
-                  <div className="flex items-center justify-between py-2 border-b border-border/50">
-                    <span className="font-semibold text-sm sm:text-base">
+                  <div className="flex justify-between items-center py-3 border-b border-border/30">
+                    <span className="font-semibold text-base">
                       ${report.daily_allowance} (סה״כ ${report.daily_allowance * calculateTripDuration()})
                     </span>
-                    <span className="text-xs sm:text-sm text-muted-foreground">:אש״ל ליום</span>
+                    <span className="text-sm text-muted-foreground font-medium">אש״ל ליום</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <span className="font-semibold text-sm sm:text-base">{format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">:תאריך יצירה</span>
+                <div className="flex justify-between items-center py-3">
+                  <span className="font-semibold text-base">{format(new Date(report.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                  <span className="text-sm text-muted-foreground font-medium">תאריך יצירה</span>
                 </div>
               </div>
               {report.notes && (
