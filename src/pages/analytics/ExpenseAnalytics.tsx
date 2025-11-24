@@ -46,6 +46,7 @@ export default function ExpenseAnalytics() {
   const [loading, setLoading] = useState(true);
   const [periodType, setPeriodType] = useState<PeriodType>('month');
   const [selectedPeriod, setSelectedPeriod] = useState(0); // 0 = current, 1 = last, etc.
+  const [isManager, setIsManager] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -55,8 +56,20 @@ export default function ExpenseAnalytics() {
       navigate('/auth/login');
       return;
     }
+    checkManagerStatus();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     loadData();
-  }, [user, periodType, selectedPeriod]);
+  }, [user, periodType, selectedPeriod, isManager]);
+
+  const checkManagerStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'manager' });
+    setIsManager(!!data);
+  };
 
   const getPeriodDates = () => {
     const now = new Date();
@@ -80,8 +93,8 @@ export default function ExpenseAnalytics() {
     try {
       const { start, end } = getPeriodDates();
 
-      // Load reports
-      const { data: reportsData, error: reportsError } = await supabase
+      // Load reports - filter by user if not a manager
+      let query = supabase
         .from('reports')
         .select(`
           *,
@@ -93,6 +106,13 @@ export default function ExpenseAnalytics() {
         .eq('status', 'closed')
         .gte('approved_at', start.toISOString())
         .lte('approved_at', end.toISOString());
+
+      // If not a manager, filter to only show user's own reports
+      if (!isManager && user) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data: reportsData, error: reportsError } = await query;
 
       if (reportsError) throw reportsError;
       setReports(reportsData || []);
@@ -217,7 +237,9 @@ export default function ExpenseAnalytics() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">אנליטיקה והוצאות</h1>
-                <p className="text-sm text-muted-foreground">סיכום דוחות ועיצוב תובנות</p>
+                <p className="text-sm text-muted-foreground">
+                  {isManager ? 'סיכום כל הדוחות במערכת' : 'סיכום הדוחות שלך'}
+                </p>
               </div>
             </div>
             <Button variant="outline" onClick={() => navigate('/')}>
