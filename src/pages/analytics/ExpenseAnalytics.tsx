@@ -10,6 +10,7 @@ import { BarChart3, Loader2, ArrowRight, Download, TrendingUp, AlertTriangle } f
 import { format, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subMonths, subQuarters } from "date-fns";
 import { he } from "date-fns/locale";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import * as XLSX from 'xlsx';
 
 interface Report {
   id: string;
@@ -323,27 +324,116 @@ export default function ExpenseAnalytics() {
       : `רבעון ${Math.floor(start.getMonth() / 3) + 1} ${start.getFullYear()}`;
 
     const categoryData = getCategoryData();
+    const employeeStatsData = getEmployeeStats();
 
-    const csvContent = [
-      `דוח סיכום הוצאות - ${periodLabel}`,
-      '',
-      'סיכום לפי קטגוריה:',
-      'קטגוריה,סכום (₪)',
-      ...categoryData.map(d => `${d.name},${d.amount}`),
-      '',
-      `סה"כ כללי:,₪${getTotalAmount().toLocaleString()}`,
-      `מספר דוחות:,${reports.length}`,
-    ].join('\n');
+    // Create workbook
+    const wb = XLSX.utils.book_new();
 
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `סיכום_הוצאות_${periodLabel.replace(/ /g, '_')}.csv`;
-    link.click();
+    // Summary sheet
+    const summaryData = [
+      [`דוח סיכום הוצאות - ${periodLabel}`],
+      [],
+      ['סיכום כללי'],
+      [`סה"כ הוצאות`, `₪${getTotalAmount().toLocaleString()}`],
+      ['מספר דוחות', reports.length],
+      [],
+      ['סיכום לפי קטגוריה'],
+      ['קטגוריה', 'סכום (₪)'],
+      ...categoryData.map(d => [d.name, d.amount]),
+    ];
+
+    const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+    
+    // Set column widths
+    ws1['!cols'] = [
+      { wch: 30 },
+      { wch: 20 }
+    ];
+
+    // Add page break after category data if needed (approximately 30 rows per page)
+    const rowCount = summaryData.length;
+    if (rowCount > 30) {
+      ws1['!rows'] = summaryData.map((_, idx) => 
+        idx === 29 ? { hpx: 15, pageBreak: 1 } : { hpx: 15 }
+      );
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'סיכום');
+
+    // Employee details sheet for managers
+    if (isManager && employeeStatsData.length > 0) {
+      const employeeData = [
+        ['סטטיסטיקות עובדים'],
+        [],
+        ['שם עובד', 'מספר דוחות', 'סה"כ הוצאות (₪)'],
+        ...employeeStatsData.map(emp => [
+          emp.name,
+          emp.reportCount,
+          emp.totalAmount
+        ])
+      ];
+
+      const ws2 = XLSX.utils.aoa_to_sheet(employeeData);
+      
+      ws2['!cols'] = [
+        { wch: 30 },
+        { wch: 15 },
+        { wch: 20 }
+      ];
+
+      // Add page breaks for every 30 employees
+      if (employeeStatsData.length > 30) {
+        ws2['!rows'] = employeeData.map((_, idx) => {
+          const dataRowIdx = idx - 3; // Subtract header rows
+          return (dataRowIdx > 0 && dataRowIdx % 30 === 0) 
+            ? { hpx: 15, pageBreak: 1 } 
+            : { hpx: 15 };
+        });
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws2, 'עובדים');
+    }
+
+    // Detailed reports sheet
+    const detailedData = [
+      ['דוחות מפורטים'],
+      [],
+      ['תאריך אישור', 'שם עובד', 'יעד', 'סכום כולל (₪)'],
+      ...reports.map(r => [
+        format(new Date(r.approved_at), 'dd/MM/yyyy'),
+        r.profiles?.full_name || '',
+        r.trip_destination,
+        r.total_amount_ils
+      ])
+    ];
+
+    const ws3 = XLSX.utils.aoa_to_sheet(detailedData);
+    
+    ws3['!cols'] = [
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 20 }
+    ];
+
+    // Add page breaks for every 35 reports
+    if (reports.length > 35) {
+      ws3['!rows'] = detailedData.map((_, idx) => {
+        const dataRowIdx = idx - 3;
+        return (dataRowIdx > 0 && dataRowIdx % 35 === 0) 
+          ? { hpx: 15, pageBreak: 1 } 
+          : { hpx: 15 };
+      });
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws3, 'דוחות מפורטים');
+
+    // Write file
+    XLSX.writeFile(wb, `סיכום_הוצאות_${periodLabel.replace(/ /g, '_')}.xlsx`);
 
     toast({
-      title: "הקובץ יוצא",
-      description: "דוח הסיכום יוצא בהצלחה",
+      title: "הקובץ יוצא בהצלחה",
+      description: "דוח Excel נוצר עם מספר דפים",
     });
   };
 
