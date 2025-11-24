@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart3, Loader2, ArrowRight, Download, TrendingUp } from "lucide-react";
+import { BarChart3, Loader2, ArrowRight, Download, TrendingUp, AlertTriangle } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subMonths, subQuarters } from "date-fns";
 import { he } from "date-fns/locale";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface Report {
   id: string;
+  user_id: string;
   trip_destination: string;
   approved_at: string;
   total_amount_ils: number;
@@ -258,6 +259,63 @@ export default function ExpenseAnalytics() {
     return reports.reduce((sum, r) => sum + r.total_amount_ils, 0);
   };
 
+  const getEmployeeStats = () => {
+    if (!isManager) return [];
+
+    const employeeStats: Record<string, { name: string; reportCount: number; totalAmount: number }> = {};
+
+    reports.forEach(report => {
+      const userId = report.user_id;
+      const userName = report.profiles?.full_name || 'לא ידוע';
+
+      if (!employeeStats[userId]) {
+        employeeStats[userId] = {
+          name: userName,
+          reportCount: 0,
+          totalAmount: 0,
+        };
+      }
+
+      employeeStats[userId].reportCount += 1;
+      employeeStats[userId].totalAmount += report.total_amount_ils;
+    });
+
+    return Object.entries(employeeStats).map(([userId, stats]) => ({
+      userId,
+      name: stats.name,
+      reportCount: stats.reportCount,
+      totalAmount: Math.round(stats.totalAmount),
+    })).sort((a, b) => b.totalAmount - a.totalAmount);
+  };
+
+  const getEmployeeComparisonData = () => {
+    if (!isManager) return [];
+
+    const employeeStats = getEmployeeStats();
+    return employeeStats.map(stat => ({
+      name: stat.name.length > 15 ? stat.name.substring(0, 15) + '...' : stat.name,
+      amount: stat.totalAmount,
+      reports: stat.reportCount,
+    }));
+  };
+
+  const getOutlierWarnings = () => {
+    if (!isManager || reports.length === 0) return [];
+
+    const employeeStats = getEmployeeStats();
+    if (employeeStats.length < 2) return [];
+
+    const averageAmount = employeeStats.reduce((sum, s) => sum + s.totalAmount, 0) / employeeStats.length;
+    const threshold = averageAmount * 1.5; // 50% above average
+
+    return employeeStats.filter(stat => stat.totalAmount > threshold).map(stat => ({
+      name: stat.name,
+      amount: stat.totalAmount,
+      average: Math.round(averageAmount),
+      percentage: Math.round(((stat.totalAmount - averageAmount) / averageAmount) * 100),
+    }));
+  };
+
   const exportData = () => {
     const { start, end } = getPeriodDates();
     const periodLabel = periodType === 'month' 
@@ -305,6 +363,9 @@ export default function ExpenseAnalytics() {
   const categoryData = getCategoryData();
   const timelineData = getTimelineData();
   const totalAmount = getTotalAmount();
+  const employeeStats = getEmployeeStats();
+  const employeeComparisonData = getEmployeeComparisonData();
+  const outlierWarnings = getOutlierWarnings();
 
   return (
     <div className="min-h-screen bg-background">
@@ -391,57 +452,109 @@ export default function ExpenseAnalytics() {
           </CardContent>
         </Card>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">סה"כ הוצאות</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    ₪{totalAmount.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
-                </div>
+        {/* Outlier Warnings for Managers */}
+        {isManager && outlierWarnings.length > 0 && selectedEmployee === 'all' && (
+          <Card className="mb-6 border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20">
+            <CardHeader>
+              <CardTitle className="text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                התראות על חריגות בהוצאות
+              </CardTitle>
+              <CardDescription>עובדים שחורגים ב-50% ומעלה מהממוצע</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {outlierWarnings.map((warning, idx) => (
+                  <div key={idx} className="p-4 bg-white dark:bg-card rounded-lg border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-orange-900 dark:text-orange-100">{warning.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          הוציא ₪{warning.amount.toLocaleString()} ({warning.percentage}%+ מהממוצע)
+                        </p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm text-muted-foreground">ממוצע הצוות</p>
+                        <p className="font-bold">₪{warning.average.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">מספר דוחות</p>
-                  <p className="text-3xl font-bold text-green-600">{reports.length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">📊</span>
-                </div>
+        {/* Employee Statistics for Managers */}
+        {isManager && employeeStats.length > 0 && selectedEmployee === 'all' && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>סטטיסטיקות עובדים</CardTitle>
+              <CardDescription>סיכום פעילות כל עובד בצוות</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {employeeStats.map((stat, idx) => (
+                  <Card key={idx} className="border-2 hover:border-primary transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <span className="text-2xl">👤</span>
+                        </div>
+                        <h3 className="font-bold text-lg mb-2">{stat.name}</h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">דוחות:</span>
+                            <span className="font-semibold">{stat.reportCount}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">סה"כ:</span>
+                            <span className="font-bold text-primary">₪{stat.totalAmount.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">ממוצע לדוח</p>
-                  <p className="text-3xl font-bold text-purple-600">
-                    ₪{reports.length > 0 ? Math.round(totalAmount / reports.length).toLocaleString() : 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
-                </div>
-                <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">💰</span>
-                </div>
-              </div>
+        {/* Employee Comparison Chart for Managers */}
+        {isManager && employeeComparisonData.length > 0 && selectedEmployee === 'all' && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>השוואת הוצאות בין עובדים</CardTitle>
+              <CardDescription>גרף עמודות המציג את ההוצאות של כל עובד</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={employeeComparisonData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => {
+                      if (name === 'amount') return [`₪${value.toLocaleString()}`, 'סכום'];
+                      if (name === 'reports') return [value, 'דוחות'];
+                      return value;
+                    }}
+                  />
+                  <Legend 
+                    formatter={(value: string) => {
+                      if (value === 'amount') return 'סכום (₪)';
+                      if (value === 'reports') return 'מספר דוחות';
+                      return value;
+                    }}
+                  />
+                  <Bar dataKey="amount" fill="#8884d8" name="amount" />
+                  <Bar dataKey="reports" fill="#82ca9d" name="reports" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
+        )}
 
         {reports.length === 0 ? (
           <Card>
