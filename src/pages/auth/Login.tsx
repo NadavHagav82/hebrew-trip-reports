@@ -18,7 +18,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!email || !password) {
       toast({
         title: 'שגיאה',
@@ -28,37 +28,18 @@ export default function Login() {
       return;
     }
 
-    try {
-      setLoading(true);
-      const { error } = await signIn(email, password);
+    setLoading(true);
+    const { error } = await signIn(email, password);
 
-      if (error) {
-        const isNetworkError = error?.message === 'Failed to fetch';
-
-        toast({
-          title: isNetworkError ? 'תקלה בחיבור לשרת' : 'שגיאת התחברות',
-          description: isNetworkError
-            ? 'יש כרגע בעיה בחיבור לשרת. נסה שוב בעוד מספר דקות.'
-            : 'שם משתמש או סיסמה שגויים',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
-      navigate('/');
-    } catch (err: any) {
-      const isNetworkError = err?.message === 'Failed to fetch';
-
+    if (error) {
       toast({
-        title: isNetworkError ? 'תקלה בחיבור לשרת' : 'שגיאת התחברות',
-        description: isNetworkError
-          ? 'יש כרגע בעיה בחיבור לשרת. נסה שוב בעוד מספר דקות.'
-          : 'אירעה שגיאה בלתי צפויה בהתחברות',
+        title: 'שגיאת התחברות',
+        description: 'שם משתמש או סיסמה שגויים',
         variant: 'destructive',
       });
-    } finally {
       setLoading(false);
+    } else {
+      navigate('/');
     }
   };
 
@@ -104,11 +85,6 @@ export default function Login() {
               {loading ? 'מתחבר...' : 'התחבר'}
             </Button>
           </form>
-          <div className="mt-3 text-center">
-            <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
-              שכחתי סיסמה
-            </Link>
-          </div>
           <div className="mt-4 text-center text-sm sm:text-base">
             <span className="text-muted-foreground">עדיין אין לך חשבון? </span>
             <Link to="/auth/register" className="text-primary hover:underline font-medium">
