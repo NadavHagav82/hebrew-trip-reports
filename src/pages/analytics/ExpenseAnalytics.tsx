@@ -346,17 +346,9 @@ export default function ExpenseAnalytics() {
     
     // Set column widths
     ws1['!cols'] = [
-      { wch: 30 },
-      { wch: 20 }
+      { wch: 35 },
+      { wch: 25 }
     ];
-
-    // Add page break after category data if needed (approximately 30 rows per page)
-    const rowCount = summaryData.length;
-    if (rowCount > 30) {
-      ws1['!rows'] = summaryData.map((_, idx) => 
-        idx === 29 ? { hpx: 15, pageBreak: 1 } : { hpx: 15 }
-      );
-    }
 
     XLSX.utils.book_append_sheet(wb, ws1, 'סיכום');
 
@@ -376,20 +368,10 @@ export default function ExpenseAnalytics() {
       const ws2 = XLSX.utils.aoa_to_sheet(employeeData);
       
       ws2['!cols'] = [
-        { wch: 30 },
-        { wch: 15 },
-        { wch: 20 }
+        { wch: 35 },
+        { wch: 18 },
+        { wch: 25 }
       ];
-
-      // Add page breaks for every 30 employees
-      if (employeeStatsData.length > 30) {
-        ws2['!rows'] = employeeData.map((_, idx) => {
-          const dataRowIdx = idx - 3; // Subtract header rows
-          return (dataRowIdx > 0 && dataRowIdx % 30 === 0) 
-            ? { hpx: 15, pageBreak: 1 } 
-            : { hpx: 15 };
-        });
-      }
 
       XLSX.utils.book_append_sheet(wb, ws2, 'עובדים');
     }
@@ -410,21 +392,11 @@ export default function ExpenseAnalytics() {
     const ws3 = XLSX.utils.aoa_to_sheet(detailedData);
     
     ws3['!cols'] = [
-      { wch: 15 },
-      { wch: 25 },
-      { wch: 25 },
-      { wch: 20 }
+      { wch: 18 },
+      { wch: 28 },
+      { wch: 30 },
+      { wch: 22 }
     ];
-
-    // Add page breaks for every 35 reports
-    if (reports.length > 35) {
-      ws3['!rows'] = detailedData.map((_, idx) => {
-        const dataRowIdx = idx - 3;
-        return (dataRowIdx > 0 && dataRowIdx % 35 === 0) 
-          ? { hpx: 15, pageBreak: 1 } 
-          : { hpx: 15 };
-      });
-    }
 
     XLSX.utils.book_append_sheet(wb, ws3, 'דוחות מפורטים');
 

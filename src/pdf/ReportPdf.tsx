@@ -290,10 +290,11 @@ const styles = StyleSheet.create({
     fontWeight: 500,
   },
   receiptImage: {
-    width: '100%',
-    maxHeight: 700,
+    maxWidth: '100%',
+    maxHeight: 600,
     objectFit: 'contain',
     borderRadius: 6,
+    alignSelf: 'center',
   },
 });
 
