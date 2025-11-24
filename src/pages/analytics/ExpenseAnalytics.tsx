@@ -93,29 +93,60 @@ export default function ExpenseAnalytics() {
     try {
       const { start, end } = getPeriodDates();
 
-      // Load reports - filter by user if not a manager
-      let query = supabase
-        .from('reports')
-        .select(`
-          *,
-          profiles!reports_user_id_fkey (
-            full_name,
-            department
-          )
-        `)
-        .eq('status', 'closed')
-        .gte('approved_at', start.toISOString())
-        .lte('approved_at', end.toISOString());
+      let reportsData = [];
 
-      // If not a manager, filter to only show user's own reports
-      if (!isManager && user) {
-        query = query.eq('user_id', user.id);
+      if (isManager && user) {
+        // For managers: get reports of their team members
+        // First, get all users who report to this manager
+        const { data: teamMembers, error: teamError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('manager_id', user.id);
+
+        if (teamError) throw teamError;
+
+        const teamMemberIds = teamMembers?.map(m => m.id) || [];
+
+        // Get reports for team members
+        if (teamMemberIds.length > 0) {
+          const { data: reports, error: reportsError } = await supabase
+            .from('reports')
+            .select(`
+              *,
+              profiles!reports_user_id_fkey (
+                full_name,
+                department
+              )
+            `)
+            .eq('status', 'closed')
+            .in('user_id', teamMemberIds)
+            .gte('approved_at', start.toISOString())
+            .lte('approved_at', end.toISOString());
+
+          if (reportsError) throw reportsError;
+          reportsData = reports || [];
+        }
+      } else if (user) {
+        // For regular users: get only their own reports
+        const { data: reports, error: reportsError } = await supabase
+          .from('reports')
+          .select(`
+            *,
+            profiles!reports_user_id_fkey (
+              full_name,
+              department
+            )
+          `)
+          .eq('status', 'closed')
+          .eq('user_id', user.id)
+          .gte('approved_at', start.toISOString())
+          .lte('approved_at', end.toISOString());
+
+        if (reportsError) throw reportsError;
+        reportsData = reports || [];
       }
 
-      const { data: reportsData, error: reportsError } = await query;
-
-      if (reportsError) throw reportsError;
-      setReports(reportsData || []);
+      setReports(reportsData);
 
       // Load expenses for these reports
       const reportIds = (reportsData || []).map(r => r.id);
@@ -238,7 +269,7 @@ export default function ExpenseAnalytics() {
               <div>
                 <h1 className="text-xl font-bold">אנליטיקה והוצאות</h1>
                 <p className="text-sm text-muted-foreground">
-                  {isManager ? 'סיכום כל הדוחות במערכת' : 'סיכום הדוחות שלך'}
+                  {isManager ? 'סיכום דוחות הצוות שלך' : 'סיכום הדוחות שלך'}
                 </p>
               </div>
             </div>
