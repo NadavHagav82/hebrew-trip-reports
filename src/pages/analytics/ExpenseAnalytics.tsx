@@ -40,6 +40,11 @@ const categoryLabels: Record<string, string> = {
   miscellaneous: 'שונות',
 };
 
+interface TeamMember {
+  id: string;
+  full_name: string;
+}
+
 export default function ExpenseAnalytics() {
   const [reports, setReports] = useState<Report[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -47,6 +52,8 @@ export default function ExpenseAnalytics() {
   const [periodType, setPeriodType] = useState<PeriodType>('month');
   const [selectedPeriod, setSelectedPeriod] = useState(0); // 0 = current, 1 = last, etc.
   const [isManager, setIsManager] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all'); // 'all' or user_id
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -62,13 +69,53 @@ export default function ExpenseAnalytics() {
   useEffect(() => {
     if (!user) return;
     loadData();
-  }, [user, periodType, selectedPeriod, isManager]);
+  }, [user, periodType, selectedPeriod, isManager, selectedEmployee]);
 
   const checkManagerStatus = async () => {
     if (!user) return;
     const { data } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'manager' });
-    setIsManager(!!data);
+    const managerStatus = !!data;
+    setIsManager(managerStatus);
+    
+    // If manager, load team members
+    if (managerStatus) {
+      await loadTeamMembers();
+    }
+  };
+
+  const loadTeamMembers = async () => {
+    if (!user) return;
+    
+    try {
+      // Get team members
+      const { data: members, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('manager_id', user.id)
+        .order('full_name');
+
+      if (error) throw error;
+
+      // Get manager's own profile
+      const { data: managerProfile, error: managerError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (managerError) throw managerError;
+
+      // Combine manager and team members
+      const allMembers = [
+        { id: managerProfile.id, full_name: `${managerProfile.full_name} (אני)` },
+        ...(members || [])
+      ];
+
+      setTeamMembers(allMembers);
+    } catch (error) {
+      console.error('Error loading team members:', error);
+    }
   };
 
   const getPeriodDates = () => {
@@ -96,19 +143,22 @@ export default function ExpenseAnalytics() {
       let reportsData = [];
 
       if (isManager && user) {
-        // For managers: get reports of their team members
-        // First, get all users who report to this manager
-        const { data: teamMembers, error: teamError } = await supabase
+        // For managers: get reports of their team members + their own reports
+        const { data: teamMembersData, error: teamError } = await supabase
           .from('profiles')
           .select('id')
           .eq('manager_id', user.id);
 
         if (teamError) throw teamError;
 
-        const teamMemberIds = teamMembers?.map(m => m.id) || [];
+        const teamMemberIds = teamMembersData?.map(m => m.id) || [];
+        // Include the manager's own ID
+        const allUserIds = [user.id, ...teamMemberIds];
 
-        // Get reports for team members
-        if (teamMemberIds.length > 0) {
+        // Filter by selected employee if not "all"
+        const userIdsToQuery = selectedEmployee === 'all' ? allUserIds : [selectedEmployee];
+
+        if (userIdsToQuery.length > 0) {
           const { data: reports, error: reportsError } = await supabase
             .from('reports')
             .select(`
@@ -119,7 +169,7 @@ export default function ExpenseAnalytics() {
               )
             `)
             .eq('status', 'closed')
-            .in('user_id', teamMemberIds)
+            .in('user_id', userIdsToQuery)
             .gte('approved_at', start.toISOString())
             .lte('approved_at', end.toISOString());
 
@@ -315,6 +365,22 @@ export default function ExpenseAnalytics() {
                     })}
                   </SelectContent>
                 </Select>
+
+                {isManager && teamMembers.length > 0 && (
+                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="בחר עובד" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">כל הצוות</SelectItem>
+                      {teamMembers.map(member => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <Button onClick={exportData} variant="outline">
