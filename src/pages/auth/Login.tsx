@@ -29,20 +29,27 @@ export default function Login() {
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
 
-    if (error) {
-      toast({
-        title: 'שגיאת התחברות',
-        description: 'שם משתמש או סיסמה שגויים',
-        variant: 'destructive',
-      });
+    try {
+      const { error } = await signIn(email, password);
+
+      if (error) {
+        const isNetworkError = typeof error.message === 'string' && error.message.toLowerCase().includes('failed to fetch');
+
+        toast({
+          title: isNetworkError ? 'שגיאת שרת' : 'שגיאת התחברות',
+          description: isNetworkError
+            ? 'לא הצלחנו להתחבר לשרת. אנא נסה שוב בעוד מספר דקות.'
+            : 'שם משתמש או סיסמה שגויים',
+          variant: 'destructive',
+        });
+      } else {
+        navigate('/');
+      }
+    } finally {
       setLoading(false);
-    } else {
-      navigate('/');
     }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-3 sm:p-4">
       <Card className="w-full max-w-md">
