@@ -88,6 +88,11 @@ export default function Login() {
                 className="h-12 text-base"
               />
             </div>
+            <div className="flex items-center justify-between mb-2">
+              <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                שכחת סיסמה?
+              </Link>
+            </div>
             <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
               {loading ? 'מתחבר...' : 'התחבר'}
             </Button>
