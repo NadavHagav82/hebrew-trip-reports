@@ -18,7 +18,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: 'שגיאה',
@@ -28,18 +28,37 @@ export default function Login() {
       return;
     }
 
-    setLoading(true);
-    const { error } = await signIn(email, password);
+    try {
+      setLoading(true);
+      const { error } = await signIn(email, password);
 
-    if (error) {
+      if (error) {
+        const isNetworkError = error?.message === 'Failed to fetch';
+
+        toast({
+          title: isNetworkError ? 'תקלה בחיבור לשרת' : 'שגיאת התחברות',
+          description: isNetworkError
+            ? 'יש כרגע בעיה בחיבור לשרת. נסה שוב בעוד מספר דקות.'
+            : 'שם משתמש או סיסמה שגויים',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      navigate('/');
+    } catch (err: any) {
+      const isNetworkError = err?.message === 'Failed to fetch';
+
       toast({
-        title: 'שגיאת התחברות',
-        description: 'שם משתמש או סיסמה שגויים',
+        title: isNetworkError ? 'תקלה בחיבור לשרת' : 'שגיאת התחברות',
+        description: isNetworkError
+          ? 'יש כרגע בעיה בחיבור לשרת. נסה שוב בעוד מספר דקות.'
+          : 'אירעה שגיאה בלתי צפויה בהתחברות',
         variant: 'destructive',
       });
+    } finally {
       setLoading(false);
-    } else {
-      navigate('/');
     }
   };
 
