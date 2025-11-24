@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   receiptImage: {
     maxWidth: '100%',
-    maxHeight: '80vh',
+    maxHeight: 700,
     objectFit: 'contain',
     borderRadius: 6,
     alignSelf: 'center',
