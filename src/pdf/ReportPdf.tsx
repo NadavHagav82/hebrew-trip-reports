@@ -10,23 +10,6 @@ import {
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-Font.register({
-  family: 'Rubik',
-  fonts: [
-    {
-      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4iFV0U1.ttf',
-      fontWeight: 400,
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-NYiFV0U1.ttf',
-      fontWeight: 700,
-    },
-    {
-      src: 'https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-2YiFV0U1.ttf',
-      fontWeight: 900,
-    },
-  ],
-});
 
 interface Expense {
   id: string;
@@ -76,7 +59,6 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     padding: 50,
-    fontFamily: 'Rubik',
     backgroundColor: '#ffffff',
   },
   headerBox: {
@@ -262,7 +244,6 @@ const styles = StyleSheet.create({
   receiptPage: {
     flexDirection: 'column',
     padding: 50,
-    fontFamily: 'Rubik',
     backgroundColor: '#ffffff',
   },
   receiptHeaderBox: {
