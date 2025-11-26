@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#3b82f6',
     paddingBottom: 8,
-    fontWeight: 700,
+    fontWeight: 900,
   },
   infoTable: {
     marginBottom: 25,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
     paddingRight: 16,
-    fontWeight: 600,
+    fontWeight: 900,
     color: '#000000',
   },
   infoValue: {
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     paddingLeft: 12,
     color: '#000000',
-    fontWeight: 700,
+    fontWeight: 900,
   },
   table: {
     marginTop: 16,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
     color: '#000000',
-    fontWeight: 500,
+    fontWeight: 900,
   },
   numberCell: {
     width: '8%',
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'right',
     color: '#000000',
-    fontWeight: 600,
+    fontWeight: 900,
   },
   summaryValue: {
     fontSize: 10,
     textAlign: 'right',
-    fontWeight: 700,
+    fontWeight: 900,
     color: '#000000',
   },
   totalRow: {
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   receiptTitle: {
     fontSize: 16,
-    fontWeight: 700,
+    fontWeight: 900,
     marginBottom: 12,
     textAlign: 'right',
     color: '#000000',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'right',
     color: '#000000',
-    fontWeight: 500,
+    fontWeight: 900,
   },
   receiptImage: {
     maxWidth: '100%',
