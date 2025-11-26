@@ -10,6 +10,24 @@ import {
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
+// Register Heebo font for Hebrew support
+Font.register({
+  family: 'Heebo',
+  fonts: [
+    {
+      src: 'https://fonts.gstatic.com/s/heebo/v26/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSysdUmr.ttf',
+      fontWeight: 400,
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/heebo/v26/NGSpv5_NC0k9P_v6ZUCbLRAHxK1ECSysdUmr.ttf',
+      fontWeight: 700,
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/heebo/v26/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EPyysdUmr.ttf',
+      fontWeight: 900,
+    },
+  ],
+});
 
 interface Expense {
   id: string;
@@ -59,6 +77,7 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     padding: 50,
+    fontFamily: 'Heebo',
     backgroundColor: '#ffffff',
   },
   headerBox: {
@@ -244,6 +263,7 @@ const styles = StyleSheet.create({
   receiptPage: {
     flexDirection: 'column',
     padding: 50,
+    fontFamily: 'Heebo',
     backgroundColor: '#ffffff',
   },
   receiptHeaderBox: {
