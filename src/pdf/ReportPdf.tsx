@@ -418,7 +418,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           </View>
 
           {expenses.map((expense, index) => (
-            <View key={expense.id} style={index % 2 === 0 ? styles.tableRow : styles.tableRowEven}>
+            <View key={expense.id} style={index % 2 === 0 ? styles.tableRowEven : styles.tableRow}>
               <View style={[styles.tableCell, styles.ilsCell]}>
                 <Text style={styles.tableCellText}>₪{expense.amount_in_ils.toFixed(2)}</Text>
               </View>
