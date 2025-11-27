@@ -10,6 +10,10 @@ import {
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
+Font.register({
+  family: 'Heebo',
+  src: 'https://fonts.gstatic.com/s/heebo/v21/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiS2cckOnz02SXQ.ttf',
+});
 
 interface Expense {
   id: string;
@@ -401,7 +405,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
           </View>
 
           {expenses.map((expense, index) => (
-            <View key={expense.id} style={index % 2 === 0 ? styles.tableRowEven : styles.tableRow}>
+            <View key={expense.id} style={index % 2 === 0 ? styles.tableRow : styles.tableRowEven}>
               <View style={[styles.tableCell, styles.ilsCell]}>
                 <Text style={styles.tableCellText}>₪{expense.amount_in_ils.toFixed(2)}</Text>
               </View>
