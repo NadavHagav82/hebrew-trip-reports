@@ -522,7 +522,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
         if (imageReceipts.length === 0) return null;
 
         return imageReceipts.map((receipt, receiptIndex) => (
-          <Page key={`${expense.id}-${receipt.id}`} size="A4" orientation="landscape" style={styles.receiptPage} wrap={false}>
+          <Page key={`${expense.id}-${receipt.id}`} size="A4" orientation="portrait" style={styles.receiptPage} wrap={false}>
             <View style={styles.receiptHeaderBox}>
               <Text style={styles.receiptPageTitle}>פירוט הוצאות וקבלות</Text>
             </View>
