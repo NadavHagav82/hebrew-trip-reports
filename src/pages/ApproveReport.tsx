@@ -21,12 +21,21 @@ interface Report {
 }
 
 interface Expense {
+  id: string;
   expense_date: string;
   category: string;
   description: string;
   amount: number;
   currency: string;
   amount_in_ils: number;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  manager_comment?: string;
+}
+
+interface ExpenseReview {
+  expenseId: string;
+  status: 'approved' | 'rejected';
+  comment: string;
 }
 
 const ApproveReport = () => {
@@ -38,8 +47,7 @@ const ApproveReport = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [employeeName, setEmployeeName] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [showRejectionForm, setShowRejectionForm] = useState(false);
+  const [expenseReviews, setExpenseReviews] = useState<Map<string, ExpenseReview>>(new Map());
 
   useEffect(() => {
     loadReport();
@@ -110,44 +118,36 @@ const ApproveReport = () => {
     }
   };
 
-  const handleApprove = async () => {
-    if (!token) return;
-
-    setProcessing(true);
-    try {
-      const { error } = await supabase.functions.invoke('approve-report', {
-        body: {
-          token,
-          action: 'approve',
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'הדוח אושר בהצלחה',
-        description: 'הדוח אושר ונשלח להנהלת חשבונות',
-      });
-
-      // Reload to show success state
-      await loadReport();
-    } catch (error: any) {
-      console.error('Error approving report:', error);
-      toast({
-        title: 'שגיאה באישור',
-        description: error.message || 'נסה שוב',
-        variant: 'destructive',
-      });
-    } finally {
-      setProcessing(false);
-    }
+  const handleExpenseReview = (expenseId: string, status: 'approved' | 'rejected', comment: string = '') => {
+    setExpenseReviews(prev => {
+      const newMap = new Map(prev);
+      newMap.set(expenseId, { expenseId, status, comment });
+      return newMap;
+    });
   };
 
-  const handleReject = async () => {
-    if (!token || !rejectionReason.trim()) {
+  const handleSubmitReview = async () => {
+    if (!token || !report) return;
+
+    // Check if all expenses have been reviewed
+    const unreviewedExpenses = expenses.filter(exp => !expenseReviews.has(exp.id));
+    if (unreviewedExpenses.length > 0) {
       toast({
-        title: 'שגיאה',
-        description: 'נא להזין סיבת דחייה',
+        title: 'יש להשלים את הביקורת',
+        description: `נותרו ${unreviewedExpenses.length} הוצאות שטרם נבדקו`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if rejected expenses have comments
+    const rejectedWithoutComments = Array.from(expenseReviews.values())
+      .filter(review => review.status === 'rejected' && !review.comment.trim());
+    
+    if (rejectedWithoutComments.length > 0) {
+      toast({
+        title: 'חסרות הערות',
+        description: 'יש להוסיף הערות לכל ההוצאות שנדחו',
         variant: 'destructive',
       });
       return;
@@ -155,27 +155,38 @@ const ApproveReport = () => {
 
     setProcessing(true);
     try {
+      const reviewsArray = Array.from(expenseReviews.values());
+      
       const { error } = await supabase.functions.invoke('approve-report', {
         body: {
           token,
-          action: 'reject',
-          rejectionReason,
+          expenseReviews: reviewsArray,
         },
       });
 
       if (error) throw error;
 
-      toast({
-        title: 'הדוח נדחה',
-        description: 'הדוח הוחזר לעובד לתיקון',
-      });
+      const approvedCount = reviewsArray.filter(r => r.status === 'approved').length;
+      const rejectedCount = reviewsArray.filter(r => r.status === 'rejected').length;
+
+      if (rejectedCount === 0) {
+        toast({
+          title: 'הדוח אושר בהצלחה',
+          description: 'כל ההוצאות אושרו והדוח נשלח להנהלת חשבונות',
+        });
+      } else {
+        toast({
+          title: 'הביקורת הושלמה',
+          description: `אושרו ${approvedCount} הוצאות, נדחו ${rejectedCount} הוצאות. הדוח הוחזר לעובד`,
+        });
+      }
 
       // Reload to show success state
       await loadReport();
     } catch (error: any) {
-      console.error('Error rejecting report:', error);
+      console.error('Error submitting review:', error);
       toast({
-        title: 'שגיאה בדחייה',
+        title: 'שגיאה בשליחת הביקורת',
         description: error.message || 'נסה שוב',
         variant: 'destructive',
       });
@@ -286,28 +297,90 @@ const ApproveReport = () => {
 
         <Card className="mb-6 shadow-md">
           <CardHeader className="pb-4 bg-gradient-to-l from-muted/30 to-transparent border-b">
-            <CardTitle>הוצאות ({expenses.length})</CardTitle>
+            <CardTitle>הוצאות לביקורת ({expenses.length})</CardTitle>
+            <CardDescription>סמן כל הוצאה כמאושרת או נדחית והוסף הערות לפי הצורך</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="space-y-3">
-              {expenses.map((expense, idx) => (
-                <div key={idx} className="border rounded-lg p-4 bg-card hover:bg-accent/5 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-semibold mb-1">{expense.description}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {getCategoryLabel(expense.category)} • {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+            <div className="space-y-4">
+              {expenses.map((expense) => {
+                const review = expenseReviews.get(expense.id);
+                return (
+                  <div key={expense.id} className={`border-2 rounded-lg p-4 transition-all ${
+                    review?.status === 'approved' ? 'border-green-500 bg-green-50 dark:bg-green-950/20' :
+                    review?.status === 'rejected' ? 'border-red-500 bg-red-50 dark:bg-red-950/20' :
+                    'border-border bg-card'
+                  }`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <div className="font-semibold mb-1">{expense.description}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {getCategoryLabel(expense.category)} • {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-lg font-bold">₪{expense.amount_in_ils.toFixed(2)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {expense.currency} {expense.amount.toFixed(2)}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-left">
-                      <div className="text-lg font-bold">₪{expense.amount_in_ils.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {expense.currency} {expense.amount.toFixed(2)}
-                      </div>
+                    
+                    <div className="flex gap-2 mb-3">
+                      <Button
+                        size="sm"
+                        variant={review?.status === 'approved' ? 'default' : 'outline'}
+                        className={review?.status === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}
+                        onClick={() => handleExpenseReview(expense.id, 'approved', review?.comment || '')}
+                        disabled={processing}
+                      >
+                        <CheckCircle className="w-4 h-4 ml-1" />
+                        אשר
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={review?.status === 'rejected' ? 'default' : 'outline'}
+                        className={review?.status === 'rejected' ? 'bg-red-600 hover:bg-red-700' : ''}
+                        onClick={() => handleExpenseReview(expense.id, 'rejected', review?.comment || '')}
+                        disabled={processing}
+                      >
+                        <XCircle className="w-4 h-4 ml-1" />
+                        דחה
+                      </Button>
                     </div>
+
+                    {review?.status === 'rejected' && (
+                      <div>
+                        <Label htmlFor={`comment-${expense.id}`} className="text-sm mb-1">הערה (חובה):</Label>
+                        <Textarea
+                          id={`comment-${expense.id}`}
+                          placeholder="הוסף הערה מדוע ההוצאה נדחתה..."
+                          value={review.comment}
+                          onChange={(e) => handleExpenseReview(expense.id, 'rejected', e.target.value)}
+                          rows={2}
+                          className="text-sm"
+                          disabled={processing}
+                        />
+                      </div>
+                    )}
+
+                    {review?.status === 'approved' && (
+                      <div>
+                        <Label htmlFor={`comment-${expense.id}`} className="text-sm mb-1">הערה (אופציונלי):</Label>
+                        <Textarea
+                          id={`comment-${expense.id}`}
+                          placeholder="הוסף הערה..."
+                          value={review.comment}
+                          onChange={(e) => handleExpenseReview(expense.id, 'approved', e.target.value)}
+                          rows={2}
+                          className="text-sm"
+                          disabled={processing}
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
+              
               <div className="border-t pt-4 mt-4">
                 <div className="flex justify-between font-bold text-xl">
                   <span>₪{report.total_amount_ils.toFixed(2)}</span>
@@ -318,91 +391,26 @@ const ApproveReport = () => {
           </CardContent>
         </Card>
 
-        {!showRejectionForm ? (
-          <div className="flex gap-4 justify-center">
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => setShowRejectionForm(true)}
-              disabled={processing}
-              className="min-w-[150px]"
-            >
-              <XCircle className="w-5 h-5 ml-2" />
-              דחה דוח
-            </Button>
-            <Button
-              size="lg"
-              onClick={handleApprove}
-              disabled={processing}
-              className="bg-green-600 hover:bg-green-700 min-w-[150px]"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                  מאשר...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5 ml-2" />
-                  אשר דוח
-                </>
-              )}
-            </Button>
-          </div>
-        ) : (
-          <Card className="shadow-md">
-            <CardHeader className="pb-4">
-              <CardTitle>דחיית דוח</CardTitle>
-              <CardDescription>נא להזין את הסיבה לדחיית הדוח</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="rejection_reason">סיבת הדחייה *</Label>
-                  <Textarea
-                    id="rejection_reason"
-                    placeholder="הזן סיבה מפורטת לדחיית הדוח..."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    rows={4}
-                    disabled={processing}
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowRejectionForm(false);
-                      setRejectionReason('');
-                    }}
-                    disabled={processing}
-                    className="flex-1"
-                  >
-                    ביטול
-                  </Button>
-                  <Button
-                    onClick={handleReject}
-                    disabled={processing || !rejectionReason.trim()}
-                    variant="destructive"
-                    className="flex-1"
-                  >
-                    {processing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                        מעבד...
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-4 h-4 ml-2" />
-                        אשר דחייה
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <div className="flex justify-center">
+          <Button
+            size="lg"
+            onClick={handleSubmitReview}
+            disabled={processing || expenseReviews.size !== expenses.length}
+            className="bg-primary hover:bg-primary/90 min-w-[200px]"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                שולח ביקורת...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5 ml-2" />
+                שלח ביקורת ({expenseReviews.size}/{expenses.length})
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
