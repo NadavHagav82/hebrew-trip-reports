@@ -18,38 +18,56 @@ export type Database = {
         Row: {
           amount: number
           amount_in_ils: number
+          approval_status:
+            | Database["public"]["Enums"]["expense_approval_status"]
+            | null
           category: Database["public"]["Enums"]["expense_category"]
           created_at: string
           currency: Database["public"]["Enums"]["expense_currency"]
           description: string
           expense_date: string
           id: string
+          manager_comment: string | null
           notes: string | null
           report_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
         }
         Insert: {
           amount: number
           amount_in_ils: number
+          approval_status?:
+            | Database["public"]["Enums"]["expense_approval_status"]
+            | null
           category: Database["public"]["Enums"]["expense_category"]
           created_at?: string
           currency: Database["public"]["Enums"]["expense_currency"]
           description: string
           expense_date: string
           id?: string
+          manager_comment?: string | null
           notes?: string | null
           report_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
         }
         Update: {
           amount?: number
           amount_in_ils?: number
+          approval_status?:
+            | Database["public"]["Enums"]["expense_approval_status"]
+            | null
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
           currency?: Database["public"]["Enums"]["expense_currency"]
           description?: string
           expense_date?: string
           id?: string
+          manager_comment?: string | null
           notes?: string | null
           report_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
         }
         Relationships: [
           {
@@ -57,6 +75,13 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -382,6 +407,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "manager" | "user"
+      expense_approval_status: "pending" | "approved" | "rejected"
       expense_category:
         | "flights"
         | "accommodation"
@@ -577,6 +603,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "user"],
+      expense_approval_status: ["pending", "approved", "rejected"],
       expense_category: [
         "flights",
         "accommodation",
