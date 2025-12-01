@@ -15,6 +15,7 @@ interface ExpenseReview {
 interface ApproveReportRequest {
   token: string;
   expenseReviews: ExpenseReview[];
+  generalComment?: string | null;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { token, expenseReviews }: ApproveReportRequest = await req.json();
+    const { token, expenseReviews, generalComment }: ApproveReportRequest = await req.json();
 
     console.log(`Processing expense reviews for report with token:`, token);
     console.log(`Number of reviews:`, expenseReviews?.length);
@@ -99,6 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
     let updateData: any = {
       status: newStatus,
       manager_approval_token: null, // Clear token after use
+      manager_general_comment: generalComment || null,
     };
 
     if (allApproved) {
@@ -122,6 +124,32 @@ const handler = async (req: Request): Promise<Response> => {
     if (reportUpdateError) {
       console.error("Error updating report:", reportUpdateError);
       throw reportUpdateError;
+    }
+
+    // Send notification email to employee
+    try {
+      const { error: notifyError } = await supabase.functions.invoke('notify-employee-review', {
+        body: {
+          employeeEmail: report.profiles.username,
+          employeeName: report.profiles.full_name,
+          reportId: report.id,
+          reportDetails: {
+            destination: report.trip_destination,
+            startDate: report.trip_start_date,
+            endDate: report.trip_end_date,
+            totalAmount: report.total_amount_ils,
+          },
+          expenseReviews,
+          generalComment,
+          allApproved,
+        }
+      });
+
+      if (notifyError) {
+        console.error('Error sending employee notification:', notifyError);
+      }
+    } catch (emailError) {
+      console.error('Failed to send employee notification:', emailError);
     }
 
     // If all approved, send to accounting

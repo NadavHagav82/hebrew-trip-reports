@@ -302,6 +302,7 @@ export type Database = {
           id: string
           manager_approval_requested_at: string | null
           manager_approval_token: string | null
+          manager_general_comment: string | null
           notes: string | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["expense_status"]
@@ -322,6 +323,7 @@ export type Database = {
           id?: string
           manager_approval_requested_at?: string | null
           manager_approval_token?: string | null
+          manager_general_comment?: string | null
           notes?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
@@ -342,6 +344,7 @@ export type Database = {
           id?: string
           manager_approval_requested_at?: string | null
           manager_approval_token?: string | null
+          manager_general_comment?: string | null
           notes?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]

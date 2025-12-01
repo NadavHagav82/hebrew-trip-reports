@@ -48,6 +48,7 @@ interface Report {
   approved_at: string | null;
   manager_approval_requested_at?: string | null;
   manager_approval_token?: string | null;
+  manager_general_comment?: string | null;
   created_at: string;
   notes?: string;
   daily_allowance?: number;
@@ -828,6 +829,12 @@ const ViewReport = () => {
                 <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-r-4 border-amber-400">
                   <span className="text-sm text-amber-800 font-semibold block mb-2">הערות:</span>
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">{report.notes}</p>
+                </div>
+              )}
+              {report.manager_general_comment && (
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-r-4 border-blue-400">
+                  <span className="text-sm text-blue-800 font-semibold block mb-2">הערת מנהל על הדוח:</span>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{report.manager_general_comment}</p>
                 </div>
               )}
             </CardContent>

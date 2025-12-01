@@ -48,6 +48,7 @@ const ApproveReport = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [employeeName, setEmployeeName] = useState('');
   const [expenseReviews, setExpenseReviews] = useState<Map<string, ExpenseReview>>(new Map());
+  const [generalComment, setGeneralComment] = useState('');
 
   useEffect(() => {
     loadReport();
@@ -161,6 +162,7 @@ const ApproveReport = () => {
         body: {
           token,
           expenseReviews: reviewsArray,
+          generalComment: generalComment.trim() || null,
         },
       });
 
@@ -388,6 +390,23 @@ const ApproveReport = () => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6 shadow-md">
+          <CardHeader className="pb-4 bg-gradient-to-l from-muted/30 to-transparent border-b">
+            <CardTitle>הערה כללית על הדוח (אופציונלי)</CardTitle>
+            <CardDescription>הוסף הערה כללית שתישלח לעובד על הדוח כולו</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <Textarea
+              placeholder="הוסף הערה כללית על הדוח..."
+              value={generalComment}
+              onChange={(e) => setGeneralComment(e.target.value)}
+              rows={4}
+              className="text-sm"
+              disabled={processing}
+            />
           </CardContent>
         </Card>
 
