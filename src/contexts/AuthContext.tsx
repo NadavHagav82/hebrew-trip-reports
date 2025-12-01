@@ -16,6 +16,7 @@ interface AuthContextType {
     is_manager: boolean;
     manager_id: string | null;
     accounting_manager_email: string | null;
+    organization_id?: string | null;
   }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     is_manager: boolean;
     manager_id: string | null;
     accounting_manager_email: string | null;
+    organization_id?: string | null;
   }) => {
     const redirectUrl = `${window.location.origin}/`;
     

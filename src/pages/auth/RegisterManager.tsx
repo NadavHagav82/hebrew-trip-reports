@@ -1,14 +1,39 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { BriefcaseBusiness, ArrowRight } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function RegisterManager() {
+
+  useEffect(() => {
+    loadOrganizations();
+  }, []);
+
+  const loadOrganizations = async () => {
+    setLoadingOrgs(true);
+    try {
+      const { data, error }: any = await (supabase as any)
+        .from('organizations')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    } finally {
+      setLoadingOrgs(false);
+    }
+  };
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,8 +43,11 @@ export default function RegisterManager() {
     employee_id: '',
     department: '',
     accounting_manager_email: '',
+    organization_id: '',
   });
   const [loading, setLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -72,6 +100,7 @@ export default function RegisterManager() {
       is_manager: true,
       manager_id: null,
       accounting_manager_email: formData.accounting_manager_email || null,
+      organization_id: formData.organization_id || null,
     });
 
     if (error) {
@@ -154,6 +183,26 @@ export default function RegisterManager() {
                 disabled={loading}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="organization_id">ארגון (אופציונלי)</Label>
+              <Select
+                value={formData.organization_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, organization_id: value }))}
+                disabled={loading || loadingOrgs}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingOrgs ? "טוען..." : "בחר ארגון"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="department">מחלקה *</Label>
               <Input
