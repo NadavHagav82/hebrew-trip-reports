@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
+import { ReportHistory } from '@/components/ReportHistory';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -382,6 +383,14 @@ const ViewReport = () => {
           .update({ status: 'closed', approved_at: new Date().toISOString() })
           .eq('id', report.id);
         
+        // Add history record
+        await supabase.from('report_history').insert({
+          report_id: report.id,
+          action: 'approved',
+          performed_by: user!.id,
+          notes: 'הדוח אושר ישירות על ידי מנהל',
+        });
+        
         toast({
           title: 'הדוח נסגר בהצלחה',
           description: 'הדוח נסגר ואושר',
@@ -415,6 +424,14 @@ const ViewReport = () => {
         });
 
         if (error) throw error;
+
+        // Add history record
+        await supabase.from('report_history').insert({
+          report_id: report.id,
+          action: 'submitted',
+          performed_by: user!.id,
+          notes: `הדוח הוגש לאישור של ${profile.manager_first_name} ${profile.manager_last_name}`,
+        });
 
         toast({
           title: 'נשלחה בקשת אישור',
@@ -1043,6 +1060,9 @@ const ViewReport = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Report History */}
+          <ReportHistory reportId={report.id} />
         </div>
         
         {/* Print Version */}
