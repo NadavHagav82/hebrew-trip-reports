@@ -18,6 +18,7 @@ import ApproveReport from "./pages/ApproveReport";
 import ManageRoles from "./pages/admin/ManageRoles";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageUsersRoles from "./pages/admin/ManageUsersRoles";
+import ManageOrganizations from "./pages/admin/ManageOrganizations";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import MyTeam from "./pages/manager/MyTeam";
 import AdvancedReports from "./pages/manager/AdvancedReports";
@@ -53,10 +54,12 @@ const App = () => (
             <Route path="/reports/new" element={<NewReport />} />
             <Route path="/reports/edit/:id" element={<NewReport />} />
             <Route path="/reports/:id" element={<ViewReport />} />
+            <Route path="/reports/view/:id" element={<ViewReport />} />
             <Route path="/approve-report/:token" element={<ApproveReport />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/roles" element={<ManageRoles />} />
             <Route path="/admin/manage-users" element={<ManageUsersRoles />} />
+            <Route path="/admin/organizations" element={<ManageOrganizations />} />
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             <Route path="/manager/team" element={<MyTeam />} />
             <Route path="/manager/stats" element={<ManagerStats />} />
