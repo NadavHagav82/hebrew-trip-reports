@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { UserPlus, Edit, Loader2 } from "lucide-react";
+import { UserPlus, Edit, Loader2, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface UserProfile {
   id: string;
@@ -40,6 +41,7 @@ interface UserRole {
 export default function ManageUsers() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [userRoles, setUserRoles] = useState<Record<string, string[]>>({});
   const [managers, setManagers] = useState<ManagerProfile[]>([]);
@@ -300,13 +302,17 @@ export default function ManageUsers() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl">ניהול משתמשים</CardTitle>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="h-4 w-4 ml-2" />
-                יצירת משתמש חדש
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/accounting')}>
+              חזרה לדשבורד
+            </Button>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="h-4 w-4 ml-2" />
+                  יצירת משתמש חדש
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl" dir="rtl">
               <DialogHeader>
                 <DialogTitle>יצירת משתמש חדש</DialogTitle>
@@ -415,6 +421,7 @@ export default function ManageUsers() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>

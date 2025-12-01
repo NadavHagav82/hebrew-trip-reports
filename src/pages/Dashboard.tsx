@@ -413,9 +413,9 @@ export default function Dashboard() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={() => navigate('/accounting/dashboard')}
+                  onClick={() => navigate('/accounting')}
                   className="h-8 w-8 sm:h-9 sm:w-9 bg-blue-500/10 hover:bg-blue-500/20"
-                  title="דשבורד מנהל.ת"
+                  title="דשבורד הנהלת חשבונות"
                 >
                   <Calculator className="w-4 h-4 text-blue-600" />
                 </Button>

@@ -197,7 +197,7 @@ export default function AccountingDashboard() {
                 <Users className="w-4 h-4 ml-2" />
                 ניהול משתמשים
               </Button>
-              <Button variant="outline" onClick={() => navigate('/')}>
+              <Button variant="outline" onClick={() => navigate('/accounting')}>
                 חזרה לדשבורד
                 <ArrowRight className="w-4 h-4 mr-2" />
               </Button>

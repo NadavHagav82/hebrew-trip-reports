@@ -19,6 +19,7 @@ import ManagerStats from "./pages/manager/ManagerStats";
 import AccountingDashboard from "./pages/accounting/AccountingDashboard";
 import AccountingStats from "./pages/accounting/AccountingStats";
 import ManageUsers from "./pages/accounting/ManageUsers";
+import AccountingHome from "./pages/accounting/AccountingHome";
 import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
 import NotFound from "./pages/NotFound";
 
@@ -45,7 +46,8 @@ const App = () => (
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             <Route path="/manager/team" element={<MyTeam />} />
             <Route path="/manager/stats" element={<ManagerStats />} />
-            <Route path="/accounting" element={<AccountingDashboard />} />
+            <Route path="/accounting" element={<AccountingHome />} />
+            <Route path="/accounting/home" element={<AccountingHome />} />
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
             <Route path="/accounting/stats" element={<AccountingStats />} />
             <Route path="/accounting/users" element={<ManageUsers />} />
