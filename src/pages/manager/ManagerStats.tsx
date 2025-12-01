@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, TrendingUp, TrendingDown, CheckCircle, XCircle, DollarSign, BarChart3 } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, CheckCircle, XCircle, DollarSign, BarChart3, Shield, Calculator, UserCog } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -238,7 +238,7 @@ const ManagerStats = () => {
           </h1>
           <p className="text-muted-foreground mt-1">ניתוח הוצאות ואישורים</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-[200px]">
               <SelectValue />
@@ -251,10 +251,19 @@ const ManagerStats = () => {
               <SelectItem value="current_year">שנה נוכחית</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => navigate('/manager/dashboard')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/manager/dashboard')}>
+            <Shield className="w-4 h-4 ml-2" />
             דשבורד מנהל
           </Button>
-          <Button variant="outline" onClick={() => navigate('/')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/accounting/home')}>
+            <Calculator className="w-4 h-4 ml-2" />
+            דשבורד הנה"ח
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
+            <UserCog className="w-4 h-4 ml-2" />
+            דשבורד אדמין
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
             חזרה לדשבורד
           </Button>
         </div>
@@ -292,7 +301,10 @@ const ManagerStats = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-amber-500 shadow-lg hover:shadow-xl transition-shadow">
+        <Card 
+          className="border-l-4 border-l-amber-500 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+          onClick={() => navigate('/manager/dashboard')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-amber-600" />
@@ -300,7 +312,10 @@ const ManagerStats = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-amber-600">{stats?.pending || 0}</div>
+            <div className="text-3xl font-bold text-amber-600 hover:text-amber-700 transition-colors">
+              {stats?.pending || 0}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">לחץ לצפייה בדוחות</p>
           </CardContent>
         </Card>
 
