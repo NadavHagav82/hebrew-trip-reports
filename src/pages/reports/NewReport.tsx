@@ -829,15 +829,15 @@ export default function NewReport() {
       }
 
       // Create history record
-      const action = closeReport 
-        ? 'edited' 
-        : (isEditMode ? 'edited' : (saveAsDraft ? 'created' : 'submitted'));
+      const historyAction = isEditMode ? 'edited' : (saveAsDraft ? 'created' : 'submitted');
       
       await supabase.from('report_history').insert({
         report_id: report.id,
-        action: action,
+        action: historyAction,
         performed_by: user.id,
-        notes: closeReport ? 'הדוח סגור והופק' : null,
+        notes: closeReport 
+          ? 'הדוח סגור והופק' 
+          : (saveAsDraft ? 'הדוח נוצר כטיוטה' : (isEditMode ? 'הדוח עודכן' : 'הדוח הוגש לאישור')),
       });
 
       const toastTitle = closeReport 

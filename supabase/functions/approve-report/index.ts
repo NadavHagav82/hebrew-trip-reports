@@ -126,6 +126,19 @@ const handler = async (req: Request): Promise<Response> => {
       throw reportUpdateError;
     }
 
+    // Add history record
+    const historyAction = allApproved ? 'approved' : 'rejected';
+    const historyNotes = allApproved 
+      ? `המנהל אישר את כל ההוצאות${generalComment ? `: ${generalComment}` : ''}`
+      : `המנהל דחה חלק מההוצאות. ${rejectedCount} נדחו, ${approvedCount} אושרו${generalComment ? `. הערה כללית: ${generalComment}` : ''}`;
+    
+    await supabase.from('report_history').insert({
+      report_id: report.id,
+      action: historyAction,
+      performed_by: report.user_id, // Using report owner as performer since manager doesn't have auth
+      notes: historyNotes,
+    });
+
     // Send notification email to employee
     try {
       const { error: notifyError } = await supabase.functions.invoke('notify-employee-review', {
