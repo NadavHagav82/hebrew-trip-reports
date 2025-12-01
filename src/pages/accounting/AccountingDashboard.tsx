@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, Eye, Loader2, ArrowRight, Download, Filter, Search } from "lucide-react";
+import { Calculator, Eye, Loader2, ArrowRight, Download, Filter, Search, BarChart3, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
@@ -188,10 +188,16 @@ export default function AccountingDashboard() {
                 <p className="text-sm text-muted-foreground">דוחות מאושרים לתשלום</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              חזרה לדשבורד
-              <ArrowRight className="w-4 h-4 mr-2" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate('/accounting/stats')}>
+                <BarChart3 className="w-4 h-4 ml-2" />
+                סטטיסטיקות
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                חזרה לדשבורד
+                <ArrowRight className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
