@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { UserPlus, Edit, Loader2, ArrowRight, KeyRound } from "lucide-react";
+import { UserPlus, Edit, Loader2, ArrowRight, KeyRound, Download, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 
 interface UserProfile {
   id: string;
@@ -63,6 +65,15 @@ export default function ManageUsers() {
   const [submitting, setSubmitting] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [userToReset, setUserToReset] = useState<UserProfile | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importResults, setImportResults] = useState<{
+    success: number;
+    failed: number;
+    errors: { row: number; email: string; error: string }[];
+  } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -330,6 +341,151 @@ export default function ManageUsers() {
     return <Badge variant="outline">עובד</Badge>;
   };
 
+  const downloadTemplate = () => {
+    const template = [
+      {
+        "כתובת מייל": "example@company.com",
+        "שם מלא": "ישראל ישראלי",
+        "שם משתמש": "israel123",
+        "מספר עובד": "12345",
+        "מחלקה": "פיתוח",
+        "תפקיד": "user",
+        "מנהל צוות": "לא",
+        "מייל מנהל": "manager@company.com"
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "משתמשים");
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 25 }, // כתובת מייל
+      { wch: 20 }, // שם מלא
+      { wch: 15 }, // שם משתמש
+      { wch: 12 }, // מספר עובד
+      { wch: 15 }, // מחלקה
+      { wch: 20 }, // תפקיד
+      { wch: 12 }, // מנהל צוות
+      { wch: 25 }  // מייל מנהל
+    ];
+
+    XLSX.writeFile(wb, "template_users.xlsx");
+    
+    toast({
+      title: "טמפלייט הורד בהצלחה",
+      description: "מלא את הפרטים בקובץ והעלה אותו לייבוא",
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        await importUsers(jsonData);
+      } catch (error) {
+        console.error("Error reading file:", error);
+        toast({
+          title: "שגיאה בקריאת הקובץ",
+          description: "אנא ודא שהקובץ בפורמט נכון",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsBinaryString(file);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const importUsers = async (data: any[]) => {
+    setImporting(true);
+    setImportProgress(0);
+    setImportDialogOpen(true);
+    
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as { row: number; email: string; error: string }[]
+    };
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowNumber = i + 2; // +2 because Excel rows start at 1 and we have a header
+
+      try {
+        // Validate required fields
+        if (!row["כתובת מייל"] || !row["שם מלא"] || !row["שם משתמש"] || !row["מחלקה"]) {
+          throw new Error("שדות חובה חסרים");
+        }
+
+        // Find manager if specified
+        let managerId = null;
+        if (row["מייל מנהל"]) {
+          const { data: managerData } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", row["מייל מנהל"])
+            .single();
+          
+          if (managerData) {
+            managerId = managerData.id;
+          }
+        }
+
+        const userData = {
+          email: row["כתובת מייל"],
+          full_name: row["שם מלא"],
+          username: row["שם משתמש"],
+          employee_id: row["מספר עובד"] || "",
+          department: row["מחלקה"],
+          is_manager: row["מנהל צוות"]?.toLowerCase() === "כן",
+          manager_id: managerId || "",
+          role: row["תפקיד"] || "user"
+        };
+
+        const { error } = await supabase.functions.invoke("create-user", {
+          body: userData,
+        });
+
+        if (error) throw error;
+
+        results.success++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({
+          row: rowNumber,
+          email: row["כתובת מייל"] || "לא צוין",
+          error: error.message || "שגיאה לא ידועה"
+        });
+      }
+
+      setImportProgress(((i + 1) / data.length) * 100);
+    }
+
+    setImportResults(results);
+    setImporting(false);
+    loadUsers();
+
+    toast({
+      title: "ייבוא הושלם",
+      description: `נוצרו ${results.success} משתמשים, ${results.failed} נכשלו`,
+      variant: results.failed > 0 ? "destructive" : "default",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -351,6 +507,21 @@ export default function ManageUsers() {
             <Button variant="outline" onClick={() => navigate('/accounting')}>
               חזרה לדשבורד
             </Button>
+            <Button variant="outline" onClick={downloadTemplate}>
+              <Download className="h-4 w-4 ml-2" />
+              הורד טמפלייט
+            </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4 ml-2" />
+              ייבא משתמשים
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -648,6 +819,73 @@ export default function ManageUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Results Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>תוצאות ייבוא משתמשים</DialogTitle>
+          </DialogHeader>
+          
+          {importing ? (
+            <div className="space-y-4">
+              <p className="text-center">מייבא משתמשים...</p>
+              <Progress value={importProgress} />
+              <p className="text-center text-sm text-muted-foreground">
+                {Math.round(importProgress)}%
+              </p>
+            </div>
+          ) : importResults ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">{importResults.success}</p>
+                      <p className="text-sm text-muted-foreground">משתמשים נוצרו בהצלחה</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
+                      <p className="text-sm text-muted-foreground">נכשלו</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {importResults.errors.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold">שגיאות:</h3>
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {importResults.errors.map((error, idx) => (
+                      <Card key={idx} className="bg-red-50">
+                        <CardContent className="pt-4">
+                          <p className="text-sm">
+                            <strong>שורה {error.row}:</strong> {error.email}
+                          </p>
+                          <p className="text-sm text-red-600">{error.error}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button onClick={() => {
+                  setImportDialogOpen(false);
+                  setImportResults(null);
+                }}>
+                  סגור
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
