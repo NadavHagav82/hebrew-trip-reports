@@ -59,6 +59,59 @@ export type Database = {
           },
         ]
       }
+      expense_templates: {
+        Row: {
+          amount: number | null
+          category: Database["public"]["Enums"]["expense_category"]
+          country: string | null
+          created_at: string
+          created_by: string
+          currency: Database["public"]["Enums"]["expense_currency"]
+          description: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          category: Database["public"]["Enums"]["expense_category"]
+          country?: string | null
+          created_at?: string
+          created_by: string
+          currency?: Database["public"]["Enums"]["expense_currency"]
+          description: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          category?: Database["public"]["Enums"]["expense_category"]
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: Database["public"]["Enums"]["expense_currency"]
+          description?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number

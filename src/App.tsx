@@ -21,6 +21,7 @@ import AccountingStats from "./pages/accounting/AccountingStats";
 import ManageUsers from "./pages/accounting/ManageUsers";
 import AccountingHome from "./pages/accounting/AccountingHome";
 import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
+import ExpenseTemplates from "./pages/accounting/ExpenseTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
             <Route path="/accounting/stats" element={<AccountingStats />} />
             <Route path="/accounting/users" element={<ManageUsers />} />
+            <Route path="/accounting/templates" element={<ExpenseTemplates />} />
             <Route path="/analytics" element={<ExpenseAnalytics />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

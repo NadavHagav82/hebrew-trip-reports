@@ -18,7 +18,8 @@ import {
   BarChart3,
   UserPlus,
   Eye,
-  Loader2
+  Loader2,
+  Clipboard
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -379,6 +380,14 @@ export default function AccountingHome() {
               >
                 <Clock className="w-4 h-4 ml-2" />
                 דוחות ממתינים לאישור
+              </Button>
+              <Button 
+                onClick={() => navigate('/accounting/templates')} 
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Clipboard className="w-4 h-4 ml-2" />
+                ניהול תבניות הוצאות
               </Button>
             </CardContent>
           </Card>
