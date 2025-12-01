@@ -92,6 +92,33 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          threshold_amount: number | null
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          threshold_amount?: number | null
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          threshold_amount?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       expense_templates: {
         Row: {
           amount: number | null
@@ -471,6 +498,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_preferences: {
+        Row: {
+          created_at: string | null
+          filters: Json
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filters?: Json
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       reports: {
         Row: {
