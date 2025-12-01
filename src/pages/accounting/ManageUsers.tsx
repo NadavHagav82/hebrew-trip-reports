@@ -11,8 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { UserPlus, Edit, Loader2, ArrowRight } from "lucide-react";
+import { UserPlus, Edit, Loader2, ArrowRight, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfile {
   id: string;
@@ -51,6 +61,8 @@ export default function ManageUsers() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [userToReset, setUserToReset] = useState<UserProfile | null>(null);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -271,6 +283,36 @@ export default function ManageUsers() {
     setEditDialogOpen(true);
   };
 
+  const handleResetPassword = async () => {
+    if (!userToReset) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("reset-user-password", {
+        body: { user_id: userToReset.id },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "הסיסמה אופסה בהצלחה",
+        description: `סיסמה חדשה נשלחה ל-${userToReset.email}`,
+      });
+
+      setResetPasswordDialogOpen(false);
+      setUserToReset(null);
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      toast({
+        title: "שגיאה באיפוס סיסמה",
+        description: error.message || "אנא נסה שנית",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getRoleBadge = (userId: string) => {
     const roles = userRoles[userId] || [];
     if (roles.includes("accounting_manager")) {
@@ -432,7 +474,7 @@ export default function ManageUsers() {
                 <TableHead className="text-right">מחלקה</TableHead>
                 <TableHead className="text-right">תפקיד</TableHead>
                 <TableHead className="text-right">מנהל ישיר</TableHead>
-                <TableHead className="text-right">פעולות</TableHead>
+                <TableHead className="text-right w-[180px]">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -446,13 +488,27 @@ export default function ManageUsers() {
                     {user.manager ? user.manager.full_name : user.is_manager ? "מנהל צוות" : "-"}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(user)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(user)}
+                        title="ערוך משתמש"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setUserToReset(user);
+                          setResetPasswordDialogOpen(true);
+                        }}
+                        title="אפס סיסמה"
+                      >
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -564,6 +620,31 @@ export default function ManageUsers() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Reset Password Confirmation Dialog */}
+      <AlertDialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>אישור איפוס סיסמה</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם אתה בטוח שברצונך לאפס את הסיסמה עבור <strong>{userToReset?.full_name}</strong>?
+              <br /><br />
+              סיסמה חדשה תיווצר ותישלח למייל: <strong>{userToReset?.email}</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>ביטול</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleResetPassword}
+              disabled={submitting}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              אפס סיסמה
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
