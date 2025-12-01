@@ -59,6 +59,39 @@ export type Database = {
           },
         ]
       }
+      bootstrap_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_used: boolean
+          notes: string | null
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_used?: boolean
+          notes?: string | null
+          token: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+          notes?: string | null
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       expense_templates: {
         Row: {
           amount: number | null

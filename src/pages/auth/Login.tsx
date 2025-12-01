@@ -103,6 +103,12 @@ export default function Login() {
               הירשם כאן
             </Link>
           </div>
+          <div className="mt-2 text-center text-xs text-muted-foreground">
+            <span>מנהל חשבונות ראשון? </span>
+            <Link to="/auth/register/bootstrap" className="text-primary hover:underline">
+              הקמה ראשונית
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
