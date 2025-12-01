@@ -6,14 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { FileText, Check, ChevronsUpDown, ArrowRight } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-export default function Register() {
+export default function RegisterEmployee() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,7 +21,6 @@ export default function Register() {
     full_name: '',
     employee_id: '',
     department: '',
-    is_manager: false,
     manager_email: '',
     accounting_manager_email: '',
   });
@@ -68,8 +66,7 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation for required fields
-    const requiredFields = ['email', 'password', 'confirmPassword', 'username', 'full_name', 'department'];
+    const requiredFields = ['email', 'password', 'confirmPassword', 'username', 'full_name', 'department', 'manager_email'];
     if (requiredFields.some(field => !formData[field as keyof typeof formData])) {
       toast({
         title: 'שגיאה',
@@ -79,18 +76,7 @@ export default function Register() {
       return;
     }
 
-    // Validate manager email for non-managers
-    if (!formData.is_manager && !formData.manager_email) {
-      toast({
-        title: 'שגיאה',
-        description: 'יש להזין מייל מנהל מאשר',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate manager email format
-    if (!formData.is_manager && formData.manager_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.manager_email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.manager_email)) {
       toast({
         title: 'שגיאה',
         description: 'כתובת המייל של המנהל אינה תקינה',
@@ -119,29 +105,23 @@ export default function Register() {
 
     setLoading(true);
 
-    // Find manager by email if not a manager
-    let managerId = null;
-    if (!formData.is_manager && formData.manager_email) {
-      const normalizedManagerEmail = formData.manager_email.trim();
+    // Find manager by email
+    const normalizedManagerEmail = formData.manager_email.trim();
+    const { data: managerData, error: managerError } = await supabase
+      .from('profiles')
+      .select('id, is_manager')
+      .ilike('email', normalizedManagerEmail)
+      .eq('is_manager', true)
+      .maybeSingle();
 
-      const { data: managerData, error: managerError } = await supabase
-        .from('profiles')
-        .select('id, is_manager')
-        .ilike('email', normalizedManagerEmail)
-        .eq('is_manager', true)
-        .maybeSingle();
-
-      if (managerError || !managerData) {
-        toast({
-          title: 'שגיאה',
-          description: 'לא נמצא מנהל עם כתובת המייל שהוזנה',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-      
-      managerId = managerData.id;
+    if (managerError || !managerData) {
+      toast({
+        title: 'שגיאה',
+        description: 'לא נמצא מנהל עם כתובת המייל שהוזנה',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
     }
 
     const { error } = await signUp(formData.email, formData.password, {
@@ -149,8 +129,8 @@ export default function Register() {
       full_name: formData.full_name,
       employee_id: formData.employee_id || null,
       department: formData.department,
-      is_manager: formData.is_manager,
-      manager_id: managerId,
+      is_manager: false,
+      manager_id: managerData.id,
       accounting_manager_email: formData.accounting_manager_email || null,
     });
 
@@ -166,22 +146,19 @@ export default function Register() {
       });
       setLoading(false);
     } else {
-      // Send notification to manager if employee has one
-      if (!formData.is_manager && managerId) {
-        try {
-          await supabase.functions.invoke('notify-manager-new-employee', {
-            body: {
-              employeeName: formData.full_name,
-              employeeEmail: formData.email,
-              employeeId: formData.employee_id || null,
-              department: formData.department,
-              managerId: managerId,
-            }
-          });
-        } catch (emailError) {
-          console.error('Failed to send manager notification:', emailError);
-          // Don't fail registration if email fails
-        }
+      // Send notification to manager
+      try {
+        await supabase.functions.invoke('notify-manager-new-employee', {
+          body: {
+            employeeName: formData.full_name,
+            employeeEmail: formData.email,
+            employeeId: formData.employee_id || null,
+            department: formData.department,
+            managerId: managerData.id,
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send manager notification:', emailError);
       }
 
       toast({
@@ -201,7 +178,7 @@ export default function Register() {
               <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-xl sm:text-2xl font-bold">הרשמה למערכת</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-bold">הרשמה כעובד</CardTitle>
           <CardDescription className="text-sm sm:text-base">צור חשבון חדש במערכת דוחות הנסיעה</CardDescription>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
@@ -279,119 +256,103 @@ export default function Register() {
                 dir="ltr"
               />
               <p className="text-xs text-muted-foreground">
-                דוחות מאושרים יישלחו אוטומטית לכתובת זו. עדכונים על דוחות יישלחו למייל הרישום שלך.
+                דוחות מאושרים יישלחו אוטומטית לכתובת זו
               </p>
             </div>
             
-            <div className="space-y-3 border-t pt-4">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <Checkbox 
-                  id="is_manager" 
-                  checked={formData.is_manager}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_manager: checked as boolean }))}
-                  disabled={loading}
-                />
-                <Label htmlFor="is_manager" className="font-medium cursor-pointer">
-                  אני מנהל (דוחות שלי לא דורשים אישור)
-                </Label>
-              </div>
-              
-              {!formData.is_manager && (
-                <div className="space-y-2">
-                  <Label htmlFor="manager_email">מייל מנהל מאשר *</Label>
-                  {!manualManagerEntry ? (
-                    <>
-                      <Popover open={openManagerCombobox} onOpenChange={setOpenManagerCombobox}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openManagerCombobox}
-                            className="w-full justify-between h-12 text-base"
-                            disabled={loading || loadingManagers}
-                          >
-                            {formData.manager_email || "בחר מנהל מאשר..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="חפש מנהל..." dir="rtl" />
-                            <CommandList>
-                              <CommandEmpty>לא נמצאו מנהלים</CommandEmpty>
-                              <CommandGroup>
-                                {managers.map((manager) => (
-                                  <CommandItem
-                                    key={manager.id}
-                                    value={manager.email}
-                                    onSelect={(currentValue) => {
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        manager_email: currentValue === formData.manager_email ? "" : currentValue
-                                      }));
-                                      setOpenManagerCombobox(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        formData.manager_email === manager.email ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{manager.full_name}</span>
-                                      <span className="text-sm text-muted-foreground">{manager.email}</span>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setManualManagerEntry(true);
-                          setFormData(prev => ({ ...prev, manager_email: '' }));
-                        }}
-                        className="text-xs text-primary hover:underline"
+            <div className="space-y-2 border-t pt-4">
+              <Label htmlFor="manager_email">מייל מנהל מאשר *</Label>
+              {!manualManagerEntry ? (
+                <>
+                  <Popover open={openManagerCombobox} onOpenChange={setOpenManagerCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openManagerCombobox}
+                        className="w-full justify-between h-12 text-base"
+                        disabled={loading || loadingManagers}
                       >
-                        המנהל שלי לא ברשימה - הזן ידנית
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Input
-                        id="manager_email"
-                        name="manager_email"
-                        type="email"
-                        placeholder="הזן מייל מנהל"
-                        value={formData.manager_email}
-                        onChange={handleChange}
-                        disabled={loading}
-                        dir="ltr"
-                        className="h-12 text-base"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setManualManagerEntry(false);
-                          setFormData(prev => ({ ...prev, manager_email: '' }));
-                        }}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        חזור לבחירה מהרשימה
-                      </button>
-                    </>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    {manualManagerEntry 
-                      ? "הזן את כתובת המייל של המנהל הישיר שלך. וודא שהמנהל רשום במערכת."
-                      : "בחר את המנהל הישיר שלך מהרשימה. רק מנהלים רשומים יכולים לאשר דוחות."}
-                  </p>
-                </div>
+                        {formData.manager_email || "בחר מנהל מאשר..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="חפש מנהל..." dir="rtl" />
+                        <CommandList>
+                          <CommandEmpty>לא נמצאו מנהלים</CommandEmpty>
+                          <CommandGroup>
+                            {managers.map((manager) => (
+                              <CommandItem
+                                key={manager.id}
+                                value={manager.email}
+                                onSelect={(currentValue) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    manager_email: currentValue === formData.manager_email ? "" : currentValue
+                                  }));
+                                  setOpenManagerCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.manager_email === manager.email ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{manager.full_name}</span>
+                                  <span className="text-sm text-muted-foreground">{manager.email}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualManagerEntry(true);
+                      setFormData(prev => ({ ...prev, manager_email: '' }));
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    המנהל שלי לא ברשימה - הזן ידנית
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Input
+                    id="manager_email"
+                    name="manager_email"
+                    type="email"
+                    placeholder="הזן מייל מנהל"
+                    value={formData.manager_email}
+                    onChange={handleChange}
+                    disabled={loading}
+                    dir="ltr"
+                    className="h-12 text-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualManagerEntry(false);
+                      setFormData(prev => ({ ...prev, manager_email: '' }));
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    חזור לבחירה מהרשימה
+                  </button>
+                </>
               )}
+              <p className="text-xs text-muted-foreground">
+                {manualManagerEntry 
+                  ? "הזן את כתובת המייל של המנהל הישיר שלך"
+                  : "בחר את המנהל הישיר שלך מהרשימה"}
+              </p>
             </div>
             
             <div className="space-y-2">
@@ -426,11 +387,22 @@ export default function Register() {
               {loading ? 'נרשם...' : 'הירשם'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            <span className="text-muted-foreground">כבר יש לך חשבון? </span>
-            <Link to="/auth/login" className="text-primary hover:underline font-medium">
-              התחבר כאן
-            </Link>
+          <div className="mt-4 space-y-2">
+            <div className="text-center text-sm">
+              <button
+                onClick={() => navigate('/auth/register')}
+                className="text-muted-foreground hover:text-primary inline-flex items-center gap-1"
+              >
+                <ArrowRight className="h-4 w-4" />
+                חזור לבחירת סוג משתמש
+              </button>
+            </div>
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">כבר יש לך חשבון? </span>
+              <Link to="/auth/login" className="text-primary hover:underline font-medium">
+                התחבר כאן
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
