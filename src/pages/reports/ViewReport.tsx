@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
 import { AccountingComments } from '@/components/AccountingComments';
+import AddExpenseByAccounting from '@/components/AddExpenseByAccounting';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -181,9 +182,16 @@ const ViewReport = () => {
 
         if (!profileError && profileData) {
           setProfile(profileData as Profile);
-          // Check if user is accounting manager
-          setIsAccountingUser(!!profileData.accounting_manager_email);
         }
+        
+        // Check if user is accounting manager
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'accounting_manager');
+        
+        setIsAccountingUser(roles && roles.length > 0);
       }
     } catch (error: any) {
       toast({
@@ -894,8 +902,13 @@ const ViewReport = () => {
                   <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
                   הוצאות
                 </CardTitle>
-                <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                  {expenses.length} פריטים
+                <div className="flex items-center gap-2">
+                  <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                    {expenses.length} פריטים
+                  </div>
+                  {isAccountingUser && (
+                    <AddExpenseByAccounting reportId={report.id} onExpenseAdded={loadReport} />
+                  )}
                 </div>
               </div>
             </CardHeader>
