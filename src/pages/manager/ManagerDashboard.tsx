@@ -326,6 +326,10 @@ export default function ManagerDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate('/manager/advanced-reports')}>
+                <BarChart3 className="w-4 h-4 ml-2" />
+                דוחות מתקדמים
+              </Button>
               <Button variant="outline" onClick={() => navigate('/manager/stats')}>
                 <BarChart3 className="w-4 h-4 ml-2" />
                 סטטיסטיקות

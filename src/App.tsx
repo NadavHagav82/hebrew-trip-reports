@@ -19,6 +19,7 @@ import ManageRoles from "./pages/admin/ManageRoles";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import MyTeam from "./pages/manager/MyTeam";
+import AdvancedReports from "./pages/manager/AdvancedReports";
 import ManagerStats from "./pages/manager/ManagerStats";
 import AccountingDashboard from "./pages/accounting/AccountingDashboard";
 import AccountingStats from "./pages/accounting/AccountingStats";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             <Route path="/manager/team" element={<MyTeam />} />
             <Route path="/manager/stats" element={<ManagerStats />} />
+            <Route path="/manager/advanced-reports" element={<AdvancedReports />} />
             <Route path="/accounting" element={<AccountingHome />} />
             <Route path="/accounting/home" element={<AccountingHome />} />
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
