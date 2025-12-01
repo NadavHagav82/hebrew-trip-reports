@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ManagerAttachmentUpload } from '@/components/ManagerAttachmentUpload';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Report {
   id: string;
@@ -36,12 +38,14 @@ interface ExpenseReview {
   expenseId: string;
   status: 'approved' | 'rejected';
   comment: string;
+  attachments?: File[];
 }
 
 const ApproveReport = () => {
   const { token } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
@@ -119,12 +123,25 @@ const ApproveReport = () => {
     }
   };
 
-  const handleExpenseReview = (expenseId: string, status: 'approved' | 'rejected', comment: string = '') => {
+  const handleExpenseReview = (expenseId: string, status: 'approved' | 'rejected', comment: string = '', attachments?: File[]) => {
     setExpenseReviews(prev => {
       const newMap = new Map(prev);
-      newMap.set(expenseId, { expenseId, status, comment });
+      const existingReview = prev.get(expenseId);
+      newMap.set(expenseId, { 
+        expenseId, 
+        status, 
+        comment,
+        attachments: attachments !== undefined ? attachments : existingReview?.attachments || []
+      });
       return newMap;
     });
+  };
+
+  const handleAttachmentsChange = (expenseId: string, files: File[]) => {
+    const existingReview = expenseReviews.get(expenseId);
+    if (existingReview) {
+      handleExpenseReview(expenseId, existingReview.status, existingReview.comment, files);
+    }
   };
 
   const handleSubmitReview = async () => {
@@ -156,12 +173,61 @@ const ApproveReport = () => {
 
     setProcessing(true);
     try {
+      if (!user?.id) {
+        toast({
+          title: 'שגיאה',
+          description: 'לא ניתן לזהות משתמש',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const reviewsArray = Array.from(expenseReviews.values());
+      
+      // Upload attachments first
+      for (const review of reviewsArray) {
+        if (review.attachments && review.attachments.length > 0) {
+          for (const file of review.attachments) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${review.expenseId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            
+            // Upload file to storage
+            const { error: uploadError } = await supabase.storage
+              .from('manager-attachments')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              console.error('Error uploading file:', uploadError);
+              throw new Error(`שגיאה בהעלאת הקובץ ${file.name}`);
+            }
+
+            // Save attachment metadata to database
+            const { error: dbError } = await supabase
+              .from('manager_comment_attachments')
+              .insert({
+                expense_id: review.expenseId,
+                file_name: file.name,
+                file_url: fileName,
+                file_size: file.size,
+                file_type: file.type,
+                uploaded_by: user.id,
+              });
+
+            if (dbError) {
+              console.error('Error saving attachment metadata:', dbError);
+              throw new Error(`שגיאה בשמירת פרטי הקובץ ${file.name}`);
+            }
+          }
+        }
+      }
+      
+      // Send reviews to edge function (without file objects)
+      const reviewsForSubmit = reviewsArray.map(({ attachments, ...review }) => review);
       
       const { error } = await supabase.functions.invoke('approve-report', {
         body: {
           token,
-          expenseReviews: reviewsArray,
+          expenseReviews: reviewsForSubmit,
           generalComment: generalComment.trim() || null,
         },
       });
@@ -351,30 +417,40 @@ const ApproveReport = () => {
                     </div>
 
                     {review?.status === 'rejected' && (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor={`comment-${expense.id}`} className="text-sm mb-1">הערה (חובה):</Label>
                         <Textarea
                           id={`comment-${expense.id}`}
                           placeholder="הוסף הערה מדוע ההוצאה נדחתה..."
                           value={review.comment}
-                          onChange={(e) => handleExpenseReview(expense.id, 'rejected', e.target.value)}
+                          onChange={(e) => handleExpenseReview(expense.id, 'rejected', e.target.value, review.attachments)}
                           rows={2}
                           className="text-sm"
+                          disabled={processing}
+                        />
+                        <ManagerAttachmentUpload
+                          expenseId={expense.id}
+                          onFilesChange={(files) => handleAttachmentsChange(expense.id, files)}
                           disabled={processing}
                         />
                       </div>
                     )}
 
                     {review?.status === 'approved' && (
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor={`comment-${expense.id}`} className="text-sm mb-1">הערה (אופציונלי):</Label>
                         <Textarea
                           id={`comment-${expense.id}`}
                           placeholder="הוסף הערה..."
                           value={review.comment}
-                          onChange={(e) => handleExpenseReview(expense.id, 'approved', e.target.value)}
+                          onChange={(e) => handleExpenseReview(expense.id, 'approved', e.target.value, review.attachments)}
                           rows={2}
                           className="text-sm"
+                          disabled={processing}
+                        />
+                        <ManagerAttachmentUpload
+                          expenseId={expense.id}
+                          onFilesChange={(files) => handleAttachmentsChange(expense.id, files)}
                           disabled={processing}
                         />
                       </div>
