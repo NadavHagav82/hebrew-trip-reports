@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -41,6 +42,9 @@ interface Expense {
   amount_in_ils: number;
   receipts: ReceiptFile[];
   notes?: string;
+  approval_status?: 'pending' | 'approved' | 'rejected';
+  manager_comment?: string;
+  reviewed_at?: string;
 }
 
 const categoryLabels = {
@@ -329,6 +333,9 @@ export default function NewReport() {
         amount_in_ils: exp.amount_in_ils,
         receipts: [], // Receipts will be loaded separately if needed
         notes: exp.notes || '',
+        approval_status: exp.approval_status || 'pending',
+        manager_comment: exp.manager_comment || undefined,
+        reviewed_at: exp.reviewed_at || undefined,
       }));
 
       setExpenses(transformedExpenses);
@@ -1084,6 +1091,15 @@ export default function NewReport() {
                             </span>
                           </>
                         )}
+                        {expense.approval_status && expense.approval_status !== 'pending' && (
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                            expense.approval_status === 'approved' 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {expense.approval_status === 'approved' ? '✓ אושר' : '✗ נדחה'}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -1101,6 +1117,45 @@ export default function NewReport() {
 
                     {expandedExpense === expense.id && (
                       <div className="p-4 border-t space-y-4">
+                        {/* Manager Review Status */}
+                        {expense.approval_status && expense.approval_status !== 'pending' && (
+                          <div className={`p-4 rounded-lg border-2 ${
+                            expense.approval_status === 'approved'
+                              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                              : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                          }`}>
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 ${
+                                expense.approval_status === 'approved' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                              }`}>
+                                {expense.approval_status === 'approved' ? '✓' : '✗'}
+                              </div>
+                              <div className="flex-1">
+                                <div className={`font-bold text-sm mb-1 ${
+                                  expense.approval_status === 'approved' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
+                                }`}>
+                                  {expense.approval_status === 'approved' ? 'ההוצאה אושרה על ידי המנהל' : 'ההוצאה נדחתה על ידי המנהל'}
+                                </div>
+                                {expense.manager_comment && (
+                                  <div className={`text-sm mt-2 ${
+                                    expense.approval_status === 'approved' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                                  }`}>
+                                    <span className="font-semibold">הערת מנהל: </span>
+                                    {expense.manager_comment}
+                                  </div>
+                                )}
+                                {expense.reviewed_at && (
+                                  <div className={`text-xs mt-1 ${
+                                    expense.approval_status === 'approved' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                  }`}>
+                                    נבדק בתאריך: {format(new Date(expense.reviewed_at), 'dd/MM/yyyy HH:mm')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Receipt Upload - First */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
