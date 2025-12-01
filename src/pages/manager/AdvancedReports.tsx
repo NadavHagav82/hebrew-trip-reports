@@ -91,8 +91,11 @@ const AdvancedReports = () => {
   useEffect(() => {
     if (teamMembers.length > 0) {
       loadData();
+    } else if (teamMembers !== undefined) {
+      // If we have loaded team members but the list is empty, stop loading
+      setLoading(false);
     }
-  }, [periodType, periodOffset, selectedEmployee, selectedCategory, selectedStatus, selectedCurrency]);
+  }, [periodType, periodOffset, selectedEmployee, selectedCategory, selectedStatus, selectedCurrency, teamMembers]);
 
   const checkManagerAndLoadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -129,10 +132,16 @@ const AdvancedReports = () => {
 
     if (error) {
       console.error("Error loading team members:", error);
+      setLoading(false);
       return;
     }
 
     setTeamMembers(data || []);
+    
+    // If no team members, stop loading
+    if (!data || data.length === 0) {
+      setLoading(false);
+    }
   };
 
   const getPeriodDates = () => {
@@ -157,6 +166,15 @@ const AdvancedReports = () => {
 
   const loadData = async () => {
     setLoading(true);
+    
+    // If no team members, show empty state
+    if (teamMembers.length === 0) {
+      setReports([]);
+      setExpenses([]);
+      setLoading(false);
+      return;
+    }
+    
     const { start, end } = getPeriodDates();
 
     let reportsQuery = supabase
@@ -434,6 +452,26 @@ const AdvancedReports = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-lg">טוען נתונים...</div>
+      </div>
+    );
+  }
+
+  if (teamMembers.length === 0) {
+    return (
+      <div className="container mx-auto p-6" dir="rtl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">דוחות מתקדמים</h1>
+          <Button onClick={() => navigate("/manager/dashboard")}>חזרה לדשבורד</Button>
+        </div>
+        <Card className="p-12 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <AlertTriangle className="h-16 w-16 text-muted-foreground" />
+            <h2 className="text-2xl font-semibold">אין עובדים בצוות</h2>
+            <p className="text-muted-foreground max-w-md">
+              לא נמצאו עובדים המשויכים אליך כמנהל. פנה למנהל ההנהלת החשבונות להוספת עובדים לצוות שלך.
+            </p>
+          </div>
+        </Card>
       </div>
     );
   }
