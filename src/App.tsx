@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageUsersRoles from "./pages/admin/ManageUsersRoles";
 import ManageOrganizations from "./pages/admin/ManageOrganizations";
 import OrganizationDashboard from "./pages/admin/OrganizationDashboard";
+import OrgAdminUsers from "./pages/admin/OrgAdminUsers";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import MyTeam from "./pages/manager/MyTeam";
 import AdvancedReports from "./pages/manager/AdvancedReports";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/admin/manage-users" element={<ManageUsersRoles />} />
           <Route path="/admin/organizations" element={<ManageOrganizations />} />
           <Route path="/admin/org-dashboard" element={<OrganizationDashboard />} />
+          <Route path="/admin/org-users" element={<OrgAdminUsers />} />
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             <Route path="/manager/team" element={<MyTeam />} />
             <Route path="/manager/stats" element={<ManagerStats />} />
