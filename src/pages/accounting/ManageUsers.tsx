@@ -438,14 +438,14 @@ export default function ManageUsers() {
                   <div className="space-y-2">
                     <Label htmlFor="manager_id">מנהל ישיר</Label>
                     <Select
-                      value={formData.manager_id}
-                      onValueChange={(value) => setFormData({ ...formData, manager_id: value })}
+                      value={formData.manager_id || "none"}
+                      onValueChange={(value) => setFormData({ ...formData, manager_id: value === "none" ? "" : value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="בחר מנהל" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">ללא מנהל</SelectItem>
+                        <SelectItem value="none">ללא מנהל</SelectItem>
                         {managers.map((manager) => (
                           <SelectItem key={manager.id} value={manager.id}>
                             {manager.full_name} ({manager.email})
@@ -595,14 +595,14 @@ export default function ManageUsers() {
               <div className="space-y-2">
                 <Label htmlFor="edit_manager_id">מנהל ישיר</Label>
                 <Select
-                  value={formData.manager_id}
-                  onValueChange={(value) => setFormData({ ...formData, manager_id: value })}
+                  value={formData.manager_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, manager_id: value === "none" ? "" : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="בחר מנהל" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">ללא מנהל</SelectItem>
+                    <SelectItem value="none">ללא מנהל</SelectItem>
                     {managers.map((manager) => (
                       <SelectItem key={manager.id} value={manager.id}>
                         {manager.full_name} ({manager.email})
