@@ -20,7 +20,8 @@ import {
   Eye,
   Loader2,
   Clipboard,
-  ShieldCheck
+  ShieldCheck,
+  Building2
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -373,6 +374,14 @@ export default function AccountingHome() {
               >
                 <BarChart3 className="w-4 h-4 ml-2" />
                 סטטיסטיקות מפורטות
+              </Button>
+              <Button 
+                onClick={() => navigate('/accounting/organizational-analytics')} 
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Building2 className="w-4 h-4 ml-2" />
+                ניתוח ארגוני מתקדם
               </Button>
               <Button 
                 onClick={() => navigate('/manager/dashboard')} 
