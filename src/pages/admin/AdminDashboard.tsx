@@ -278,6 +278,14 @@ export default function AdminDashboard() {
             <Building2 className="h-6 w-6" />
             <span>ניהול ארגונים</span>
           </Button>
+          <Button 
+            variant="outline" 
+            className="h-20 flex flex-col gap-2"
+            onClick={() => navigate('/admin/org-dashboard')}
+          >
+            <FileText className="h-6 w-6" />
+            <span>דשבורד ארגוני</span>
+          </Button>
         </CardContent>
       </Card>
 

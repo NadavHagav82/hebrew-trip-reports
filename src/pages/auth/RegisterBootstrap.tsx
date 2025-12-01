@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function RegisterBootstrap() {
   const [formData, setFormData] = useState({
@@ -19,7 +20,9 @@ export default function RegisterBootstrap() {
     username: '',
     full_name: '',
     department: '',
+    organization_id: '',
   });
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [validatingToken, setValidatingToken] = useState(false);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
@@ -30,7 +33,23 @@ export default function RegisterBootstrap() {
 
   useEffect(() => {
     checkExistingAccountingManager();
+    loadOrganizations();
   }, []);
+
+  const loadOrganizations = async () => {
+    try {
+      const { data, error }: any = await (supabase as any)
+        .from('organizations')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    }
+  };
 
   const checkExistingAccountingManager = async () => {
     try {
@@ -163,6 +182,7 @@ export default function RegisterBootstrap() {
         is_manager: true,
         manager_id: null,
         accounting_manager_email: null,
+        organization_id: formData.organization_id || null,
       });
 
       if (signUpError) {
@@ -372,6 +392,29 @@ export default function RegisterBootstrap() {
                   onChange={handleChange}
                   disabled={loading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="organization_id">ארגון (אופציונלי)</Label>
+                <Select
+                  value={formData.organization_id}
+                  onValueChange={(value) => setFormData({ ...formData, organization_id: value })}
+                  disabled={loading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר ארגון" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  ניתן לשייך את המשתמש לארגון ספציפי
+                </p>
               </div>
 
               <div className="space-y-2">

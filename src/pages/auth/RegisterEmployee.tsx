@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FileText, Check, ChevronsUpDown, ArrowRight } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 export default function RegisterEmployee() {
@@ -23,17 +24,20 @@ export default function RegisterEmployee() {
     department: '',
     manager_email: '',
     accounting_manager_email: '',
+    organization_id: '',
   });
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState<Array<{ id: string; email: string; full_name: string }>>([]);
   const [loadingManagers, setLoadingManagers] = useState(false);
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
   const [openManagerCombobox, setOpenManagerCombobox] = useState(false);
   const [manualManagerEntry, setManualManagerEntry] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Load managers list
+  // Load managers and organizations
   useEffect(() => {
     const loadManagers = async () => {
       setLoadingManagers(true);
@@ -53,7 +57,26 @@ export default function RegisterEmployee() {
       }
     };
 
+    const loadOrganizations = async () => {
+      setLoadingOrgs(true);
+      try {
+        const { data, error }: any = await (supabase as any)
+          .from('organizations')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name');
+
+        if (error) throw error;
+        setOrganizations(data || []);
+      } catch (error) {
+        console.error('Error loading organizations:', error);
+      } finally {
+        setLoadingOrgs(false);
+      }
+    };
+
     loadManagers();
+    loadOrganizations();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,6 +155,7 @@ export default function RegisterEmployee() {
       is_manager: false,
       manager_id: managerData.id,
       accounting_manager_email: formData.accounting_manager_email || null,
+      organization_id: formData.organization_id || null,
     });
 
     if (error) {
@@ -229,6 +253,26 @@ export default function RegisterEmployee() {
                 disabled={loading}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="organization_id">ארגון (אופציונלי)</Label>
+              <Select
+                value={formData.organization_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, organization_id: value }))}
+                disabled={loading || loadingOrgs}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder={loadingOrgs ? "טוען..." : "בחר ארגון"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="department">מחלקה *</Label>
               <Input
