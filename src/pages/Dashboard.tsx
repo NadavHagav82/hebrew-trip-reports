@@ -449,6 +449,15 @@ export default function Dashboard() {
                   >
                     <FileStack className="w-4 h-4 text-green-600" />
                   </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/manager/stats')}
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-indigo-500/10 hover:bg-indigo-500/20"
+                    title="סטטיסטיקות"
+                  >
+                    <BarChart3 className="w-4 h-4 text-indigo-600" />
+                  </Button>
                 </>
               )}
               {isAdmin && (
