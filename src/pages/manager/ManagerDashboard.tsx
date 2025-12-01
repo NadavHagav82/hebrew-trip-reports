@@ -512,11 +512,12 @@ export default function ManagerDashboard() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => navigate(`/reports/${report.id}`)}
+                              onClick={() => navigate(`/reports/view/${report.id}`)}
                               disabled={processingReportId === report.id || bulkApproving}
+                              title="בדוק הוצאות בודדות ואשר/דחה כל אחת בנפרד"
                             >
                               <Eye className="w-4 h-4 ml-1" />
-                              צפייה
+                              בדוק פירוט
                             </Button>
                             <Button
                               size="sm"
@@ -524,13 +525,14 @@ export default function ManagerDashboard() {
                               className="bg-green-600 hover:bg-green-700"
                               onClick={() => approveReport(report.id)}
                               disabled={processingReportId === report.id || bulkApproving}
+                              title="אשר את כל ההוצאות בדוח"
                             >
                               {processingReportId === report.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <>
                                   <Check className="w-4 h-4 ml-1" />
-                                  אשר
+                                  אשר הכל
                                 </>
                               )}
                             </Button>
@@ -539,9 +541,10 @@ export default function ManagerDashboard() {
                               variant="destructive"
                               onClick={() => rejectReport(report.id)}
                               disabled={processingReportId === report.id || bulkApproving}
+                              title="דחה את כל הדוח"
                             >
                               <X className="w-4 h-4 ml-1" />
-                              דחה
+                              דחה הכל
                             </Button>
                           </div>
                         </TableCell>
