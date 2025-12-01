@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, Eye, Loader2, ArrowRight, Download, Filter, Search, BarChart3, MessageSquare } from "lucide-react";
+import { Calculator, Eye, Loader2, ArrowRight, Download, Filter, Search, BarChart3, MessageSquare, Users } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
@@ -192,6 +192,10 @@ export default function AccountingDashboard() {
               <Button variant="outline" onClick={() => navigate('/accounting/stats')}>
                 <BarChart3 className="w-4 h-4 ml-2" />
                 סטטיסטיקות
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/accounting/users')}>
+                <Users className="w-4 h-4 ml-2" />
+                ניהול משתמשים
               </Button>
               <Button variant="outline" onClick={() => navigate('/')}>
                 חזרה לדשבורד
