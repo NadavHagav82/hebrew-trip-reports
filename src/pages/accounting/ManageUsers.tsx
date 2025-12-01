@@ -120,8 +120,7 @@ export default function ManageUsers() {
           employee_id,
           department,
           is_manager,
-          manager_id,
-          manager:profiles!profiles_manager_id_fkey(full_name)
+          manager_id
         `)
         .order("full_name");
 
@@ -139,9 +138,13 @@ export default function ManageUsers() {
         rolesMap[role.user_id].push(role.role);
       });
 
+      // Map managers to users
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
       const usersData = (profilesData || []).map(user => ({
         ...user,
-        manager: Array.isArray(user.manager) && user.manager.length > 0 ? user.manager[0] : null
+        manager: user.manager_id && profilesMap.get(user.manager_id) 
+          ? { full_name: profilesMap.get(user.manager_id)!.full_name }
+          : null
       }));
 
       setUsers(usersData);
