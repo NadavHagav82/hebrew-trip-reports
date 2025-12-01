@@ -17,7 +17,8 @@ import {
   Loader2,
   ShieldCheck,
   FileText,
-  UserCog
+  UserCog,
+  Building2
 } from "lucide-react";
 
 interface Stats {
@@ -268,6 +269,14 @@ export default function AdminDashboard() {
           >
             <Users className="h-6 w-6" />
             <span>ניהול משתמשים</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-20 flex flex-col gap-2"
+            onClick={() => navigate('/admin/organizations')}
+          >
+            <Building2 className="h-6 w-6" />
+            <span>ניהול ארגונים</span>
           </Button>
         </CardContent>
       </Card>

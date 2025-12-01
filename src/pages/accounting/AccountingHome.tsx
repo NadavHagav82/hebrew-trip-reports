@@ -407,6 +407,14 @@ export default function AccountingHome() {
                 <ShieldCheck className="w-4 h-4 ml-2" />
                 ניהול קודי הזמנה
               </Button>
+              <Button 
+                onClick={() => navigate('/admin/organizations')} 
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Building2 className="w-4 h-4 ml-2" />
+                ניהול ארגונים
+              </Button>
             </CardContent>
           </Card>
         </div>
