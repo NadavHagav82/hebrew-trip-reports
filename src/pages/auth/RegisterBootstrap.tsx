@@ -34,17 +34,16 @@ export default function RegisterBootstrap() {
 
   const checkExistingAccountingManager = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('role', 'accounting_manager')
-        .limit(1);
+      const { data, error } = await supabase.rpc('accounting_manager_exists');
 
       if (error) throw error;
       
-      setAccountingManagerExists(data && data.length > 0);
+      setAccountingManagerExists(data === true);
     } catch (error) {
       console.error('Error checking accounting manager:', error);
+      // If there's an error checking, assume no accounting manager exists
+      // This allows the bootstrap process to proceed
+      setAccountingManagerExists(false);
     }
   };
 
