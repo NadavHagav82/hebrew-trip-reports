@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
@@ -35,6 +35,14 @@ interface Expense {
   approval_status?: 'pending' | 'approved' | 'rejected';
   manager_comment?: string;
   reviewed_at?: string;
+  manager_attachments?: {
+    id: string;
+    file_name: string;
+    file_url: string;
+    file_size: number;
+    file_type: string;
+    uploaded_at: string;
+  }[];
 }
 
 interface Report {
@@ -110,7 +118,8 @@ const ViewReport = () => {
         .from('expenses')
         .select(
           `*,
-           receipts (*)`
+           receipts (*),
+           manager_comment_attachments:manager_comment_attachments(*)`
         )
         .eq('report_id', id)
         .order('expense_date', { ascending: true });
@@ -135,9 +144,25 @@ const ViewReport = () => {
             })
           );
 
+          // Get signed URLs for manager attachments
+          const attachmentsWithSignedUrls = await Promise.all(
+            (expense.manager_comment_attachments || []).map(async (attachment: any) => {
+              const { data } = await supabase
+                .storage
+                .from('manager-attachments')
+                .createSignedUrl(attachment.file_url, 60 * 60);
+
+              return {
+                ...attachment,
+                signed_url: data?.signedUrl || null,
+              };
+            })
+          );
+
           return {
             ...expense,
             receipts: receiptsWithSignedUrls,
+            manager_attachments: attachmentsWithSignedUrls,
           };
         })
       );
@@ -917,6 +942,36 @@ const ViewReport = () => {
                                 }`}>
                                   <span className="font-semibold">הערה: </span>
                                   {expense.manager_comment}
+                                </div>
+                              )}
+                              {expense.manager_attachments && expense.manager_attachments.length > 0 && (
+                                <div className="mt-3 space-y-1">
+                                  <div className={`text-xs font-semibold mb-1 ${
+                                    expense.approval_status === 'approved' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
+                                  }`}>
+                                    קבצים מצורפים מהמנהל:
+                                  </div>
+                                  {expense.manager_attachments.map((attachment: any) => (
+                                    <a
+                                      key={attachment.id}
+                                      href={attachment.signed_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`flex items-center gap-2 text-xs p-2 rounded border ${
+                                        expense.approval_status === 'approved'
+                                          ? 'bg-green-100 border-green-300 hover:bg-green-200 text-green-800'
+                                          : 'bg-red-100 border-red-300 hover:bg-red-200 text-red-800'
+                                      } transition-colors`}
+                                    >
+                                      {attachment.file_type.startsWith('image/') ? (
+                                        <FileText className="w-3 h-3" />
+                                      ) : (
+                                        <FileText className="w-3 h-3" />
+                                      )}
+                                      <span className="truncate flex-1">{attachment.file_name}</span>
+                                      <Download className="w-3 h-3" />
+                                    </a>
+                                  ))}
                                 </div>
                               )}
                             </div>
