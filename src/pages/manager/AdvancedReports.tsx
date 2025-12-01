@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Save, AlertTriangle, TrendingUp, Calendar, DollarSign, PieChart as PieIcon, BarChart3 } from "lucide-react";
+import { Download, Save, AlertTriangle, TrendingUp, Calendar, DollarSign, PieChart as PieIcon, BarChart3, UserPlus } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subMonths, subQuarters, startOfYear, endOfYear } from "date-fns";
 import * as XLSX from "xlsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Report {
   id: string;
@@ -82,6 +84,16 @@ const AdvancedReports = () => {
   // Alerts
   const [alertThreshold, setAlertThreshold] = useState<number>(10000);
   const [showAlerts, setShowAlerts] = useState(true);
+  
+  // Request employee dialog
+  const [showRequestEmployeeDialog, setShowRequestEmployeeDialog] = useState(false);
+  const [requestEmployeeForm, setRequestEmployeeForm] = useState({
+    employeeName: "",
+    employeeEmail: "",
+    department: "",
+    notes: "",
+  });
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   useEffect(() => {
     checkManagerAndLoadData();
@@ -403,6 +415,71 @@ const AdvancedReports = () => {
     return employeeData.filter(emp => emp.amount > alertThreshold || emp.amount > avgAmount * 1.5);
   };
 
+  const handleRequestEmployee = async () => {
+    if (!requestEmployeeForm.employeeName || !requestEmployeeForm.employeeEmail || !requestEmployeeForm.department) {
+      toast({
+        title: "שגיאה",
+        description: "נא למלא את כל השדות הנדרשים",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "שגיאה",
+          description: "משתמש לא מחובר",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+
+      const { error } = await supabase.functions.invoke("request-add-employee", {
+        body: {
+          managerName: profile?.full_name || "",
+          managerEmail: profile?.email || user.email,
+          employeeName: requestEmployeeForm.employeeName,
+          employeeEmail: requestEmployeeForm.employeeEmail,
+          department: requestEmployeeForm.department,
+          notes: requestEmployeeForm.notes,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "הצלחה",
+        description: "הבקשה נשלחה בהצלחה למנהל הנהלת החשבונות",
+      });
+      setShowRequestEmployeeDialog(false);
+      setRequestEmployeeForm({
+        employeeName: "",
+        employeeEmail: "",
+        department: "",
+        notes: "",
+      });
+    } catch (error: any) {
+      console.error("Error requesting employee:", error);
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בשליחת הבקשה: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
   const exportToExcel = () => {
     const categoryData = getCategoryData();
     const employeeData = getEmployeeData();
@@ -468,10 +545,83 @@ const AdvancedReports = () => {
             <AlertTriangle className="h-16 w-16 text-muted-foreground" />
             <h2 className="text-2xl font-semibold">אין עובדים בצוות</h2>
             <p className="text-muted-foreground max-w-md">
-              לא נמצאו עובדים המשויכים אליך כמנהל. פנה למנהל ההנהלת החשבונות להוספת עובדים לצוות שלך.
+              לא נמצאו עובדים המשויכים אליך כמנהל. תוכל לבקש הוספת עובדים באמצעות הכפתור למטה.
             </p>
+            <Button 
+              onClick={() => setShowRequestEmployeeDialog(true)}
+              className="mt-4"
+            >
+              <UserPlus className="ml-2 h-4 w-4" />
+              בקש הוספת עובד
+            </Button>
           </div>
         </Card>
+
+        <Dialog open={showRequestEmployeeDialog} onOpenChange={setShowRequestEmployeeDialog}>
+          <DialogContent className="sm:max-w-[500px]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>בקשה להוספת עובד</DialogTitle>
+              <DialogDescription>
+                מלא את הפרטים והבקשה תישלח למנהל הנהלת החשבונות
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="employeeName">שם מלא *</Label>
+                <Input
+                  id="employeeName"
+                  value={requestEmployeeForm.employeeName}
+                  onChange={(e) => setRequestEmployeeForm({ ...requestEmployeeForm, employeeName: e.target.value })}
+                  placeholder="הזן שם מלא"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="employeeEmail">אימייל *</Label>
+                <Input
+                  id="employeeEmail"
+                  type="email"
+                  value={requestEmployeeForm.employeeEmail}
+                  onChange={(e) => setRequestEmployeeForm({ ...requestEmployeeForm, employeeEmail: e.target.value })}
+                  placeholder="example@company.com"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="department">מחלקה *</Label>
+                <Input
+                  id="department"
+                  value={requestEmployeeForm.department}
+                  onChange={(e) => setRequestEmployeeForm({ ...requestEmployeeForm, department: e.target.value })}
+                  placeholder="הזן מחלקה"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="notes">הערות</Label>
+                <Textarea
+                  id="notes"
+                  value={requestEmployeeForm.notes}
+                  onChange={(e) => setRequestEmployeeForm({ ...requestEmployeeForm, notes: e.target.value })}
+                  placeholder="הערות נוספות (אופציונלי)"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowRequestEmployeeDialog(false)}
+                disabled={isSubmittingRequest}
+              >
+                ביטול
+              </Button>
+              <Button
+                onClick={handleRequestEmployee}
+                disabled={isSubmittingRequest}
+              >
+                {isSubmittingRequest ? "שולח..." : "שלח בקשה"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
