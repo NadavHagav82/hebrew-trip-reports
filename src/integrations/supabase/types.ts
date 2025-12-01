@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_comments: {
+        Row: {
+          comment_text: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_resolved: boolean | null
+          report_id: string
+          resolved_at: string | null
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_resolved?: boolean | null
+          report_id: string
+          resolved_at?: string | null
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_resolved?: boolean | null
+          report_id?: string
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_comments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_comments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number

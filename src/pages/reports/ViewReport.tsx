@@ -8,6 +8,7 @@ import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
+import { AccountingComments } from '@/components/AccountingComments';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -82,6 +83,7 @@ const ViewReport = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAccountingUser, setIsAccountingUser] = useState(false);
   
   // Share dialog state
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -179,6 +181,8 @@ const ViewReport = () => {
 
         if (!profileError && profileData) {
           setProfile(profileData as Profile);
+          // Check if user is accounting manager
+          setIsAccountingUser(!!profileData.accounting_manager_email);
         }
       }
     } catch (error: any) {
@@ -1118,6 +1122,11 @@ const ViewReport = () => {
 
           {/* Report History */}
           <ReportHistory reportId={report.id} />
+          
+          {/* Accounting Comments */}
+          {(report.status === 'closed' || report.status === 'pending_approval' || isAccountingUser) && (
+            <AccountingComments reportId={report.id} isAccountingUser={isAccountingUser} />
+          )}
         </div>
         
         {/* Print Version */}
