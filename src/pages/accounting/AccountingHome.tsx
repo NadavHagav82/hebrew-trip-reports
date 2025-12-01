@@ -19,7 +19,8 @@ import {
   UserPlus,
   Eye,
   Loader2,
-  Clipboard
+  Clipboard,
+  ShieldCheck
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -388,6 +389,14 @@ export default function AccountingHome() {
               >
                 <Clipboard className="w-4 h-4 ml-2" />
                 ניהול תבניות הוצאות
+              </Button>
+              <Button 
+                onClick={() => navigate('/accounting/bootstrap-tokens')} 
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <ShieldCheck className="w-4 h-4 ml-2" />
+                ניהול קודי הזמנה
               </Button>
             </CardContent>
           </Card>
