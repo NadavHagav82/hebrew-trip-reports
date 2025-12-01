@@ -82,14 +82,13 @@ export default function ManageOrganizations() {
 
   const loadOrganizations = async () => {
     try {
-      // @ts-ignore - organizations table exists in DB but not in generated types yet
-      const { data, error } = await supabase
+      const { data, error }: any = await (supabase as any)
         .from('organizations')
         .select('*')
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setOrganizations((data as any) || []);
+      setOrganizations(data || []);
     } catch (error) {
       console.error('Error loading organizations:', error);
       toast({
@@ -109,7 +108,7 @@ export default function ManageOrganizations() {
     try {
       if (editingOrg) {
         // Update existing organization
-        const { error }: any = await supabase
+        const { error }: any = await (supabase as any)
           .from('organizations')
           .update({
             name: formData.name,
@@ -126,7 +125,7 @@ export default function ManageOrganizations() {
         });
       } else {
         // Create new organization
-        const { error }: any = await supabase
+        const { error }: any = await (supabase as any)
           .from('organizations')
           .insert({
             name: formData.name,
@@ -174,7 +173,7 @@ export default function ManageOrganizations() {
 
     try {
       // Check if organization has users
-      const { count } = await supabase
+      const { count }: any = await (supabase as any)
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', org.id);
@@ -188,7 +187,7 @@ export default function ManageOrganizations() {
         return;
       }
 
-      const { error }: any = await supabase
+      const { error }: any = await (supabase as any)
         .from('organizations')
         .delete()
         .eq('id', org.id);
