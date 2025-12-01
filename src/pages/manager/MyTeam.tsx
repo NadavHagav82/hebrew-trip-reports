@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Eye, Loader2, ArrowRight, FileText } from 'lucide-react';
+import { Users, Eye, Loader2, ArrowRight, FileText, BarChart3 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface TeamMember {
@@ -133,10 +133,16 @@ export default function MyTeam() {
                 <p className="text-sm text-muted-foreground">עובדים ודוחות הצוות</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              חזרה לדשבורד
-              <ArrowRight className="w-4 h-4 mr-2" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate('/manager/stats')}>
+                <BarChart3 className="w-4 h-4 ml-2" />
+                סטטיסטיקות
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                חזרה לדשבורד
+                <ArrowRight className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>

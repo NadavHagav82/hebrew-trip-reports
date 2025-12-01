@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign, CheckSquare } from "lucide-react";
+import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign, CheckSquare, BarChart3 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -325,10 +325,16 @@ export default function ManagerDashboard() {
                 <p className="text-sm text-muted-foreground">אישור דוחות הצוות</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              חזרה לדשבורד
-              <ArrowRight className="w-4 h-4 mr-2" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate('/manager/stats')}>
+                <BarChart3 className="w-4 h-4 ml-2" />
+                סטטיסטיקות
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                חזרה לדשבורד
+                <ArrowRight className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
