@@ -70,12 +70,12 @@ export default function OrgAdminUsers() {
     }
 
     try {
-      // Check if user has org_admin role
+      // Check if user has admin role for organization management
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .eq('role', 'org_admin')
+        .eq('role', 'admin')
         .maybeSingle();
 
       if (!roleData) {
