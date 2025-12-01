@@ -257,7 +257,7 @@ const AccountingStats = () => {
           <Button variant="outline" onClick={() => navigate('/accounting/dashboard')}>
             דשבורד ראשי
           </Button>
-          <Button variant="outline" onClick={() => navigate('/')}>
+          <Button variant="outline" onClick={() => navigate('/accounting')}>
             חזרה לדשבורד
           </Button>
         </div>
