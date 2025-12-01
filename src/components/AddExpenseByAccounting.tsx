@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload, X, Loader2 } from "lucide-react";
+import { Plus, Upload, X, Loader2, FileText } from "lucide-react";
 
 interface AddExpenseByAccountingProps {
   reportId: string;
@@ -27,12 +27,24 @@ const CURRENCIES = [
   "SEK", "NOK", "DKK", "CHF", "JPY", "CNY", "CAD", "AUD"
 ];
 
+interface ExpenseTemplate {
+  id: string;
+  template_name: string;
+  category: string;
+  description: string;
+  amount: number | null;
+  currency: string;
+  notes: string | null;
+}
+
 export default function AddExpenseByAccounting({ reportId, onExpenseAdded }: AddExpenseByAccountingProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [receipts, setReceipts] = useState<File[]>([]);
+  const [templates, setTemplates] = useState<ExpenseTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   const [formData, setFormData] = useState({
     category: "flights",
@@ -42,6 +54,42 @@ export default function AddExpenseByAccounting({ reportId, onExpenseAdded }: Add
     currency: "ILS",
     notes: "",
   });
+
+  useEffect(() => {
+    if (open) {
+      loadTemplates();
+    }
+  }, [open]);
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expense_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('template_name');
+
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setFormData({
+        category: template.category,
+        expense_date: new Date().toISOString().split('T')[0],
+        description: template.description,
+        amount: template.amount?.toString() || "",
+        currency: template.currency,
+        notes: template.notes || "",
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,6 +244,36 @@ export default function AddExpenseByAccounting({ reportId, onExpenseAdded }: Add
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {templates.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="template">תבנית הוצאה</Label>
+              <Select
+                value={selectedTemplate}
+                onValueChange={handleTemplateSelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר תבנית (אופציונלי)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ללא תבנית</SelectItem>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {template.template_name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedTemplate && selectedTemplate !== "none" && (
+                <p className="text-sm text-muted-foreground">
+                  {templates.find(t => t.id === selectedTemplate)?.notes}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">קטגוריה *</Label>
