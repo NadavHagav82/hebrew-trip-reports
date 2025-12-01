@@ -31,6 +31,9 @@ interface Expense {
   amount_in_ils: number;
   receipts: any[];
   notes?: string;
+  approval_status?: 'pending' | 'approved' | 'rejected';
+  manager_comment?: string;
+  reviewed_at?: string;
 }
 
 interface Report {
@@ -871,6 +874,29 @@ const ViewReport = () => {
                               {expense.notes}
                             </p>
                           )}
+                          {expense.approval_status && expense.approval_status !== 'pending' && (
+                            <div className={`mt-3 p-3 rounded-lg border-2 ${
+                              expense.approval_status === 'approved'
+                                ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                                : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                            }`}>
+                              <div className="flex items-start gap-2">
+                                <div className={`text-sm font-bold ${
+                                  expense.approval_status === 'approved' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
+                                }`}>
+                                  {expense.approval_status === 'approved' ? '✓ אושר על ידי מנהל' : '✗ נדחה על ידי מנהל'}
+                                </div>
+                              </div>
+                              {expense.manager_comment && (
+                                <div className={`text-xs mt-2 ${
+                                  expense.approval_status === 'approved' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                                }`}>
+                                  <span className="font-semibold">הערה: </span>
+                                  {expense.manager_comment}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
                           <div className="text-2xl font-black text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">
@@ -1130,6 +1156,7 @@ const ViewReport = () => {
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>מטבע</th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>בשקלים</th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>קטגוריה</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>סטטוס</th>
                 </tr>
               </thead>
               <tbody>
@@ -1163,6 +1190,29 @@ const ViewReport = () => {
                       }}>
                         {getCategoryLabel(expense.category)}
                       </span>
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '12px' }}>
+                      {expense.approval_status && expense.approval_status !== 'pending' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ 
+                            background: expense.approval_status === 'approved' ? '#dcfce7' : '#fee2e2',
+                            color: expense.approval_status === 'approved' ? '#166534' : '#991b1b',
+                            padding: '3px 8px', 
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}>
+                            {expense.approval_status === 'approved' ? '✓ אושר' : '✗ נדחה'}
+                          </span>
+                          {expense.manager_comment && (
+                            <span style={{ fontSize: '10px', color: '#6b7280' }}>
+                              {expense.manager_comment}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontSize: '11px' }}>ממתין</span>
+                      )}
                     </td>
                   </tr>
                 ))}
