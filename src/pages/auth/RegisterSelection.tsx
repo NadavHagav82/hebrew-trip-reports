@@ -102,11 +102,19 @@ export default function RegisterSelection() {
           </Card>
         </div>
 
-        <div className="text-center text-sm">
-          <span className="text-muted-foreground">כבר יש לך חשבון? </span>
-          <Link to="/auth/login" className="text-primary hover:underline font-medium">
-            התחבר כאן
-          </Link>
+        <div className="text-center space-y-2">
+          <div className="text-sm">
+            <span className="text-muted-foreground">כבר יש לך חשבון? </span>
+            <Link to="/auth/login" className="text-primary hover:underline font-medium">
+              התחבר כאן
+            </Link>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <span>מנהל חשבונות ראשון במערכת? </span>
+            <Link to="/auth/register/bootstrap" className="text-primary hover:underline font-medium">
+              הקמה ראשונית
+            </Link>
+          </div>
         </div>
       </div>
     </div>
