@@ -452,22 +452,11 @@ const ViewReport = () => {
     if (!report || !profile || !user) return;
 
     try {
-      // Get current logged-in user's profile to check if they're a manager
-      const { data: currentUserProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_manager, manager_id')
-        .eq('id', user.id)
-        .single();
+      // Check if the report owner has a manager
+      const hasManager = profile.manager_id !== null;
 
-      if (profileError) throw profileError;
-
-      // Check if current user is a manager AND is the manager of this report's owner
-      const isManagerOfThisReport = currentUserProfile?.is_manager && 
-                                     report.user_id !== user.id &&
-                                     profile.manager_id === user.id;
-
-      if (isManagerOfThisReport) {
-        // Manager can close report directly
+      if (!hasManager) {
+        // No manager - close report directly
         await supabase
           .from('reports')
           .update({ 
@@ -477,30 +466,28 @@ const ViewReport = () => {
           })
           .eq('id', report.id);
         
-        // Add history record
         await supabase.from('report_history').insert({
           report_id: report.id,
           action: 'approved',
           performed_by: user.id,
-          notes: 'הדוח אושר ישירות על ידי מנהל',
+          notes: 'הדוח אושר ונסגר ישירות (ללא מנהל אחראי)',
         });
         
         toast({
-          title: 'הדוח אושר בהצלחה',
+          title: 'הדוח הופק בהצלחה',
           description: 'הדוח אושר ונסגר',
         });
       } else {
-        // Employee needs manager approval
+        // Has manager - send for approval
         if (!profile.manager_email || !profile.manager_name) {
           toast({
             title: 'שגיאה',
-            description: 'לא הוגדר מנהל אחראי לעובד זה',
+            description: 'לא נמצאו פרטי מנהל בפרופיל שלך',
             variant: 'destructive',
           });
           return;
         }
 
-        // Request approval from manager
         const { error } = await supabase.functions.invoke('request-report-approval', {
           body: {
             reportId: report.id,
@@ -519,7 +506,6 @@ const ViewReport = () => {
 
         if (error) throw error;
 
-        // Add history record
         await supabase.from('report_history').insert({
           report_id: report.id,
           action: 'submitted',
@@ -528,7 +514,7 @@ const ViewReport = () => {
         });
 
         toast({
-          title: 'נשלחה בקשת אישור',
+          title: 'הדוח נשלח לאישור',
           description: `הדוח נשלח לאישור של ${profile.manager_name}`,
         });
       }
@@ -538,7 +524,44 @@ const ViewReport = () => {
       console.error('Error closing report:', error);
       toast({
         title: 'שגיאה',
-        description: error.message || 'לא ניתן לסגור את הדוח',
+        description: error.message || 'לא ניתן להפיק את הדוח',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleApproveReport = async () => {
+    if (!report || !user) return;
+
+    try {
+      // Manager approves the report
+      await supabase
+        .from('reports')
+        .update({ 
+          status: 'closed', 
+          approved_at: new Date().toISOString(),
+          approved_by: user.id 
+        })
+        .eq('id', report.id);
+      
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: 'approved',
+        performed_by: user.id,
+        notes: 'הדוח אושר על ידי מנהל',
+      });
+      
+      toast({
+        title: 'הדוח אושר בהצלחה',
+        description: 'הדוח אושר ונסגר',
+      });
+
+      loadReport();
+    } catch (error: any) {
+      console.error('Error approving report:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לאשר את הדוח',
         variant: 'destructive',
       });
     }
@@ -778,9 +801,19 @@ const ViewReport = () => {
                       className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <CheckCircle className="w-4 h-4 ml-1" />
-                      {isManagerOfThisReport ? 'אשר דוח' : 'שלח לאישור מנהל'}
+                      הפק דוח
                     </Button>
                   </>
+                )}
+                {report.status === 'pending_approval' && isManagerOfThisReport && (
+                  <Button 
+                    size="sm"
+                    onClick={handleApproveReport}
+                    className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                  >
+                    <CheckCircle className="w-4 h-4 ml-1" />
+                    אשר דוח
+                  </Button>
                 )}
                 {report.status === 'closed' && (
                   <Button 
@@ -848,9 +881,18 @@ const ViewReport = () => {
                       className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <CheckCircle className="w-4 h-4 ml-2" />
-                      {isManagerOfThisReport ? 'אשר דוח' : 'שלח לאישור מנהל'}
+                      הפק דוח
                     </Button>
                   </>
+                )}
+                {report.status === 'pending_approval' && isManagerOfThisReport && (
+                  <Button 
+                    onClick={handleApproveReport}
+                    className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                  >
+                    <CheckCircle className="w-4 h-4 ml-2" />
+                    אשר דוח
+                  </Button>
                 )}
                 {report.status === 'closed' && (
                   <Button 
