@@ -452,6 +452,15 @@ const ViewReport = () => {
     if (!report || !profile || !user) return;
 
     try {
+      console.log('handleCloseReport debug', {
+        currentUserId: user.id,
+        reportUserId: report.user_id,
+        isOwner: user.id === report.user_id,
+        profileUserId: (profile as any).id,
+        profileManagerId: profile.manager_id,
+        hasManager: profile.manager_id !== null && profile.manager_id !== undefined,
+      });
+
       const isOwner = user.id === report.user_id;
       const hasManager = profile.manager_id !== null && profile.manager_id !== undefined;
 
