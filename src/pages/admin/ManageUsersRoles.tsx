@@ -203,6 +203,7 @@ export default function ManageUsersRoles() {
       manager: "מנהל",
       user: "משתמש",
       accounting_manager: "מנהל הנה\"ח",
+      org_admin: "מנהל ארגון",
     };
     return labels[role];
   };
@@ -213,6 +214,7 @@ export default function ManageUsersRoles() {
       manager: "bg-blue-500/10 text-blue-700 border-blue-200",
       user: "bg-gray-500/10 text-gray-700 border-gray-200",
       accounting_manager: "bg-purple-500/10 text-purple-700 border-purple-200",
+      org_admin: "bg-green-500/10 text-green-700 border-green-200",
     };
     return colors[role];
   };

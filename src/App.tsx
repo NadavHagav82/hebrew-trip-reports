@@ -33,6 +33,7 @@ import OrganizationalAnalytics from "./pages/accounting/OrganizationalAnalytics"
 import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
 import ExpenseTemplates from "./pages/accounting/ExpenseTemplates";
 import BootstrapTokenManagement from "./pages/accounting/BootstrapTokenManagement";
+import OrgAdminDashboard from "./pages/orgadmin/OrgAdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/accounting/templates" element={<ExpenseTemplates />} />
             <Route path="/accounting/bootstrap-tokens" element={<BootstrapTokenManagement />} />
             <Route path="/analytics" element={<ExpenseAnalytics />} />
+            <Route path="/orgadmin" element={<OrgAdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

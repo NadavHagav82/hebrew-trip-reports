@@ -292,6 +292,36 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accounting_manager_email: string | null
@@ -303,6 +333,7 @@ export type Database = {
           id: string
           is_manager: boolean
           manager_id: string | null
+          organization_id: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -316,6 +347,7 @@ export type Database = {
           id: string
           is_manager?: boolean
           manager_id?: string | null
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username: string
         }
@@ -329,6 +361,7 @@ export type Database = {
           id?: string
           is_manager?: boolean
           manager_id?: string | null
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           username?: string
         }
@@ -338,6 +371,13 @@ export type Database = {
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
