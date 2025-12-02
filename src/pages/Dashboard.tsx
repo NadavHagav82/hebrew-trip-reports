@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3 } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -69,6 +69,7 @@ export default function Dashboard() {
   const [newEmail, setNewEmail] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [isManager, setIsManager] = useState(false);
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -82,6 +83,7 @@ export default function Dashboard() {
     fetchManagers();
     checkAdminStatus();
     checkManagerStatus();
+    checkOrgAdminStatus();
   }, [user, navigate]);
 
   const checkAdminStatus = async () => {
@@ -96,6 +98,13 @@ export default function Dashboard() {
     const { data } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'manager' });
     setIsManager(!!data);
+  };
+
+  const checkOrgAdminStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'org_admin' });
+    setIsOrgAdmin(!!data);
   };
 
   const fetchReports = async () => {
@@ -460,6 +469,17 @@ export default function Dashboard() {
                   </Button>
                 </>
               )}
+              {isOrgAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/orgadmin')}
+                  className="h-8 w-8 sm:h-9 sm:w-9 bg-emerald-500/10 hover:bg-emerald-500/20"
+                  title="ניהול ארגון"
+                >
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                </Button>
+              )}
               {isAdmin && (
                 <Button 
                   variant="ghost" 
@@ -472,7 +492,7 @@ export default function Dashboard() {
                 </Button>
               )}
               <Button 
-                variant="ghost" 
+                variant="ghost"
                 size="icon" 
                 onClick={() => setShowProfileDialog(true)}
                 className="h-8 w-8 sm:h-9 sm:w-9"
