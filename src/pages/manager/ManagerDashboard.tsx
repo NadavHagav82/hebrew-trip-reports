@@ -100,6 +100,10 @@ export default function ManagerDashboard() {
   };
 
   const loadPendingReports = async () => {
+    if (!user) {
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -108,10 +112,12 @@ export default function ManagerDashboard() {
           profiles!reports_user_id_fkey (
             full_name,
             employee_id,
-            department
+            department,
+            manager_id
           )
         `)
         .eq('status', 'pending_approval')
+        .eq('profiles.manager_id', user.id)
         .order('submitted_at', { ascending: false });
 
       if (error) throw error;
