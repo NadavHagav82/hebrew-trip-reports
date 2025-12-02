@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
 import { AccountingComments } from '@/components/AccountingComments';
 import AddExpenseByAccounting from '@/components/AddExpenseByAccounting';
+import { ManagerExpenseReview } from '@/components/ManagerExpenseReview';
+import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -99,6 +101,11 @@ const ViewReport = () => {
   const [showSaveListDialog, setShowSaveListDialog] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [savingList, setSavingList] = useState(false);
+  
+  // Manager review state
+  const [expenseReviews, setExpenseReviews] = useState<Map<string, { expenseId: string; status: 'approved' | 'rejected'; comment: string; attachments: File[] }>>(new Map());
+  const [managerGeneralComment, setManagerGeneralComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -550,37 +557,205 @@ const ViewReport = () => {
   const handleApproveReport = async () => {
     if (!report || !user) return;
 
-    try {
-      // Manager approves the report
-      await supabase
-        .from('reports')
-        .update({ 
-          status: 'closed', 
-          approved_at: new Date().toISOString(),
-          approved_by: user.id 
-        })
-        .eq('id', report.id);
-      
-      await supabase.from('report_history').insert({
-        report_id: report.id,
-        action: 'approved',
-        performed_by: user.id,
-        notes: 'הדוח אושר על ידי מנהל',
-      });
-      
-      toast({
-        title: 'הדוח אושר בהצלחה',
-        description: 'הדוח אושר ונסגר',
-      });
+    // If no individual reviews, approve all expenses at once
+    if (expenseReviews.size === 0) {
+      try {
+        await supabase
+          .from('reports')
+          .update({ 
+            status: 'closed', 
+            approved_at: new Date().toISOString(),
+            approved_by: user.id 
+          })
+          .eq('id', report.id);
+        
+        // Mark all expenses as approved
+        await supabase
+          .from('expenses')
+          .update({ 
+            approval_status: 'approved',
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('report_id', report.id);
+        
+        await supabase.from('report_history').insert({
+          report_id: report.id,
+          action: 'approved',
+          performed_by: user.id,
+          notes: 'הדוח אושר על ידי מנהל',
+        });
+        
+        toast({
+          title: 'הדוח אושר בהצלחה',
+          description: 'הדוח אושר ונסגר',
+        });
 
-      loadReport();
-    } catch (error: any) {
-      console.error('Error approving report:', error);
+        loadReport();
+      } catch (error: any) {
+        console.error('Error approving report:', error);
+        toast({
+          title: 'שגיאה',
+          description: error.message || 'לא ניתן לאשר את הדוח',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+
+    // Submit with individual expense reviews
+    await handleSubmitManagerReview();
+  };
+
+  const handleManagerExpenseReview = (expenseId: string, status: 'approved' | 'rejected', comment: string, attachments: File[]) => {
+    setExpenseReviews(prev => {
+      const newMap = new Map(prev);
+      newMap.set(expenseId, { expenseId, status, comment, attachments });
+      return newMap;
+    });
+  };
+
+  const handleSubmitManagerReview = async () => {
+    if (!report || !user) return;
+
+    // Check if all expenses have been reviewed
+    const unreviewedExpenses = expenses.filter(exp => !expenseReviews.has(exp.id));
+    if (unreviewedExpenses.length > 0) {
       toast({
-        title: 'שגיאה',
-        description: error.message || 'לא ניתן לאשר את הדוח',
+        title: 'יש להשלים את הביקורת',
+        description: `נותרו ${unreviewedExpenses.length} הוצאות שטרם נבדקו`,
         variant: 'destructive',
       });
+      return;
+    }
+
+    // Check if rejected expenses have comments
+    const rejectedWithoutComments = Array.from(expenseReviews.values())
+      .filter(review => review.status === 'rejected' && !review.comment.trim());
+    
+    if (rejectedWithoutComments.length > 0) {
+      toast({
+        title: 'חסרות הערות',
+        description: 'יש להוסיף הערות לכל ההוצאות שנדחו',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const reviewsArray = Array.from(expenseReviews.values());
+      
+      // Upload attachments first
+      for (const review of reviewsArray) {
+        if (review.attachments && review.attachments.length > 0) {
+          for (const file of review.attachments) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${review.expenseId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            
+            const { error: uploadError } = await supabase.storage
+              .from('manager-attachments')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              console.error('Error uploading file:', uploadError);
+              throw new Error(`שגיאה בהעלאת הקובץ ${file.name}`);
+            }
+
+            const { error: dbError } = await supabase
+              .from('manager_comment_attachments')
+              .insert({
+                expense_id: review.expenseId,
+                file_name: file.name,
+                file_url: fileName,
+                file_size: file.size,
+                file_type: file.type,
+                uploaded_by: user.id,
+              });
+
+            if (dbError) {
+              console.error('Error saving attachment metadata:', dbError);
+              throw new Error(`שגיאה בשמירת פרטי הקובץ ${file.name}`);
+            }
+          }
+        }
+      }
+
+      // Update each expense
+      for (const review of reviewsArray) {
+        await supabase
+          .from('expenses')
+          .update({
+            approval_status: review.status,
+            manager_comment: review.comment || null,
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', review.expenseId);
+      }
+
+      // Determine overall report status
+      const hasRejected = reviewsArray.some(r => r.status === 'rejected');
+      const newStatus = hasRejected ? 'open' : 'closed';
+      
+      await supabase
+        .from('reports')
+        .update({
+          status: newStatus,
+          manager_approval_token: null,
+          manager_general_comment: managerGeneralComment || null,
+          rejection_reason: hasRejected ? 'חלק מההוצאות נדחו או דורשות בירור' : null,
+          approved_at: hasRejected ? null : new Date().toISOString(),
+          approved_by: hasRejected ? null : user.id,
+        })
+        .eq('id', report.id);
+
+      // Add history entry
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: hasRejected ? 'rejected' : 'approved',
+        performed_by: user.id,
+        notes: hasRejected 
+          ? `חלק מההוצאות נדחו או דורשות בירור. הדוח הוחזר לעובד.`
+          : 'הדוח אושר על ידי מנהל',
+      });
+
+      // Send notification to employee
+      await supabase.functions.invoke('notify-employee-review', {
+        body: {
+          reportId: report.id,
+          hasRejected,
+        },
+      });
+
+      const approvedCount = reviewsArray.filter(r => r.status === 'approved').length;
+      const rejectedCount = reviewsArray.filter(r => r.status === 'rejected').length;
+
+      if (!hasRejected) {
+        toast({
+          title: 'הדוח אושר בהצלחה',
+          description: 'כל ההוצאות אושרו',
+        });
+      } else {
+        toast({
+          title: 'הביקורת הושלמה',
+          description: `אושרו ${approvedCount} הוצאות, נדחו/לבירור ${rejectedCount} הוצאות. הדוח הוחזר לעובד`,
+        });
+      }
+
+      // Reset review state
+      setExpenseReviews(new Map());
+      setManagerGeneralComment('');
+      loadReport();
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      toast({
+        title: 'שגיאה בשליחת הביקורת',
+        description: error.message || 'נסה שוב',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -1121,10 +1296,77 @@ const ViewReport = () => {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Manager Review UI */}
+                      {isManagerOfThisReport && report.status === 'pending_approval' && (
+                        <ManagerExpenseReview
+                          expenseId={expense.id}
+                          currentStatus={expense.approval_status}
+                          currentComment={expense.manager_comment}
+                          onReview={handleManagerExpenseReview}
+                          disabled={submittingReview}
+                        />
+                      )}
                     </div>
                   );
                 })}
               </div>
+              
+              {/* Manager Review Submit Section */}
+              {isManagerOfThisReport && report.status === 'pending_approval' && (
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                  <h3 className="font-bold text-lg text-blue-900 mb-4">סיכום ביקורת מנהל</h3>
+                  
+                  <div className="mb-4">
+                    <Label htmlFor="manager-general-comment" className="text-sm font-semibold text-blue-800 mb-2 block">
+                      הערה כללית על הדוח (אופציונלי):
+                    </Label>
+                    <Textarea
+                      id="manager-general-comment"
+                      placeholder="הוסף הערה כללית על הדוח..."
+                      value={managerGeneralComment}
+                      onChange={(e) => setManagerGeneralComment(e.target.value)}
+                      rows={3}
+                      disabled={submittingReview}
+                      className="bg-white"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="text-sm text-blue-700">
+                      {expenseReviews.size === 0 ? (
+                        <span>לחץ "אשר דוח" כדי לאשר את כל ההוצאות, או סמן כל הוצאה בנפרד</span>
+                      ) : (
+                        <span>
+                          נסקרו {expenseReviews.size} מתוך {expenses.length} הוצאות
+                          {Array.from(expenseReviews.values()).some(r => r.status === 'rejected') && 
+                            ' • ישנן הוצאות שנדחו - הדוח יחזור לעובד'}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {expenseReviews.size > 0 && expenseReviews.size < expenses.length && (
+                        <span className="text-sm text-amber-600 font-semibold">
+                          יש להשלים סקירת {expenses.length - expenseReviews.size} הוצאות נוספות
+                        </span>
+                      )}
+                      <Button
+                        onClick={handleSubmitManagerReview}
+                        disabled={submittingReview || (expenseReviews.size > 0 && expenseReviews.size < expenses.length)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {submittingReview ? (
+                          <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4 ml-2" />
+                        )}
+                        {expenseReviews.size === 0 ? 'אשר את כל ההוצאות' : 'שלח ביקורת'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
