@@ -452,17 +452,17 @@ const ViewReport = () => {
     if (!report || !profile || !user) return;
 
     try {
-      // Check if the report owner has a manager
-      const hasManager = profile.manager_id !== null;
+      const isOwner = user.id === report.user_id;
+      const hasManager = profile.manager_id !== null && profile.manager_id !== undefined;
 
-      if (!hasManager) {
-        // No manager - close report directly
+      if (!isOwner || !hasManager) {
+        // Not the report owner OR owner without manager – close report directly
         await supabase
           .from('reports')
           .update({ 
             status: 'closed', 
             approved_at: new Date().toISOString(),
-            approved_by: user.id 
+            approved_by: user.id,
           })
           .eq('id', report.id);
         
@@ -470,7 +470,9 @@ const ViewReport = () => {
           report_id: report.id,
           action: 'approved',
           performed_by: user.id,
-          notes: 'הדוח אושר ונסגר ישירות (ללא מנהל אחראי)',
+          notes: isOwner
+            ? 'הדוח הופק ונסגר (לעובד ללא מנהל אחראי)'
+            : 'הדוח אושר ונסגר על ידי משתמש אחר (מנהל / חשבונאות)',
         });
         
         toast({
@@ -478,11 +480,11 @@ const ViewReport = () => {
           description: 'הדוח אושר ונסגר',
         });
       } else {
-        // Has manager - send for approval
+        // Owner with manager – send for approval
         if (!profile.manager_email || !profile.manager_name) {
           toast({
             title: 'שגיאה',
-            description: 'לא נמצאו פרטי מנהל בפרופיל שלך',
+            description: 'לא נמצאו פרטי מנהל בפרופיל העובד',
             variant: 'destructive',
           });
           return;
@@ -529,7 +531,6 @@ const ViewReport = () => {
       });
     }
   };
-
   const handleApproveReport = async () => {
     if (!report || !user) return;
 
