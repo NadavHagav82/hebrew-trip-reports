@@ -49,6 +49,7 @@ interface Expense {
 
 interface Report {
   id: string;
+  user_id: string;
   trip_destination: string;
   trip_start_date: string;
   trip_end_date: string;
@@ -86,6 +87,7 @@ const ViewReport = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAccountingUser, setIsAccountingUser] = useState(false);
+  const [isManagerOfThisReport, setIsManagerOfThisReport] = useState(false);
   
   // Share dialog state
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -217,6 +219,19 @@ const ViewReport = () => {
           .eq('role', 'accounting_manager');
         
         setIsAccountingUser(roles && roles.length > 0);
+
+        // Check if current user is the manager of this report's owner
+        const { data: currentUserProfile } = await supabase
+          .from('profiles')
+          .select('is_manager')
+          .eq('id', user.id)
+          .single();
+
+        const isManager = currentUserProfile?.is_manager && 
+                         reportData.user_id !== user.id &&
+                         profile.manager_id === user.id;
+        
+        setIsManagerOfThisReport(isManager || false);
       }
     } catch (error: any) {
       toast({
@@ -434,35 +449,52 @@ const ViewReport = () => {
   };
 
   const handleCloseReport = async () => {
-    if (!report || !profile) return;
+    if (!report || !profile || !user) return;
 
     try {
-      // Check if user is a manager
-      if (profile.is_manager) {
+      // Get current logged-in user's profile to check if they're a manager
+      const { data: currentUserProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_manager, manager_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Check if current user is a manager AND is the manager of this report's owner
+      const isManagerOfThisReport = currentUserProfile?.is_manager && 
+                                     report.user_id !== user.id &&
+                                     profile.manager_id === user.id;
+
+      if (isManagerOfThisReport) {
         // Manager can close report directly
         await supabase
           .from('reports')
-          .update({ status: 'closed', approved_at: new Date().toISOString() })
+          .update({ 
+            status: 'closed', 
+            approved_at: new Date().toISOString(),
+            approved_by: user.id 
+          })
           .eq('id', report.id);
         
         // Add history record
         await supabase.from('report_history').insert({
           report_id: report.id,
           action: 'approved',
-          performed_by: user!.id,
+          performed_by: user.id,
           notes: 'הדוח אושר ישירות על ידי מנהל',
         });
         
         toast({
-          title: 'הדוח נסגר בהצלחה',
-          description: 'הדוח נסגר ואושר',
+          title: 'הדוח אושר בהצלחה',
+          description: 'הדוח אושר ונסגר',
         });
       } else {
         // Employee needs manager approval
         if (!profile.manager_email || !profile.manager_name) {
           toast({
             title: 'שגיאה',
-            description: 'לא נמצאו פרטי מנהל בפרופיל שלך',
+            description: 'לא הוגדר מנהל אחראי לעובד זה',
             variant: 'destructive',
           });
           return;
@@ -491,7 +523,7 @@ const ViewReport = () => {
         await supabase.from('report_history').insert({
           report_id: report.id,
           action: 'submitted',
-          performed_by: user!.id,
+          performed_by: user.id,
           notes: `הדוח הוגש לאישור של ${profile.manager_name}`,
         });
 
@@ -746,7 +778,7 @@ const ViewReport = () => {
                       className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <CheckCircle className="w-4 h-4 ml-1" />
-                      {profile?.is_manager ? 'סגור ואשר' : 'שלח לאישור'}
+                      {isManagerOfThisReport ? 'אשר דוח' : 'שלח לאישור מנהל'}
                     </Button>
                   </>
                 )}
@@ -816,7 +848,7 @@ const ViewReport = () => {
                       className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
                     >
                       <CheckCircle className="w-4 h-4 ml-2" />
-                      {profile?.is_manager ? 'סגור ואשר דוח' : 'שלח לאישור מנהל'}
+                      {isManagerOfThisReport ? 'אשר דוח' : 'שלח לאישור מנהל'}
                     </Button>
                   </>
                 )}
