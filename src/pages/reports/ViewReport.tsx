@@ -73,6 +73,7 @@ interface Profile {
   manager_id?: string | null;
   manager_email?: string | null;
   manager_name?: string | null;
+  accounting_manager_email?: string | null;
 }
 
 const ViewReport = () => {
@@ -1670,10 +1671,12 @@ const ViewReport = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const managerEmail = profile?.manager_email || 'manager@company.com';
-                    const hasEmpty = recipientEmails.some(e => e.trim() === '');
-                    if (hasEmpty) {
-                      const newEmails = recipientEmails.map(e => e.trim() === '' ? managerEmail : e);
+                    const managerEmail = profile?.manager_email || profile?.accounting_manager_email || 'manager@company.com';
+                    // Find first empty field, or add new one
+                    const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
+                    if (firstEmptyIndex !== -1) {
+                      const newEmails = [...recipientEmails];
+                      newEmails[firstEmptyIndex] = managerEmail;
                       setRecipientEmails(newEmails);
                     } else {
                       setRecipientEmails([...recipientEmails, managerEmail]);
@@ -1687,12 +1690,15 @@ const ViewReport = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const hasEmpty = recipientEmails.some(e => e.trim() === '');
-                    if (hasEmpty) {
-                      const newEmails = recipientEmails.map(e => e.trim() === '' ? 'accounting@company.com' : e);
+                    const accountingEmail = profile?.accounting_manager_email || 'accounting@company.com';
+                    // Find first empty field, or add new one
+                    const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
+                    if (firstEmptyIndex !== -1) {
+                      const newEmails = [...recipientEmails];
+                      newEmails[firstEmptyIndex] = accountingEmail;
                       setRecipientEmails(newEmails);
                     } else {
-                      setRecipientEmails([...recipientEmails, 'accounting@company.com']);
+                      setRecipientEmails([...recipientEmails, accountingEmail]);
                     }
                   }}
                   disabled={sendingEmail}
