@@ -99,10 +99,31 @@ export default {
             height: "0",
           },
         },
+        "shake": {
+          "0%, 100%": {
+            transform: "rotate(0deg)",
+          },
+          "15%": {
+            transform: "rotate(-15deg)",
+          },
+          "30%": {
+            transform: "rotate(10deg)",
+          },
+          "45%": {
+            transform: "rotate(-10deg)",
+          },
+          "60%": {
+            transform: "rotate(5deg)",
+          },
+          "75%": {
+            transform: "rotate(-5deg)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "shake": "shake 0.5s ease-in-out",
       },
     },
   },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   id: string;
@@ -27,7 +28,40 @@ export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      // Create a simple beep sound using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Could not play notification sound:', error);
+    }
+  };
+
+  // Trigger shake animation
+  const triggerShakeAnimation = () => {
+    setIsShaking(true);
+    playNotificationSound();
+    setTimeout(() => setIsShaking(false), 600);
+  };
 
   const fetchNotifications = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -63,6 +97,7 @@ export const NotificationBell = () => {
           const newNotification = payload.new as Notification;
           setNotifications((prev) => [newNotification, ...prev]);
           setUnreadCount((prev) => prev + 1);
+          triggerShakeAnimation();
         }
       )
       .subscribe();
@@ -143,8 +178,18 @@ export const NotificationBell = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={cn(
+            "relative transition-all",
+            isShaking && "animate-[shake_0.5s_ease-in-out]"
+          )}
+        >
+          <Bell className={cn(
+            "h-5 w-5 transition-transform",
+            isShaking && "text-amber-500"
+          )} />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-medium">
               {unreadCount > 9 ? "9+" : unreadCount}
