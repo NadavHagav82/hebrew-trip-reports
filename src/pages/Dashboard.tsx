@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2 } from 'lucide-react';
+import { NotificationBell } from '@/components/NotificationBell';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -491,6 +492,7 @@ export default function Dashboard() {
                   <Shield className="w-4 h-4" />
                 </Button>
               )}
+              <NotificationBell />
               <Button 
                 variant="ghost"
                 size="icon" 
