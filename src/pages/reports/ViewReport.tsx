@@ -744,8 +744,25 @@ const ViewReport = () => {
         },
       });
 
+      // Create in-app notification for employee
       const approvedCount = reviewsArray.filter(r => r.status === 'approved').length;
       const rejectedCount = reviewsArray.filter(r => r.status === 'rejected').length;
+      
+      const notificationType = hasRejected ? 'report_rejected' : 'report_approved';
+      const notificationTitle = hasRejected 
+        ? 'הדוח שלך דורש תיקונים' 
+        : 'הדוח שלך אושר';
+      const notificationMessage = hasRejected
+        ? `הדוח ל${report.trip_destination} הוחזר אליך עם הערות. ${rejectedCount} הוצאות דורשות תיקון.`
+        : `הדוח ל${report.trip_destination} אושר על ידי המנהל.`;
+
+      await supabase.from('notifications').insert({
+        user_id: report.user_id,
+        type: notificationType,
+        title: notificationTitle,
+        message: notificationMessage,
+        report_id: report.id,
+      });
 
       if (!hasRejected) {
         toast({
