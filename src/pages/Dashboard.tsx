@@ -492,7 +492,9 @@ export default function Dashboard() {
                   <Shield className="w-4 h-4" />
                 </Button>
               )}
-              <NotificationBell />
+              <div className="bg-amber-500/10 hover:bg-amber-500/20 rounded-md">
+                <NotificationBell />
+              </div>
               <Button 
                 variant="ghost"
                 size="icon" 
