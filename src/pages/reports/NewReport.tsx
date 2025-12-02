@@ -728,10 +728,35 @@ export default function NewReport() {
     try {
       let report;
       
-      // Determine status based on action
-      let newStatus: 'draft' | 'open' | 'closed';
+      // Load current user profile when closing report to determine manager / accounting behavior
+      let profileData: {
+        is_manager?: boolean;
+        manager_id?: string | null;
+        full_name?: string;
+        email?: string;
+        accounting_manager_email?: string | null;
+        username?: string | null;
+      } | null = null;
+
       if (closeReport) {
-        newStatus = 'closed';
+        const { data } = await supabase
+          .from('profiles')
+          .select('is_manager, manager_id, full_name, email, accounting_manager_email, username')
+          .eq('id', user.id)
+          .single();
+
+        profileData = data;
+      }
+
+      const hasManager = !!profileData?.manager_id;
+      const isManagerUser = !!profileData?.is_manager;
+
+      // Determine status based on action
+      let newStatus: 'draft' | 'open' | 'closed' | 'pending_approval';
+      if (closeReport) {
+        // Employee with manager → send to manager for approval
+        // Manager or employee without manager → close directly
+        newStatus = !isManagerUser && hasManager ? 'pending_approval' : 'closed';
       } else if (saveAsDraft) {
         newStatus = 'draft';
       } else {
@@ -750,7 +775,7 @@ export default function NewReport() {
             notes: reportNotes,
             daily_allowance: dailyAllowance,
             status: newStatus,
-            submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
+            submitted_at: (newStatus === 'open' || newStatus === 'closed' || newStatus === 'pending_approval') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
             updated_at: new Date().toISOString(),
           })
@@ -779,7 +804,7 @@ export default function NewReport() {
             notes: reportNotes,
             daily_allowance: dailyAllowance,
             status: newStatus,
-            submitted_at: (newStatus === 'open' || newStatus === 'closed') ? new Date().toISOString() : null,
+            submitted_at: (newStatus === 'open' || newStatus === 'closed' || newStatus === 'pending_approval') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
           })
           .select()
@@ -840,6 +865,7 @@ export default function NewReport() {
       }
 
       // Create history record
+      const isPendingForManager = closeReport && newStatus === 'pending_approval';
       const historyAction = isEditMode ? 'edited' : (saveAsDraft ? 'created' : 'submitted');
       
       await supabase.from('report_history').insert({
@@ -847,16 +873,16 @@ export default function NewReport() {
         action: historyAction,
         performed_by: user.id,
         notes: closeReport 
-          ? 'הדוח סגור והופק' 
+          ? (isPendingForManager ? 'הדוח נשלח לאישור מנהל' : 'הדוח סגור והופק')
           : (saveAsDraft ? 'הדוח נוצר כטיוטה' : (isEditMode ? 'הדוח עודכן' : 'הדוח הוגש לאישור')),
       });
 
       const toastTitle = closeReport 
-        ? 'הדוח הופק בהצלחה' 
+        ? (isPendingForManager ? 'הדוח נשלח לאישור מנהל' : 'הדוח הופק בהצלחה')
         : (saveAsDraft ? 'הדוח נשמר כטיוטה' : (isEditMode ? 'הדוח עודכן בהצלחה' : 'הדוח נוצר בהצלחה'));
       
       const toastDescription = closeReport
-        ? 'הדוח נסגר והופק בהצלחה'
+        ? (isPendingForManager ? 'הדוח נשלח למנהל האחראי לאישור' : 'הדוח נסגר והופק בהצלחה')
         : (saveAsDraft ? 'ניתן להמשיך לערוך מאוחר יותר' : 'הדוח פתוח ופעיל');
 
       toast({
@@ -864,31 +890,69 @@ export default function NewReport() {
         description: toastDescription,
       });
 
-      // Send email to accounting manager if report is closed and user has accounting email
-      if (closeReport) {
+      // If the report is being sent to manager approval, trigger approval email
+      if (isPendingForManager && profileData && profileData.manager_id && profileData.full_name) {
         try {
-          const { data: profileData } = await supabase
+          const { data: managerProfile } = await supabase
             .from('profiles')
-            .select('accounting_manager_email, username')
-            .eq('id', user.id)
+            .select('email, full_name')
+            .eq('id', profileData.manager_id)
             .single();
 
+          if (managerProfile?.email && managerProfile?.full_name) {
+            await supabase.functions.invoke('request-report-approval', {
+              body: {
+                reportId: report.id,
+                managerEmail: managerProfile.email,
+                managerName: managerProfile.full_name,
+                employeeName: profileData.full_name,
+                reportDetails: {
+                  destination: tripDestination,
+                  startDate: format(new Date(tripStartDate), 'dd/MM/yyyy'),
+                  endDate: format(new Date(tripEndDate), 'dd/MM/yyyy'),
+                  purpose: tripPurpose,
+                  totalAmount: calculateGrandTotal(),
+                },
+              },
+            });
+          }
+        } catch (approvalError) {
+          console.error('Error sending manager approval request:', approvalError);
+          // Don't block the flow if email fails – the report is already marked as pending_approval
+        }
+      }
+
+      // Send email to accounting manager if report is closed and user has accounting email
+      if (closeReport && !isPendingForManager) {
+        try {
+          let accountingProfile = profileData;
+
+          if (!accountingProfile) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('accounting_manager_email, username')
+              .eq('id', user.id)
+              .single();
+
+            accountingProfile = data;
+          }
+
           // Send to accounting manager
-          if (profileData?.accounting_manager_email) {
+          if (accountingProfile?.accounting_manager_email) {
             await supabase.functions.invoke('send-accounting-report', {
               body: {
                 reportId: report.id,
-                accountingEmail: profileData.accounting_manager_email,
+                accountingEmail: accountingProfile.accounting_manager_email,
               }
             });
           }
 
           // Send to user's registration email (stored in username)
-          if (profileData?.username) {
+          if (accountingProfile?.username) {
             await supabase.functions.invoke('send-accounting-report', {
               body: {
                 reportId: report.id,
-                accountingEmail: profileData.username,
+                accountingEmail: accountingProfile.username,
               }
             });
           }
