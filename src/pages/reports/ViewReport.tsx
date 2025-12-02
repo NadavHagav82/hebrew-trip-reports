@@ -227,9 +227,16 @@ const ViewReport = () => {
           .eq('id', user.id)
           .single();
 
+        // Get the report owner's profile to check if current user is their manager
+        const { data: reportOwnerProfile } = await supabase
+          .from('profiles')
+          .select('manager_id')
+          .eq('id', reportData.user_id)
+          .single();
+
         const isManager = currentUserProfile?.is_manager && 
                          reportData.user_id !== user.id &&
-                         profile.manager_id === user.id;
+                         reportOwnerProfile?.manager_id === user.id;
         
         setIsManagerOfThisReport(isManager || false);
       }
