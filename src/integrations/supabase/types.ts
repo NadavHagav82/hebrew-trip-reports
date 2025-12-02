@@ -674,6 +674,7 @@ export type Database = {
     }
     Functions: {
       accounting_manager_exists: { Args: never; Returns: boolean }
+      get_user_organization_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
