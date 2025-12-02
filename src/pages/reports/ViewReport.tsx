@@ -721,10 +721,26 @@ const ViewReport = () => {
       });
 
       // Send notification to employee
+      const expenseReviewsForEmail = reviewsArray.map(r => ({
+        expenseId: r.expenseId,
+        status: r.status,
+        comment: r.comment,
+      }));
+      
       await supabase.functions.invoke('notify-employee-review', {
         body: {
+          employeeEmail: (profile as any)?.email,
+          employeeName: profile?.full_name,
           reportId: report.id,
-          hasRejected,
+          reportDetails: {
+            destination: report.trip_destination,
+            startDate: report.trip_start_date,
+            endDate: report.trip_end_date,
+            totalAmount: report.total_amount_ils || 0,
+          },
+          expenseReviews: expenseReviewsForEmail,
+          generalComment: managerGeneralComment || null,
+          allApproved: !hasRejected,
         },
       });
 
