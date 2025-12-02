@@ -173,15 +173,15 @@ const ViewReport = () => {
 
       setExpenses(enhancedExpenses);
 
-      // Load employee profile with manager details
-      if (user?.id) {
+      // Load employee profile with manager details (של בעל הדוח, לא של המשתמש המחובר)
+      if (reportData?.user_id) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select(`
             *,
             manager:profiles!manager_id(email, full_name)
           `)
-          .eq('id', user.id)
+          .eq('id', reportData.user_id)
           .single();
 
         if (!profileError && profileData) {
@@ -193,6 +193,10 @@ const ViewReport = () => {
           };
           setProfile(profile as Profile);
         }
+      }
+      
+      // Check if current logged-in user is accounting manager
+      if (user?.id) {
         
         // Check if user is accounting manager
         const { data: roles } = await supabase
@@ -1671,7 +1675,15 @@ const ViewReport = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const managerEmail = profile?.manager_email || profile?.accounting_manager_email || 'manager@company.com';
+                    if (!profile?.manager_email) {
+                      toast({
+                        title: 'שגיאה',
+                        description: 'לא הוגדר מנהל אחראי למשתמש זה',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+                    const managerEmail = profile.manager_email;
                     // Find first empty field, or add new one
                     const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
                     if (firstEmptyIndex !== -1) {
