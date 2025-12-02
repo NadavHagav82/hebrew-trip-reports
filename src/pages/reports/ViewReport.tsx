@@ -177,20 +177,31 @@ const ViewReport = () => {
       if (reportData?.user_id) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select(`
-            *,
-            manager:profiles!manager_id(email, full_name)
-          `)
+          .select('*')
           .eq('id', reportData.user_id)
           .single();
 
         if (!profileError && profileData) {
-          // Flatten the manager details into profile
+          let managerEmail: string | null = null;
+          let managerName: string | null = null;
+
+          if (profileData.manager_id) {
+            const { data: managerProfile } = await supabase
+              .from('profiles')
+              .select('email, full_name')
+              .eq('id', profileData.manager_id)
+              .single();
+
+            managerEmail = managerProfile?.email || null;
+            managerName = managerProfile?.full_name || null;
+          }
+
           const profile = {
             ...profileData,
-            manager_email: profileData.manager?.email || null,
-            manager_name: profileData.manager?.full_name || null
+            manager_email: managerEmail,
+            manager_name: managerName,
           };
+
           setProfile(profile as Profile);
         }
       }
