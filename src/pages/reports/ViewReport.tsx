@@ -70,9 +70,9 @@ interface Profile {
   employee_id: string;
   department: string;
   is_manager: boolean;
-  manager_first_name?: string | null;
-  manager_last_name?: string | null;
+  manager_id?: string | null;
   manager_email?: string | null;
+  manager_name?: string | null;
 }
 
 const ViewReport = () => {
@@ -172,16 +172,25 @@ const ViewReport = () => {
 
       setExpenses(enhancedExpenses);
 
-      // Load employee profile
+      // Load employee profile with manager details
       if (user?.id) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select(`
+            *,
+            manager:profiles!manager_id(email, full_name)
+          `)
           .eq('id', user.id)
           .single();
 
         if (!profileError && profileData) {
-          setProfile(profileData as Profile);
+          // Flatten the manager details into profile
+          const profile = {
+            ...profileData,
+            manager_email: profileData.manager?.email || null,
+            manager_name: profileData.manager?.full_name || null
+          };
+          setProfile(profile as Profile);
         }
         
         // Check if user is accounting manager
@@ -434,7 +443,7 @@ const ViewReport = () => {
         });
       } else {
         // Employee needs manager approval
-        if (!profile.manager_email || !profile.manager_first_name || !profile.manager_last_name) {
+        if (!profile.manager_email || !profile.manager_name) {
           toast({
             title: 'שגיאה',
             description: 'לא נמצאו פרטי מנהל בפרופיל שלך',
@@ -448,7 +457,7 @@ const ViewReport = () => {
           body: {
             reportId: report.id,
             managerEmail: profile.manager_email,
-            managerName: `${profile.manager_first_name} ${profile.manager_last_name}`,
+            managerName: profile.manager_name,
             employeeName: profile.full_name,
             reportDetails: {
               destination: report.trip_destination,
@@ -467,12 +476,12 @@ const ViewReport = () => {
           report_id: report.id,
           action: 'submitted',
           performed_by: user!.id,
-          notes: `הדוח הוגש לאישור של ${profile.manager_first_name} ${profile.manager_last_name}`,
+          notes: `הדוח הוגש לאישור של ${profile.manager_name}`,
         });
 
         toast({
           title: 'נשלחה בקשת אישור',
-          description: `הדוח נשלח לאישור של ${profile.manager_first_name} ${profile.manager_last_name}`,
+          description: `הדוח נשלח לאישור של ${profile.manager_name}`,
         });
       }
 
@@ -1661,12 +1670,13 @@ const ViewReport = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    const managerEmail = profile?.manager_email || 'manager@company.com';
                     const hasEmpty = recipientEmails.some(e => e.trim() === '');
                     if (hasEmpty) {
-                      const newEmails = recipientEmails.map(e => e.trim() === '' ? 'manager@company.com' : e);
+                      const newEmails = recipientEmails.map(e => e.trim() === '' ? managerEmail : e);
                       setRecipientEmails(newEmails);
                     } else {
-                      setRecipientEmails([...recipientEmails, 'manager@company.com']);
+                      setRecipientEmails([...recipientEmails, managerEmail]);
                     }
                   }}
                   disabled={sendingEmail}
