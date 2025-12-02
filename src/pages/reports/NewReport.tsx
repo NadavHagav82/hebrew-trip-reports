@@ -654,12 +654,18 @@ export default function NewReport() {
   };
 
   const handleSave = async (saveAsDraft: boolean = false, closeReport: boolean = false) => {
-    if (!user) return;
+    console.log('handleSave called', { saveAsDraft, closeReport, expensesLength: expenses.length });
+    
+    if (!user) {
+      console.log('No user found');
+      return;
+    }
 
     // Validation
     if (!tripDestination || !tripStartDate || !tripEndDate || !tripPurpose) {
+      console.log('Missing trip details', { tripDestination, tripStartDate, tripEndDate, tripPurpose });
       toast({
-        title: 'שגיאה',
+        title: '⚠️ שגיאה',
         description: 'יש למלא את כל פרטי הנסיעה',
         variant: 'destructive',
       });
@@ -667,9 +673,10 @@ export default function NewReport() {
     }
 
     if (closeReport && expenses.length === 0) {
+      console.log('No expenses added for closeReport=true');
       toast({
-        title: 'שגיאה',
-        description: 'יש להוסיף לפחות הוצאה אחת',
+        title: '⚠️ שגיאה',
+        description: 'יש להוסיף לפחות הוצאה אחת לפני הפקת הדוח',
         variant: 'destructive',
       });
       return;
@@ -677,13 +684,15 @@ export default function NewReport() {
 
     // Validate expenses have all required fields
     if (expenses.length > 0) {
+      console.log('Validating expenses', expenses);
       for (let i = 0; i < expenses.length; i++) {
         const expense = expenses[i];
         const expenseNum = expenses.length - i;
         
         if (!expense.expense_date) {
+          console.log('Missing expense_date', expense);
           toast({
-            title: 'שגיאה',
+            title: '⚠️ שגיאה',
             description: `הוצאה #${expenseNum}: יש למלא תאריך`,
             variant: 'destructive',
           });
@@ -692,8 +701,9 @@ export default function NewReport() {
         }
         
         if (!expense.description || expense.description.trim() === '') {
+          console.log('Missing description', expense);
           toast({
-            title: 'שגיאה',
+            title: '⚠️ שגיאה',
             description: `הוצאה #${expenseNum}: יש למלא תיאור`,
             variant: 'destructive',
           });
@@ -702,8 +712,9 @@ export default function NewReport() {
         }
         
         if (!expense.amount || expense.amount <= 0) {
+          console.log('Invalid amount', expense);
           toast({
-            title: 'שגיאה',
+            title: '⚠️ שגיאה',
             description: `הוצאה #${expenseNum}: יש למלא סכום תקין`,
             variant: 'destructive',
           });
