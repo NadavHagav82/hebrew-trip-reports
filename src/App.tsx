@@ -36,6 +36,7 @@ import ExpenseTemplates from "./pages/accounting/ExpenseTemplates";
 import BootstrapTokenManagement from "./pages/accounting/BootstrapTokenManagement";
 import OrgAdminDashboard from "./pages/orgadmin/OrgAdminDashboard";
 import InvitationCodesManagement from "./pages/orgadmin/InvitationCodesManagement";
+import OrgUsersManagement from "./pages/orgadmin/OrgUsersManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const App = () => (
             <Route path="/analytics" element={<ExpenseAnalytics />} />
             <Route path="/orgadmin" element={<OrgAdminDashboard />} />
             <Route path="/orgadmin/invitation-codes" element={<InvitationCodesManagement />} />
+            <Route path="/orgadmin/users" element={<OrgUsersManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
