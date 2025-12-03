@@ -352,18 +352,18 @@ export default function OrgAdminDashboard() {
           <Button
             variant="outline"
             className="h-20 flex flex-col gap-2"
-            onClick={() => toast({ title: 'בקרוב', description: 'תכונה זו תהיה זמינה בקרוב' })}
+            onClick={() => navigate('/orgadmin/users')}
           >
-            <BarChart3 className="h-6 w-6" />
-            <span>דוחות וסטטיסטיקות</span>
+            <Users className="h-6 w-6" />
+            <span>ניהול משתמשים</span>
           </Button>
           <Button
             variant="outline"
             className="h-20 flex flex-col gap-2"
             onClick={() => toast({ title: 'בקרוב', description: 'תכונה זו תהיה זמינה בקרוב' })}
           >
-            <FileText className="h-6 w-6" />
-            <span>דוחות הארגון</span>
+            <BarChart3 className="h-6 w-6" />
+            <span>דוחות וסטטיסטיקות</span>
           </Button>
         </CardContent>
       </Card>
