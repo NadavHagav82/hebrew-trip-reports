@@ -7,7 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, ShieldCheck, User, Loader2, Search, Filter, ArrowLeft, Briefcase, Building2 } from "lucide-react";
 
@@ -18,6 +27,7 @@ interface UserProfile {
   email: string;
   employee_id: string;
   department: string;
+  organization_id: string | null;
 }
 
 interface UserRole {
@@ -25,13 +35,26 @@ interface UserRole {
   role: 'admin' | 'manager' | 'user' | 'accounting_manager' | 'org_admin';
 }
 
+interface Organization {
+  id: string;
+  name: string;
+}
+
 export default function ManageRoles() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [userRoles, setUserRoles] = useState<Map<string, Set<string>>>(new Map());
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  
+  // Org admin dialog state
+  const [orgAdminDialogOpen, setOrgAdminDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -67,19 +90,18 @@ export default function ManageRoles() {
 
     setIsAdmin(true);
     loadUsers();
+    loadOrganizations();
   };
 
   const loadUsers = async () => {
     try {
-      // Load all users from profiles with username as email fallback
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, username, full_name, employee_id, department')
+        .select('id, username, full_name, employee_id, department, organization_id')
         .order('full_name');
 
       if (profilesError) throw profilesError;
 
-      // Use username as email (it's usually the email)
       const usersWithEmails = (profilesData || []).map(profile => ({
         ...profile,
         email: profile.username
@@ -87,14 +109,12 @@ export default function ManageRoles() {
 
       setUsers(usersWithEmails);
 
-      // Load all user roles
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
       if (rolesError) throw rolesError;
 
-      // Build a map of user_id -> Set of roles
       const rolesMap = new Map<string, Set<string>>();
       (rolesData || []).forEach((roleEntry: UserRole) => {
         if (!rolesMap.has(roleEntry.user_id)) {
@@ -116,7 +136,86 @@ export default function ManageRoles() {
     }
   };
 
+  const loadOrganizations = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('organizations')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    }
+  };
+
+  const openOrgAdminDialog = (userId: string) => {
+    const userProfile = users.find(u => u.id === userId);
+    setSelectedUserId(userId);
+    setSelectedOrgId(userProfile?.organization_id || "");
+    setOrgAdminDialogOpen(true);
+  };
+
+  const handleAssignOrgAdmin = async () => {
+    if (!selectedUserId || !selectedOrgId) {
+      toast({
+        title: "שגיאה",
+        description: "יש לבחור ארגון",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Add org_admin role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: selectedUserId, role: 'org_admin' });
+
+      if (roleError) throw roleError;
+
+      // Update user's organization_id
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ organization_id: selectedOrgId })
+        .eq('id', selectedUserId);
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: "תפקיד הוקצה",
+        description: "המשתמש הוגדר כאדמין ארגון ושויך לארגון בהצלחה",
+      });
+
+      setOrgAdminDialogOpen(false);
+      setSelectedUserId(null);
+      setSelectedOrgId("");
+      await loadUsers();
+    } catch (error: any) {
+      console.error('Error assigning org admin:', error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "שגיאה בהקצאת התפקיד",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const toggleRole = async (userId: string, role: 'admin' | 'manager' | 'accounting_manager' | 'org_admin') => {
+    // For org_admin, open dialog if adding role
+    if (role === 'org_admin') {
+      const currentRoles = userRoles.get(userId) || new Set();
+      if (!currentRoles.has('org_admin')) {
+        openOrgAdminDialog(userId);
+        return;
+      }
+    }
+
     try {
       const currentRoles = userRoles.get(userId) || new Set();
       const hasRole = currentRoles.has(role);
@@ -129,7 +228,6 @@ export default function ManageRoles() {
       };
 
       if (hasRole) {
-        // Remove role
         const { error } = await supabase
           .from('user_roles')
           .delete()
@@ -143,7 +241,6 @@ export default function ManageRoles() {
           description: `תפקיד ${roleLabels[role]} הוסר בהצלחה`,
         });
       } else {
-        // Add role
         const { error } = await supabase
           .from('user_roles')
           .insert({ user_id: userId, role });
@@ -156,7 +253,6 @@ export default function ManageRoles() {
         });
       }
 
-      // Reload users to refresh the UI
       await loadUsers();
     } catch (error) {
       console.error('Error toggling role:', error);
@@ -168,11 +264,15 @@ export default function ManageRoles() {
     }
   };
 
-  // Filter and search logic
+  const getUserOrgName = (orgId: string | null) => {
+    if (!orgId) return null;
+    const org = organizations.find(o => o.id === orgId);
+    return org?.name || null;
+  };
+
   const filteredUsers = users.filter((userProfile) => {
     const roles = userRoles.get(userProfile.id) || new Set();
     
-    // Search filter
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
       userProfile.full_name.toLowerCase().includes(searchLower) ||
@@ -182,7 +282,6 @@ export default function ManageRoles() {
 
     if (!matchesSearch) return false;
 
-    // Role filter
     if (roleFilter === "all") return true;
     if (roleFilter === "admin" && roles.has("admin")) return true;
     if (roleFilter === "manager" && roles.has("manager")) return true;
@@ -283,6 +382,7 @@ export default function ManageRoles() {
                   <TableHead>מייל</TableHead>
                   <TableHead>מספר עובד</TableHead>
                   <TableHead>מחלקה</TableHead>
+                  <TableHead>ארגון</TableHead>
                   <TableHead>תפקידים</TableHead>
                   <TableHead>פעולות</TableHead>
                 </TableRow>
@@ -290,7 +390,7 @@ export default function ManageRoles() {
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       לא נמצאו משתמשים תואמים
                     </TableCell>
                   </TableRow>
@@ -301,6 +401,7 @@ export default function ManageRoles() {
                     const isAdminUser = roles.has('admin');
                     const isAccountingManager = roles.has('accounting_manager');
                     const isOrgAdmin = roles.has('org_admin');
+                    const orgName = getUserOrgName(userProfile.organization_id);
 
                     return (
                       <TableRow key={userProfile.id}>
@@ -308,6 +409,16 @@ export default function ManageRoles() {
                         <TableCell>{userProfile.email}</TableCell>
                         <TableCell>{userProfile.employee_id || '-'}</TableCell>
                         <TableCell>{userProfile.department}</TableCell>
+                        <TableCell>
+                          {orgName ? (
+                            <Badge variant="outline" className="gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {orgName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="flex gap-2 flex-wrap">
                             {isAdminUser && (
@@ -386,6 +497,74 @@ export default function ManageRoles() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Org Admin Assignment Dialog */}
+      <Dialog open={orgAdminDialogOpen} onOpenChange={setOrgAdminDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              הקצאת אדמין ארגון
+            </DialogTitle>
+            <DialogDescription>
+              בחר את הארגון שהמשתמש ינהל
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {selectedUserId && (
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm text-muted-foreground">משתמש נבחר:</p>
+                <p className="font-medium">
+                  {users.find(u => u.id === selectedUserId)?.full_name}
+                </p>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="organization">ארגון *</Label>
+              <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר ארגון" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {organizations.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  אין ארגונים פעילים. יש ליצור ארגון קודם.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOrgAdminDialogOpen(false)}
+              disabled={submitting}
+            >
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleAssignOrgAdmin} 
+              disabled={submitting || !selectedOrgId}
+              className="bg-purple-500 hover:bg-purple-600"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  מקצה...
+                </>
+              ) : (
+                'הקצה אדמין ארגון'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
