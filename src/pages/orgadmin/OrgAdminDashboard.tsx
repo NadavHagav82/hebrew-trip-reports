@@ -360,7 +360,7 @@ export default function OrgAdminDashboard() {
           <Button
             variant="outline"
             className="h-20 flex flex-col gap-2"
-            onClick={() => toast({ title: 'בקרוב', description: 'תכונה זו תהיה זמינה בקרוב' })}
+            onClick={() => navigate('/orgadmin/analytics')}
           >
             <BarChart3 className="h-6 w-6" />
             <span>דוחות וסטטיסטיקות</span>
