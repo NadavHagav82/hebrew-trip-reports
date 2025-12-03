@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, ShieldCheck, User, Loader2, Search, Filter, ArrowLeft, Briefcase } from "lucide-react";
+import { Shield, ShieldCheck, User, Loader2, Search, Filter, ArrowLeft, Briefcase, Building2 } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -22,7 +22,7 @@ interface UserProfile {
 
 interface UserRole {
   user_id: string;
-  role: 'admin' | 'manager' | 'user' | 'accounting_manager';
+  role: 'admin' | 'manager' | 'user' | 'accounting_manager' | 'org_admin';
 }
 
 export default function ManageRoles() {
@@ -116,10 +116,17 @@ export default function ManageRoles() {
     }
   };
 
-  const toggleRole = async (userId: string, role: 'admin' | 'manager' | 'accounting_manager') => {
+  const toggleRole = async (userId: string, role: 'admin' | 'manager' | 'accounting_manager' | 'org_admin') => {
     try {
       const currentRoles = userRoles.get(userId) || new Set();
       const hasRole = currentRoles.has(role);
+
+      const roleLabels: Record<string, string> = {
+        admin: 'אדמין',
+        manager: 'מנהל',
+        accounting_manager: 'מנהל חשבונות',
+        org_admin: 'אדמין ארגון'
+      };
 
       if (hasRole) {
         // Remove role
@@ -133,7 +140,7 @@ export default function ManageRoles() {
 
         toast({
           title: "תפקיד הוסר",
-          description: `תפקיד ${role === 'admin' ? 'אדמין' : role === 'manager' ? 'מנהל' : 'מנהל חשבונות'} הוסר בהצלחה`,
+          description: `תפקיד ${roleLabels[role]} הוסר בהצלחה`,
         });
       } else {
         // Add role
@@ -145,7 +152,7 @@ export default function ManageRoles() {
 
         toast({
           title: "תפקיד הוקצה",
-          description: `תפקיד ${role === 'admin' ? 'אדמין' : role === 'manager' ? 'מנהל' : 'מנהל חשבונות'} הוקצה בהצלחה`,
+          description: `תפקיד ${roleLabels[role]} הוקצה בהצלחה`,
         });
       }
 
@@ -180,7 +187,8 @@ export default function ManageRoles() {
     if (roleFilter === "admin" && roles.has("admin")) return true;
     if (roleFilter === "manager" && roles.has("manager")) return true;
     if (roleFilter === "accounting_manager" && roles.has("accounting_manager")) return true;
-    if (roleFilter === "user" && !roles.has("admin") && !roles.has("manager") && !roles.has("accounting_manager")) return true;
+    if (roleFilter === "org_admin" && roles.has("org_admin")) return true;
+    if (roleFilter === "user" && !roles.has("admin") && !roles.has("manager") && !roles.has("accounting_manager") && !roles.has("org_admin")) return true;
     
     return false;
   });
@@ -244,6 +252,7 @@ export default function ManageRoles() {
                 <SelectItem value="admin">אדמינים בלבד</SelectItem>
                 <SelectItem value="manager">מנהלים בלבד</SelectItem>
                 <SelectItem value="accounting_manager">מנהלי חשבונות בלבד</SelectItem>
+                <SelectItem value="org_admin">אדמיני ארגון בלבד</SelectItem>
                 <SelectItem value="user">משתמשים רגילים בלבד</SelectItem>
               </SelectContent>
             </Select>
@@ -291,6 +300,7 @@ export default function ManageRoles() {
                     const isManager = roles.has('manager');
                     const isAdminUser = roles.has('admin');
                     const isAccountingManager = roles.has('accounting_manager');
+                    const isOrgAdmin = roles.has('org_admin');
 
                     return (
                       <TableRow key={userProfile.id}>
@@ -306,6 +316,12 @@ export default function ManageRoles() {
                                 אדמין
                               </Badge>
                             )}
+                            {isOrgAdmin && (
+                              <Badge className="gap-1 bg-purple-500 hover:bg-purple-600">
+                                <Building2 className="h-3 w-3" />
+                                אדמין ארגון
+                              </Badge>
+                            )}
                             {isManager && (
                               <Badge variant="secondary" className="gap-1">
                                 <Shield className="h-3 w-3" />
@@ -318,7 +334,7 @@ export default function ManageRoles() {
                                 מנהל חשבונות
                               </Badge>
                             )}
-                            {!isAdminUser && !isManager && !isAccountingManager && (
+                            {!isAdminUser && !isManager && !isAccountingManager && !isOrgAdmin && (
                               <Badge variant="outline" className="gap-1">
                                 <User className="h-3 w-3" />
                                 משתמש
@@ -335,6 +351,14 @@ export default function ManageRoles() {
                               disabled={userProfile.id === user?.id}
                             >
                               {isAdminUser ? "הסר אדמין" : "הפוך לאדמין"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={isOrgAdmin ? "default" : "outline"}
+                              onClick={() => toggleRole(userProfile.id, 'org_admin')}
+                              className={isOrgAdmin ? "bg-purple-500 hover:bg-purple-600" : ""}
+                            >
+                              {isOrgAdmin ? "הסר אדמין ארגון" : "הפוך לאדמין ארגון"}
                             </Button>
                             <Button
                               size="sm"
