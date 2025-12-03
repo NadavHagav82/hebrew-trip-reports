@@ -1,7 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, BriefcaseBusiness } from 'lucide-react';
+import { FileText, Users, BriefcaseBusiness, Ticket } from 'lucide-react';
 
 export default function RegisterSelection() {
   const navigate = useNavigate();
@@ -103,6 +103,18 @@ export default function RegisterSelection() {
         </div>
 
         <div className="text-center space-y-2">
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 mb-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Ticket className="w-5 h-5 text-primary" />
+              <span className="font-medium">יש לך קוד הזמנה?</span>
+            </div>
+            <Link 
+              to="/auth/register/code" 
+              className="text-primary hover:underline font-medium"
+            >
+              לחץ כאן להרשמה עם קוד הזמנה
+            </Link>
+          </div>
           <div className="text-sm">
             <span className="text-muted-foreground">כבר יש לך חשבון? </span>
             <Link to="/auth/login" className="text-primary hover:underline font-medium">

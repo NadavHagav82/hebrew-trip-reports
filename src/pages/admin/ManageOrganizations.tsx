@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Building2, Plus, Pencil, Trash2, Loader2, ArrowRight, Users } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Loader2, ArrowRight, Users, Ticket, Copy, Check } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -35,13 +36,21 @@ export default function ManageOrganizations() {
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [codeDialogOpen, setCodeDialogOpen] = useState(false);
+  const [selectedOrgForCode, setSelectedOrgForCode] = useState<Organization | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     is_active: true,
   });
+  const [codeFormData, setCodeFormData] = useState({
+    expires_days: '7',
+    notes: '',
+  });
   const [submitting, setSubmitting] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -223,6 +232,82 @@ export default function ManageOrganizations() {
     setDialogOpen(open);
     if (!open) {
       resetForm();
+    }
+  };
+
+  const generateCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const handleOpenCodeDialog = (org: Organization) => {
+    setSelectedOrgForCode(org);
+    setGeneratedCode(null);
+    setCopiedCode(false);
+    setCodeFormData({ expires_days: '7', notes: '' });
+    setCodeDialogOpen(true);
+  };
+
+  const handleCreateOrgAdminCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrgForCode || !user) return;
+
+    setSubmitting(true);
+
+    try {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + parseInt(codeFormData.expires_days));
+
+      const newCode = generateCode();
+
+      const { error } = await (supabase as any)
+        .from('invitation_codes')
+        .insert({
+          code: newCode,
+          organization_id: selectedOrgForCode.id,
+          role: 'org_admin',
+          created_by: user.id,
+          expires_at: expiresAt.toISOString(),
+          notes: codeFormData.notes || `קוד מנהל ארגון עבור ${selectedOrgForCode.name}`,
+          max_uses: 1,
+        });
+
+      if (error) throw error;
+
+      setGeneratedCode(newCode);
+      toast({
+        title: 'קוד נוצר בהצלחה',
+        description: 'העתק את הקוד ושלח אותו למנהל הארגון',
+      });
+    } catch (error: any) {
+      console.error('Error creating code:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'אירעה שגיאה ביצירת הקוד',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const copyCodeToClipboard = async () => {
+    if (!generatedCode) return;
+    try {
+      const registrationUrl = `${window.location.origin}/auth/register/code?code=${generatedCode}`;
+      await navigator.clipboard.writeText(registrationUrl);
+      setCopiedCode(true);
+      toast({
+        title: 'הועתק',
+        description: 'קישור ההרשמה הועתק ללוח',
+      });
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch (error) {
+      console.error('Error copying:', error);
     }
   };
 
@@ -434,6 +519,14 @@ export default function ManageOrganizations() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => handleOpenCodeDialog(org)}
+                          title="צור קוד למנהל ארגון"
+                        >
+                          <Ticket className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleEdit(org)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -454,6 +547,104 @@ export default function ManageOrganizations() {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Org Admin Code Dialog */}
+      <Dialog open={codeDialogOpen} onOpenChange={setCodeDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>יצירת קוד למנהל ארגון</DialogTitle>
+            <DialogDescription>
+              צור קוד הזמנה עבור מנהל ארגון {selectedOrgForCode?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!generatedCode ? (
+            <form onSubmit={handleCreateOrgAdminCode}>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="expires_days">תוקף הקוד</Label>
+                  <Select
+                    value={codeFormData.expires_days}
+                    onValueChange={(value) => setCodeFormData({ ...codeFormData, expires_days: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">יום אחד</SelectItem>
+                      <SelectItem value="3">3 ימים</SelectItem>
+                      <SelectItem value="7">שבוע</SelectItem>
+                      <SelectItem value="14">שבועיים</SelectItem>
+                      <SelectItem value="30">חודש</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="notes">הערות (אופציונלי)</Label>
+                  <Input
+                    id="notes"
+                    value={codeFormData.notes}
+                    onChange={(e) => setCodeFormData({ ...codeFormData, notes: e.target.value })}
+                    placeholder="הערות"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCodeDialogOpen(false)}
+                  disabled={submitting}
+                >
+                  ביטול
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      יוצר...
+                    </>
+                  ) : (
+                    'צור קוד'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          ) : (
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 text-center">
+                <p className="text-sm text-muted-foreground mb-2">קוד ההזמנה:</p>
+                <p className="text-2xl font-mono font-bold tracking-widest">{generatedCode}</p>
+              </div>
+              <Button
+                onClick={copyCodeToClipboard}
+                className="w-full"
+                variant={copiedCode ? 'secondary' : 'default'}
+              >
+                {copiedCode ? (
+                  <>
+                    <Check className="ml-2 h-4 w-4" />
+                    הועתק!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="ml-2 h-4 w-4" />
+                    העתק קישור הרשמה
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                שלח את הקישור למנהל הארגון כדי שיוכל להירשם
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCodeDialogOpen(false)}>
+                  סגור
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

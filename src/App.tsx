@@ -9,6 +9,7 @@ import RegisterSelection from "./pages/auth/RegisterSelection";
 import RegisterEmployee from "./pages/auth/RegisterEmployee";
 import RegisterManager from "./pages/auth/RegisterManager";
 import RegisterBootstrap from "./pages/auth/RegisterBootstrap";
+import RegisterWithCode from "./pages/auth/RegisterWithCode";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -34,6 +35,7 @@ import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
 import ExpenseTemplates from "./pages/accounting/ExpenseTemplates";
 import BootstrapTokenManagement from "./pages/accounting/BootstrapTokenManagement";
 import OrgAdminDashboard from "./pages/orgadmin/OrgAdminDashboard";
+import InvitationCodesManagement from "./pages/orgadmin/InvitationCodesManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +54,7 @@ const App = () => (
             <Route path="/auth/register/employee" element={<RegisterEmployee />} />
             <Route path="/auth/register/manager" element={<RegisterManager />} />
             <Route path="/auth/register/bootstrap" element={<RegisterBootstrap />} />
+            <Route path="/auth/register/code" element={<RegisterWithCode />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/reports/new" element={<NewReport />} />
@@ -79,6 +82,7 @@ const App = () => (
             <Route path="/accounting/bootstrap-tokens" element={<BootstrapTokenManagement />} />
             <Route path="/analytics" element={<ExpenseAnalytics />} />
             <Route path="/orgadmin" element={<OrgAdminDashboard />} />
+            <Route path="/orgadmin/invitation-codes" element={<InvitationCodesManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
