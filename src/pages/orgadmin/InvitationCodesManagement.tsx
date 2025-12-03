@@ -29,7 +29,9 @@ import {
   Clock,
   UserCheck,
   Building2,
-  Users
+  Users,
+  Mail,
+  Send
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -76,6 +78,11 @@ export default function InvitationCodesManagement() {
     notes: '',
     max_uses: '1',
   });
+  
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [selectedCode, setSelectedCode] = useState<InvitationCode | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -291,6 +298,54 @@ export default function InvitationCodesManagement() {
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (error) {
       console.error('Error copying:', error);
+    }
+  };
+
+  const openEmailDialog = (code: InvitationCode) => {
+    setSelectedCode(code);
+    setRecipientEmail('');
+    setEmailDialogOpen(true);
+  };
+
+  const sendInvitationEmail = async () => {
+    if (!selectedCode || !recipientEmail) return;
+
+    setSendingEmail(true);
+    try {
+      const registrationUrl = `${window.location.origin}/auth/register/code?code=${selectedCode.code}`;
+      
+      const response = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          recipientEmail,
+          invitationCode: selectedCode.code,
+          organizationName,
+          role: selectedCode.role,
+          expiresAt: selectedCode.expires_at,
+          registrationUrl,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast({
+        title: 'המייל נשלח בהצלחה',
+        description: `קוד ההזמנה נשלח ל-${recipientEmail}`,
+      });
+      
+      setEmailDialogOpen(false);
+      setSelectedCode(null);
+      setRecipientEmail('');
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast({
+        title: 'שגיאה בשליחת המייל',
+        description: error.message || 'אנא נסה שוב מאוחר יותר',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -560,17 +615,28 @@ export default function InvitationCodesManagement() {
                       </TableCell>
                       <TableCell>
                         {status.label === 'פעיל' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(code.code)}
-                          >
-                            {copiedCode === code.code ? (
-                              <Check className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(code.code)}
+                              title="העתק קישור"
+                            >
+                              {copiedCode === code.code ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEmailDialog(code)}
+                              title="שלח במייל"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -581,6 +647,68 @@ export default function InvitationCodesManagement() {
           )}
         </CardContent>
       </Card>
+      {/* Email Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              שליחת קוד הזמנה במייל
+            </DialogTitle>
+            <DialogDescription>
+              שלח את קוד ההזמנה ישירות למייל של המוזמן
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {selectedCode && (
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm text-muted-foreground">קוד הזמנה:</p>
+                <p className="font-mono font-bold text-lg">{selectedCode.code}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  תפקיד: {getRoleLabel(selectedCode.role)}
+                </p>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="recipient-email">כתובת מייל *</Label>
+              <Input
+                id="recipient-email"
+                type="email"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                placeholder="example@company.com"
+                dir="ltr"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEmailDialogOpen(false)}
+              disabled={sendingEmail}
+            >
+              ביטול
+            </Button>
+            <Button 
+              onClick={sendInvitationEmail} 
+              disabled={sendingEmail || !recipientEmail}
+            >
+              {sendingEmail ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Send className="ml-2 h-4 w-4" />
+                  שלח מייל
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
