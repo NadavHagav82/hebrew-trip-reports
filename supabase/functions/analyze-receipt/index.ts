@@ -21,6 +21,24 @@ serve(async (req) => {
       );
     }
 
+    // Input validation: Check base64 format
+    const base64Pattern = /^data:image\/(jpeg|jpg|png|gif|webp|heic|heif);base64,/i;
+    if (!base64Pattern.test(imageBase64)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid image format. Allowed: JPEG, PNG, GIF, WebP, HEIC' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Input validation: Check file size (base64 is ~1.37x original size)
+    const estimatedSizeMB = (imageBase64.length * 0.75) / (1024 * 1024);
+    if (estimatedSizeMB > 10) {
+      return new Response(
+        JSON.stringify({ error: 'Image too large. Maximum size: 10MB' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Analyzing receipt with Lovable AI...', { tripDestination });
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

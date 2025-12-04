@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -34,6 +35,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Authorization check - verify user has permission to send invitations
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized - missing authorization" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Invalid token:", authError?.message);
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check if user has permission (org_admin or accounting_manager)
+    const { data: roles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['org_admin', 'accounting_manager', 'admin']);
+
+    if (rolesError || !roles?.length) {
+      console.error("User lacks required role:", user.id);
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden - insufficient permissions" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`User ${user.id} authorized with roles:`, roles.map(r => r.role));
+
     const { 
       recipientEmail, 
       invitationCode, 
@@ -42,6 +86,23 @@ const handler = async (req: Request): Promise<Response> => {
       expiresAt,
       registrationUrl 
     }: SendInvitationRequest = await req.json();
+
+    // Input validation
+    if (!recipientEmail || !invitationCode || !organizationName || !role || !expiresAt || !registrationUrl) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid email format" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     console.log(`Sending invitation email to ${recipientEmail} for organization ${organizationName}`);
 
