@@ -187,6 +187,7 @@ export type Database = {
           id: string
           manager_comment: string | null
           notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
           report_id: string
           reviewed_at: string | null
           reviewed_by: string | null
@@ -205,6 +206,7 @@ export type Database = {
           id?: string
           manager_comment?: string | null
           notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           report_id: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           id?: string
           manager_comment?: string | null
           notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           report_id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -880,6 +883,7 @@ export type Database = {
         | "JOD"
       expense_status: "draft" | "open" | "closed" | "pending_approval"
       file_type_enum: "image" | "pdf"
+      payment_method: "company_card" | "out_of_pocket"
       report_action:
         | "created"
         | "submitted"
@@ -1078,6 +1082,7 @@ export const Constants = {
       ],
       expense_status: ["draft", "open", "closed", "pending_approval"],
       file_type_enum: ["image", "pdf"],
+      payment_method: ["company_card", "out_of_pocket"],
       report_action: ["created", "submitted", "approved", "rejected", "edited"],
     },
   },
