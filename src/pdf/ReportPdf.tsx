@@ -23,6 +23,7 @@ interface Expense {
   amount: number;
   currency: string;
   amount_in_ils: number;
+  payment_method?: 'company_card' | 'out_of_pocket';
   receipts?: {
     id: string;
     file_url: string;
@@ -330,6 +331,14 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
     return acc;
   }, {} as Record<string, number>);
 
+  // Calculate totals by payment method
+  const companyCardTotal = expenses
+    .filter(e => e.payment_method === 'company_card')
+    .reduce((sum, e) => sum + e.amount_in_ils, 0);
+  const outOfPocketTotal = expenses
+    .filter(e => e.payment_method === 'out_of_pocket' || !e.payment_method)
+    .reduce((sum, e) => sum + e.amount_in_ils, 0);
+
   const tripStart = format(new Date(report.trip_start_date), 'dd/MM/yyyy');
   const tripEnd = format(new Date(report.trip_end_date), 'dd/MM/yyyy');
   const tripRange = `${tripStart} - ${tripEnd}`;
@@ -480,6 +489,29 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
               <Text style={styles.summaryValue}>₪{total.toFixed(2)}</Text>
             </View>
           ))}
+        </View>
+
+        {/* Payment Method Summary */}
+        <View style={[styles.summaryBox, { marginTop: 16, backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]} wrap={false}>
+          <Text style={[styles.summaryTitle, { color: '#92400e' }]}>סיכום לפי אמצעי תשלום</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>💳 כרטיס חברה</Text>
+            <Text style={styles.summaryValue}>₪{companyCardTotal.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>💵 מכיס העובד</Text>
+            <Text style={styles.summaryValue}>₪{outOfPocketTotal.toFixed(2)}</Text>
+          </View>
+          {outOfPocketTotal > 0 && (
+            <View style={[styles.totalRow, { backgroundColor: '#ea580c', marginTop: 10 }]}>
+              <Text style={styles.totalLabel}>סה"כ להחזר לעובד:</Text>
+              <Text style={styles.totalValue}>₪{outOfPocketTotal.toFixed(2)}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Grand Total */}
+        <View style={[styles.summaryBox, { marginTop: 16 }]} wrap={false}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>סה"כ כולל:</Text>
             <Text style={styles.totalValue}>₪{report.total_amount_ils?.toFixed(2) || '0.00'}</Text>

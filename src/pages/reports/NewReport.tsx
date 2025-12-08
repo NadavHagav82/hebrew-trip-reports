@@ -42,6 +42,7 @@ interface Expense {
   amount_in_ils: number;
   receipts: ReceiptFile[];
   notes?: string;
+  payment_method: 'company_card' | 'out_of_pocket';
   approval_status?: 'pending' | 'approved' | 'rejected';
   manager_comment?: string;
   reviewed_at?: string;
@@ -333,6 +334,7 @@ export default function NewReport() {
         amount_in_ils: exp.amount_in_ils,
         receipts: [], // Receipts will be loaded separately if needed
         notes: exp.notes || '',
+        payment_method: (exp as any).payment_method || 'out_of_pocket',
         approval_status: exp.approval_status || 'pending',
         manager_comment: exp.manager_comment || undefined,
         reviewed_at: exp.reviewed_at || undefined,
@@ -362,6 +364,7 @@ export default function NewReport() {
       amount_in_ils: 0,
       receipts: [],
       notes: '',
+      payment_method: 'out_of_pocket',
     };
     setExpenses([...expenses, newExpense]);
     setExpandedExpense(newExpense.id);
@@ -829,6 +832,7 @@ export default function NewReport() {
               currency: exp.currency as any,
               amount_in_ils: exp.amount_in_ils,
               notes: exp.notes || null,
+              payment_method: exp.payment_method as any,
             })
             .select()
             .single();
@@ -1401,6 +1405,32 @@ export default function NewReport() {
                           />
                         </div>
 
+                        <div>
+                          <Label>אמצעי תשלום *</Label>
+                          <Select
+                            value={expense.payment_method}
+                            onValueChange={(value) => updateExpense(expense.id, 'payment_method', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="out_of_pocket">
+                                <div className="flex items-center gap-2">
+                                  <span>💵</span>
+                                  <span>מכיס העובד (נדרש החזר)</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="company_card">
+                                <div className="flex items-center gap-2">
+                                  <span>💳</span>
+                                  <span>כרטיס אשראי חברה</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label>סכום *</Label>
@@ -1479,6 +1509,46 @@ export default function NewReport() {
 
               <Separator />
 
+              {/* Payment Method Summary */}
+              <div>
+                <p className="font-semibold mb-3">סיכום לפי אמצעי תשלום:</p>
+                <div className="space-y-2">
+                  {(() => {
+                    const companyCardTotal = expenses
+                      .filter(e => e.payment_method === 'company_card')
+                      .reduce((sum, e) => sum + e.amount_in_ils, 0);
+                    const outOfPocketTotal = expenses
+                      .filter(e => e.payment_method === 'out_of_pocket')
+                      .reduce((sum, e) => sum + e.amount_in_ils, 0);
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-2">
+                            <span>💳</span>
+                            כרטיס חברה
+                          </span>
+                          <span className="font-semibold">
+                            {companyCardTotal.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-2">
+                            <span>💵</span>
+                            מכיס העובד (נדרש החזר)
+                          </span>
+                          <span className="font-semibold text-orange-600 dark:text-orange-400">
+                            {outOfPocketTotal.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <Separator />
+
               <div className="bg-primary text-primary-foreground p-4 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">סה"כ כללי:</span>
@@ -1487,6 +1557,21 @@ export default function NewReport() {
                   </span>
                 </div>
               </div>
+
+              {/* Reimbursement highlight */}
+              {expenses.some(e => e.payment_method === 'out_of_pocket') && (
+                <div className="bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-300 dark:border-orange-700 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-orange-800 dark:text-orange-300">💰 סה"כ להחזר לעובד:</span>
+                    <span className="text-xl font-bold text-orange-800 dark:text-orange-300">
+                      {expenses
+                        .filter(e => e.payment_method === 'out_of_pocket')
+                        .reduce((sum, e) => sum + e.amount_in_ils, 0)
+                        .toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
