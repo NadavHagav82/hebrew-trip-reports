@@ -60,6 +60,7 @@ export default function ReimbursementSummary() {
   const [isAccountingManager, setIsAccountingManager] = useState(false);
   const [reimbursements, setReimbursements] = useState<EmployeeReimbursement[]>([]);
   const [statusFilter, setStatusFilter] = useState<"closed" | "pending_approval">("closed");
+  const [reimbursementFilter, setReimbursementFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
 
   useEffect(() => {
@@ -181,6 +182,7 @@ export default function ReimbursementSummary() {
         .sort((a, b) => b.totalOutOfPocket - a.totalOutOfPocket);
 
       setReimbursements(sortedReimbursements);
+      setExpandedEmployee(null);
     } catch (error) {
       console.error("Error loading reimbursement data:", error);
       toast({
@@ -229,7 +231,7 @@ export default function ReimbursementSummary() {
   };
 
   const exportToExcel = () => {
-    const data = reimbursements.map(emp => ({
+    const data = filteredReimbursements.map(emp => ({
       'שם העובד': emp.fullName,
       'מחלקה': emp.department,
       'מספר דוחות': emp.reportCount,
@@ -239,12 +241,10 @@ export default function ReimbursementSummary() {
     }));
 
     // Add summary row
-    const totalOutOfPocket = reimbursements.reduce((sum, e) => sum + e.totalOutOfPocket, 0);
-    const totalCompanyCard = reimbursements.reduce((sum, e) => sum + e.totalCompanyCard, 0);
     data.push({
       'שם העובד': 'סה"כ',
       'מחלקה': '',
-      'מספר דוחות': reimbursements.reduce((sum, e) => sum + e.reportCount, 0),
+      'מספר דוחות': totalReports,
       'הוצאות מכיס (₪)': totalOutOfPocket,
       'כרטיס חברה (₪)': totalCompanyCard,
       'סה"כ (₪)': totalOutOfPocket + totalCompanyCard,
@@ -255,7 +255,8 @@ export default function ReimbursementSummary() {
     XLSX.utils.book_append_sheet(wb, ws, 'סיכום החזרים');
     
     const statusText = statusFilter === 'closed' ? 'מאושרים' : 'ממתינים';
-    XLSX.writeFile(wb, `סיכום_החזרים_${statusText}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const reimbursementText = reimbursementFilter === 'all' ? '' : reimbursementFilter === 'paid' ? '_הוחזר' : '_טרם_הוחזר';
+    XLSX.writeFile(wb, `סיכום_החזרים_${statusText}${reimbursementText}_${new Date().toISOString().split('T')[0]}.xlsx`);
 
     toast({
       title: "יצוא הושלם",
@@ -263,9 +264,31 @@ export default function ReimbursementSummary() {
     });
   };
 
-  const totalOutOfPocket = reimbursements.reduce((sum, e) => sum + e.totalOutOfPocket, 0);
-  const totalCompanyCard = reimbursements.reduce((sum, e) => sum + e.totalCompanyCard, 0);
-  const totalReports = reimbursements.reduce((sum, e) => sum + e.reportCount, 0);
+  // Filter reimbursements based on reimbursementFilter
+  const filteredReimbursements = reimbursements.map(emp => {
+    const filteredReports = emp.reports.filter(r => {
+      if (reimbursementFilter === "all") return true;
+      if (reimbursementFilter === "paid") return r.reimbursementPaid;
+      return !r.reimbursementPaid;
+    });
+    
+    const totalOutOfPocket = filteredReports
+      .reduce((sum, r) => sum + r.outOfPocket, 0);
+    const totalCompanyCard = filteredReports
+      .reduce((sum, r) => sum + r.companyCard, 0);
+    
+    return {
+      ...emp,
+      reports: filteredReports,
+      reportCount: filteredReports.length,
+      totalOutOfPocket,
+      totalCompanyCard
+    };
+  }).filter(emp => emp.reports.length > 0);
+
+  const totalOutOfPocket = filteredReimbursements.reduce((sum, e) => sum + e.totalOutOfPocket, 0);
+  const totalCompanyCard = filteredReimbursements.reduce((sum, e) => sum + e.totalCompanyCard, 0);
+  const totalReports = filteredReimbursements.reduce((sum, e) => sum + e.reportCount, 0);
 
   if (loading && !isAccountingManager) {
     return (
@@ -315,8 +338,18 @@ export default function ReimbursementSummary() {
                 <SelectItem value="pending_approval">ממתינים לאישור</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={reimbursementFilter} onValueChange={(v) => setReimbursementFilter(v as "all" | "paid" | "unpaid")}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="סטטוס החזר" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="unpaid">טרם הוחזר</SelectItem>
+                <SelectItem value="paid">הוחזר</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Button onClick={exportToExcel} disabled={reimbursements.length === 0}>
+          <Button onClick={exportToExcel} disabled={filteredReimbursements.length === 0}>
             <Download className="w-4 h-4 ml-2" />
             ייצוא לאקסל
           </Button>
@@ -329,7 +362,7 @@ export default function ReimbursementSummary() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">עובדים</p>
-                  <p className="text-3xl font-bold text-blue-600">{reimbursements.length}</p>
+                  <p className="text-3xl font-bold text-blue-600">{filteredReimbursements.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
                   <Users className="w-6 h-6 text-blue-600" />
@@ -394,7 +427,7 @@ export default function ReimbursementSummary() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : reimbursements.length === 0 ? (
+            ) : filteredReimbursements.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>אין דוחות בסטטוס זה</p>
@@ -412,7 +445,7 @@ export default function ReimbursementSummary() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reimbursements.map((employee) => (
+                  {filteredReimbursements.map((employee) => (
                     <>
                       <TableRow 
                         key={employee.userId}
