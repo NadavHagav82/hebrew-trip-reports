@@ -104,9 +104,16 @@ export default function RegisterManager() {
     });
 
     if (error) {
+      console.error('Registration error:', error);
       let errorMessage = 'אירעה שגיאה בהרשמה';
-      if (error.message?.includes('already registered')) {
+      if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
         errorMessage = 'כתובת האימייל כבר רשומה במערכת';
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = 'כתובת אימייל לא תקינה';
+      } else if (error.message?.includes('Password')) {
+        errorMessage = 'הסיסמה חייבת להכיל לפחות 8 תווים';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       toast({
         title: 'שגיאת הרשמה',
