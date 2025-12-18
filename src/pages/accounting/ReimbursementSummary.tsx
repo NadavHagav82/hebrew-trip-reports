@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Calculator, 
   ArrowRight,
   Loader2,
   Download,
   Users,
   Wallet,
   CreditCard,
-  FileText
+  FileText,
+  Check,
+  CheckCircle2
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -46,6 +48,7 @@ interface EmployeeReimbursement {
     outOfPocket: number;
     companyCard: number;
     status: string;
+    reimbursementPaid: boolean;
   }[];
 }
 
@@ -110,6 +113,7 @@ export default function ReimbursementSummary() {
           user_id,
           trip_destination,
           status,
+          reimbursement_paid,
           profiles!reports_user_id_fkey (
             full_name,
             department
@@ -167,7 +171,8 @@ export default function ReimbursementSummary() {
           tripDestination: report.trip_destination,
           outOfPocket,
           companyCard,
-          status: report.status
+          status: report.status,
+          reimbursementPaid: report.reimbursement_paid || false
         });
       });
 
@@ -185,6 +190,41 @@ export default function ReimbursementSummary() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleReimbursementPaid = async (reportId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("reports")
+        .update({
+          reimbursement_paid: !currentValue,
+          reimbursement_paid_at: !currentValue ? new Date().toISOString() : null,
+          reimbursement_paid_by: !currentValue ? user?.id : null
+        })
+        .eq("id", reportId);
+
+      if (error) throw error;
+
+      // Update local state
+      setReimbursements(prev => prev.map(emp => ({
+        ...emp,
+        reports: emp.reports.map(r => 
+          r.id === reportId ? { ...r, reimbursementPaid: !currentValue } : r
+        )
+      })));
+
+      toast({
+        title: !currentValue ? "החזר סומן כבוצע" : "סימון ההחזר בוטל",
+        description: !currentValue ? "ההחזר לעובד סומן כבוצע בהצלחה" : "סימון ההחזר בוטל",
+      });
+    } catch (error) {
+      console.error("Error updating reimbursement status:", error);
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לעדכן את סטטוס ההחזר",
+        variant: "destructive",
+      });
     }
   };
 
@@ -402,26 +442,50 @@ export default function ReimbursementSummary() {
                             <div className="p-4">
                               <h4 className="font-medium mb-3">פירוט דוחות:</h4>
                               <div className="space-y-2">
-                                {employee.reports.map((report) => (
-                                  <div 
-                                    key={report.id}
-                                    className="flex items-center justify-between p-3 bg-background rounded-lg border cursor-pointer hover:border-primary transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/reports/${report.id}`);
-                                    }}
-                                  >
-                                    <span className="font-medium">{report.tripDestination}</span>
-                                    <div className="flex items-center gap-4">
-                                      <span className="text-orange-600">
-                                        מכיס: ₪{report.outOfPocket.toLocaleString()}
-                                      </span>
-                                      <span className="text-muted-foreground">
-                                        חברה: ₪{report.companyCard.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
+                                                {employee.reports.map((report) => (
+                                                  <div 
+                                                    key={report.id}
+                                                    className={`flex items-center justify-between p-3 bg-background rounded-lg border transition-colors ${
+                                                      report.reimbursementPaid 
+                                                        ? 'border-green-300 bg-green-50/50' 
+                                                        : 'hover:border-primary'
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-center gap-3">
+                                                      <Checkbox
+                                                        checked={report.reimbursementPaid}
+                                                        onCheckedChange={() => toggleReimbursementPaid(report.id, report.reimbursementPaid)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                                                      />
+                                                      <span 
+                                                        className={`font-medium cursor-pointer hover:text-primary ${
+                                                          report.reimbursementPaid ? 'line-through text-muted-foreground' : ''
+                                                        }`}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          navigate(`/reports/${report.id}`);
+                                                        }}
+                                                      >
+                                                        {report.tripDestination}
+                                                      </span>
+                                                      {report.reimbursementPaid && (
+                                                        <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
+                                                          <CheckCircle2 className="w-3 h-3 ml-1" />
+                                                          הוחזר
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                      <span className={`${report.reimbursementPaid ? 'text-muted-foreground' : 'text-orange-600'}`}>
+                                                        מכיס: ₪{report.outOfPocket.toLocaleString()}
+                                                      </span>
+                                                      <span className="text-muted-foreground">
+                                                        חברה: ₪{report.companyCard.toLocaleString()}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                ))}
                               </div>
                             </div>
                           </TableCell>
