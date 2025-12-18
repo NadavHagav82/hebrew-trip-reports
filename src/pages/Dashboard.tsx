@@ -71,6 +71,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isManager, setIsManager] = useState(false);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
+  const [isAccountingManager, setIsAccountingManager] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -85,6 +86,7 @@ export default function Dashboard() {
     checkAdminStatus();
     checkManagerStatus();
     checkOrgAdminStatus();
+    checkAccountingManagerStatus();
   }, [user, navigate]);
 
   const checkAdminStatus = async () => {
@@ -106,6 +108,13 @@ export default function Dashboard() {
     const { data } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'org_admin' });
     setIsOrgAdmin(!!data);
+  };
+
+  const checkAccountingManagerStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'accounting_manager' });
+    setIsAccountingManager(!!data);
   };
 
   const fetchReports = async () => {
@@ -419,7 +428,7 @@ export default function Dashboard() {
               <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
                 {profile?.full_name || user?.email}
               </span>
-              {profile?.accounting_manager_email && (
+              {isAccountingManager && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
