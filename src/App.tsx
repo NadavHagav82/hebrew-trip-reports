@@ -31,6 +31,7 @@ import AccountingStats from "./pages/accounting/AccountingStats";
 import ManageUsers from "./pages/accounting/ManageUsers";
 import AccountingHome from "./pages/accounting/AccountingHome";
 import OrganizationalAnalytics from "./pages/accounting/OrganizationalAnalytics";
+import ReimbursementSummary from "./pages/accounting/ReimbursementSummary";
 import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
 import ExpenseTemplates from "./pages/accounting/ExpenseTemplates";
 import BootstrapTokenManagement from "./pages/accounting/BootstrapTokenManagement";
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
             <Route path="/accounting/stats" element={<AccountingStats />} />
             <Route path="/accounting/organizational-analytics" element={<OrganizationalAnalytics />} />
+            <Route path="/accounting/reimbursements" element={<ReimbursementSummary />} />
             <Route path="/accounting/users" element={<ManageUsers />} />
             <Route path="/accounting/templates" element={<ExpenseTemplates />} />
             <Route path="/accounting/bootstrap-tokens" element={<BootstrapTokenManagement />} />

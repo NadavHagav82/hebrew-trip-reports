@@ -21,7 +21,8 @@ import {
   Loader2,
   Clipboard,
   ShieldCheck,
-  Building2
+  Building2,
+  Wallet
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -382,6 +383,14 @@ export default function AccountingHome() {
               >
                 <Building2 className="w-4 h-4 ml-2" />
                 ניתוח ארגוני מתקדם
+              </Button>
+              <Button 
+                onClick={() => navigate('/accounting/reimbursements')} 
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Wallet className="w-4 h-4 ml-2" />
+                סיכום החזרים לעובדים
               </Button>
               <Button 
                 onClick={() => navigate('/manager/dashboard')} 
