@@ -708,6 +708,9 @@ export type Database = {
           manager_approval_token: string | null
           manager_general_comment: string | null
           notes: string | null
+          reimbursement_paid: boolean | null
+          reimbursement_paid_at: string | null
+          reimbursement_paid_by: string | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["expense_status"]
           submitted_at: string | null
@@ -729,6 +732,9 @@ export type Database = {
           manager_approval_token?: string | null
           manager_general_comment?: string | null
           notes?: string | null
+          reimbursement_paid?: boolean | null
+          reimbursement_paid_at?: string | null
+          reimbursement_paid_by?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_at?: string | null
@@ -750,6 +756,9 @@ export type Database = {
           manager_approval_token?: string | null
           manager_general_comment?: string | null
           notes?: string | null
+          reimbursement_paid?: boolean | null
+          reimbursement_paid_at?: string | null
+          reimbursement_paid_by?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_at?: string | null
@@ -765,6 +774,13 @@ export type Database = {
           {
             foreignKeyName: "reports_approved_by_fkey"
             columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reimbursement_paid_by_fkey"
+            columns: ["reimbursement_paid_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
