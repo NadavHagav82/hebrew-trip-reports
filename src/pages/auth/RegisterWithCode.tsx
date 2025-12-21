@@ -242,28 +242,9 @@ export default function RegisterWithCode() {
       const newUserId = signUpData.user?.id;
       
       if (newUserId) {
-        // Add role to user_roles table using the service role through an edge function
-        // Since RLS won't allow us to insert directly, we use Supabase's user creation callback
-        // The trigger handle_new_user creates the profile, and we need to add the role
-        
-        // Wait a moment for the trigger to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Insert role - this might fail due to RLS, but we'll handle it
-        const { error: roleError } = await (supabase as any)
-          .from('user_roles')
-          .insert({
-            user_id: newUserId,
-            role: codeData.role,
-          });
-
-        if (roleError) {
-          console.error('Error inserting role:', roleError);
-          // The role insertion failed, we need to handle this via edge function
-        }
-
-        // Mark invitation code as used
-        await (supabase as any)
+        // First, mark invitation code as used with the new user ID
+        // This must happen BEFORE the profile is created so the trigger can find it
+        const { error: codeUpdateError } = await (supabase as any)
           .from('invitation_codes')
           .update({
             is_used: true,
@@ -272,6 +253,26 @@ export default function RegisterWithCode() {
             use_count: (codeData as any).use_count + 1,
           })
           .eq('id', codeData.id);
+        
+        if (codeUpdateError) {
+          console.error('Error updating invitation code:', codeUpdateError);
+        }
+
+        // The trigger on_profile_created_assign_role will automatically add the role
+        // based on the invitation code that was just marked as used
+        
+        // Also try to insert the role directly (as a backup)
+        const { error: roleError } = await (supabase as any)
+          .from('user_roles')
+          .insert({
+            user_id: newUserId,
+            role: codeData.role,
+          });
+
+        if (roleError) {
+          console.log('Role insertion via RLS (backup):', roleError.message);
+          // This might fail due to RLS, but the trigger should handle it
+        }
       }
 
       toast({
