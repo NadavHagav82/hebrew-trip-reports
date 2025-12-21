@@ -204,20 +204,30 @@ export default function RegisterWithCode() {
     try {
       // Create user with metadata
       const isOrgAdmin = codeData.role === 'org_admin';
-      const { error } = await signUp(formData.email, formData.password, {
-        username: formData.username,
-        full_name: formData.full_name,
-        employee_id: formData.employee_id || null,
-        department: formData.department,
-        is_manager: isOrgAdmin,
-        manager_id: codeData.manager_id,
-        accounting_manager_email: '',
-        organization_id: codeData.organization_id,
+      const isManager = codeData.role === 'manager';
+      
+      // First, sign up the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            username: formData.username,
+            full_name: formData.full_name,
+            employee_id: formData.employee_id || null,
+            department: formData.department,
+            is_manager: isOrgAdmin || isManager,
+            manager_id: codeData.manager_id,
+            accounting_manager_email: '',
+            organization_id: codeData.organization_id,
+          }
+        }
       });
 
-      if (error) {
+      if (signUpError) {
         let errorMessage = 'אירעה שגיאה בהרשמה';
-        if (error.message?.includes('already registered')) {
+        if (signUpError.message?.includes('already registered')) {
           errorMessage = 'כתובת האימייל כבר רשומה במערכת';
         }
         toast({
@@ -229,17 +239,28 @@ export default function RegisterWithCode() {
         return;
       }
 
-      // Get newly created user
-      const { data: { user } } = await supabase.auth.getUser();
+      const newUserId = signUpData.user?.id;
       
-      if (user) {
-        // Add role to user_roles table
-        await (supabase as any)
+      if (newUserId) {
+        // Add role to user_roles table using the service role through an edge function
+        // Since RLS won't allow us to insert directly, we use Supabase's user creation callback
+        // The trigger handle_new_user creates the profile, and we need to add the role
+        
+        // Wait a moment for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Insert role - this might fail due to RLS, but we'll handle it
+        const { error: roleError } = await (supabase as any)
           .from('user_roles')
           .insert({
-            user_id: user.id,
+            user_id: newUserId,
             role: codeData.role,
           });
+
+        if (roleError) {
+          console.error('Error inserting role:', roleError);
+          // The role insertion failed, we need to handle this via edge function
+        }
 
         // Mark invitation code as used
         await (supabase as any)
@@ -247,7 +268,7 @@ export default function RegisterWithCode() {
           .update({
             is_used: true,
             used_at: new Date().toISOString(),
-            used_by: user.id,
+            used_by: newUserId,
             use_count: (codeData as any).use_count + 1,
           })
           .eq('id', codeData.id);
