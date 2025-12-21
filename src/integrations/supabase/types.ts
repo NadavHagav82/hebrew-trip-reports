@@ -831,6 +831,7 @@ export type Database = {
     Functions: {
       accounting_manager_exists: { Args: never; Returns: boolean }
       get_org_id_for_policy: { Args: { _user_id: string }; Returns: string }
+      get_team_user_ids: { Args: { _manager_id: string }; Returns: string[] }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
