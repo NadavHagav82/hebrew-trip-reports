@@ -425,27 +425,36 @@ export type Database = {
       }
       organizations: {
         Row: {
+          accounting_type: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          external_accounting_email: string | null
+          external_accounting_name: string | null
           id: string
           is_active: boolean
           name: string
           updated_at: string
         }
         Insert: {
+          accounting_type?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          external_accounting_email?: string | null
+          external_accounting_name?: string | null
           id?: string
           is_active?: boolean
           name: string
           updated_at?: string
         }
         Update: {
+          accounting_type?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          external_accounting_email?: string | null
+          external_accounting_name?: string | null
           id?: string
           is_active?: boolean
           name?: string
