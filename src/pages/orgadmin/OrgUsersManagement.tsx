@@ -291,40 +291,17 @@ export default function OrgUsersManagement() {
 
   const toggleManagerStatus = async (userProfile: UserProfile) => {
     try {
-      const newManagerStatus = !userProfile.is_manager;
-      
-      // Update profile
-      const { error: profileError } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
-          is_manager: newManagerStatus,
+          is_manager: !userProfile.is_manager,
         })
         .eq('id', userProfile.id);
 
-      if (profileError) throw profileError;
-
-      // Update user_roles table
-      if (newManagerStatus) {
-        // Add manager role
-        await (supabase as any)
-          .from('user_roles')
-          .upsert({
-            user_id: userProfile.id,
-            role: 'manager',
-          }, { onConflict: 'user_id,role' });
-      } else {
-        // Remove manager role (only if not org_admin)
-        if (userProfile.role !== 'org_admin') {
-          await (supabase as any)
-            .from('user_roles')
-            .delete()
-            .eq('user_id', userProfile.id)
-            .eq('role', 'manager');
-        }
-      }
+      if (error) throw error;
 
       toast({
-        title: newManagerStatus ? 'המשתמש הוגדר כמנהל' : 'סטטוס מנהל הוסר',
+        title: userProfile.is_manager ? 'סטטוס מנהל הוסר' : 'המשתמש הוגדר כמנהל',
       });
 
       if (organizationId) {

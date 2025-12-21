@@ -425,36 +425,27 @@ export type Database = {
       }
       organizations: {
         Row: {
-          accounting_type: string | null
           created_at: string
           created_by: string | null
           description: string | null
-          external_accounting_email: string | null
-          external_accounting_name: string | null
           id: string
           is_active: boolean
           name: string
           updated_at: string
         }
         Insert: {
-          accounting_type?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
-          external_accounting_email?: string | null
-          external_accounting_name?: string | null
           id?: string
           is_active?: boolean
           name: string
           updated_at?: string
         }
         Update: {
-          accounting_type?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
-          external_accounting_email?: string | null
-          external_accounting_name?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -830,8 +821,6 @@ export type Database = {
     }
     Functions: {
       accounting_manager_exists: { Args: never; Returns: boolean }
-      get_org_id_for_policy: { Args: { _user_id: string }; Returns: string }
-      get_team_user_ids: { Args: { _manager_id: string }; Returns: string[] }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -840,8 +829,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_manager_of: { Args: { target_user_id: string }; Returns: boolean }
-      is_user_a_manager: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

@@ -204,30 +204,20 @@ export default function RegisterWithCode() {
     try {
       // Create user with metadata
       const isOrgAdmin = codeData.role === 'org_admin';
-      const isManager = codeData.role === 'manager';
-      
-      // First, sign up the user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            username: formData.username,
-            full_name: formData.full_name,
-            employee_id: formData.employee_id || null,
-            department: formData.department,
-            is_manager: isOrgAdmin || isManager,
-            manager_id: codeData.manager_id,
-            accounting_manager_email: '',
-            organization_id: codeData.organization_id,
-          }
-        }
+      const { error } = await signUp(formData.email, formData.password, {
+        username: formData.username,
+        full_name: formData.full_name,
+        employee_id: formData.employee_id || null,
+        department: formData.department,
+        is_manager: isOrgAdmin,
+        manager_id: codeData.manager_id,
+        accounting_manager_email: '',
+        organization_id: codeData.organization_id,
       });
 
-      if (signUpError) {
+      if (error) {
         let errorMessage = 'אירעה שגיאה בהרשמה';
-        if (signUpError.message?.includes('already registered')) {
+        if (error.message?.includes('already registered')) {
           errorMessage = 'כתובת האימייל כבר רשומה במערכת';
         }
         toast({
@@ -239,40 +229,28 @@ export default function RegisterWithCode() {
         return;
       }
 
-      const newUserId = signUpData.user?.id;
+      // Get newly created user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (newUserId) {
-        // First, mark invitation code as used with the new user ID
-        // This must happen BEFORE the profile is created so the trigger can find it
-        const { error: codeUpdateError } = await (supabase as any)
+      if (user) {
+        // Add role to user_roles table
+        await (supabase as any)
+          .from('user_roles')
+          .insert({
+            user_id: user.id,
+            role: codeData.role,
+          });
+
+        // Mark invitation code as used
+        await (supabase as any)
           .from('invitation_codes')
           .update({
             is_used: true,
             used_at: new Date().toISOString(),
-            used_by: newUserId,
+            used_by: user.id,
             use_count: (codeData as any).use_count + 1,
           })
           .eq('id', codeData.id);
-        
-        if (codeUpdateError) {
-          console.error('Error updating invitation code:', codeUpdateError);
-        }
-
-        // The trigger on_profile_created_assign_role will automatically add the role
-        // based on the invitation code that was just marked as used
-        
-        // Also try to insert the role directly (as a backup)
-        const { error: roleError } = await (supabase as any)
-          .from('user_roles')
-          .insert({
-            user_id: newUserId,
-            role: codeData.role,
-          });
-
-        if (roleError) {
-          console.log('Role insertion via RLS (backup):', roleError.message);
-          // This might fail due to RLS, but the trigger should handle it
-        }
       }
 
       toast({
