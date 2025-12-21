@@ -14,12 +14,17 @@ import {
   Users, 
   FileText, 
   DollarSign, 
-  ArrowRight,
   Settings,
-  UserPlus,
   BarChart3,
   Edit,
-  Ticket
+  Ticket,
+  UserCog,
+  Calculator,
+  ExternalLink,
+  Home,
+  Shield,
+  UserPlus,
+  Building
 } from 'lucide-react';
 import {
   Dialog,
@@ -31,6 +36,8 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
 
 interface Organization {
   id: string;
@@ -39,13 +46,18 @@ interface Organization {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  accounting_type?: string;
+  external_accounting_email?: string;
+  external_accounting_name?: string;
 }
 
 interface OrgStats {
   totalUsers: number;
+  totalManagers: number;
   totalReports: number;
   openReports: number;
   closedReports: number;
+  pendingReports: number;
   totalAmount: number;
 }
 
@@ -55,6 +67,8 @@ interface UserProfile {
   email: string;
   department: string;
   employee_id: string | null;
+  is_manager: boolean;
+  manager_id: string | null;
 }
 
 export default function OrgAdminDashboard() {
@@ -67,9 +81,15 @@ export default function OrgAdminDashboard() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [accountingDialogOpen, setAccountingDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+  });
+  const [accountingFormData, setAccountingFormData] = useState({
+    accounting_type: 'internal',
+    external_accounting_email: '',
+    external_accounting_name: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -141,11 +161,16 @@ export default function OrgAdminDashboard() {
         name: orgData.name,
         description: orgData.description || '',
       });
+      setAccountingFormData({
+        accounting_type: orgData.accounting_type || 'internal',
+        external_accounting_email: orgData.external_accounting_email || '',
+        external_accounting_name: orgData.external_accounting_name || '',
+      });
 
       // Get users in organization
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, department, employee_id')
+        .select('id, full_name, email, department, employee_id, is_manager, manager_id')
         .eq('organization_id', profileData.organization_id)
         .order('full_name');
 
@@ -154,6 +179,7 @@ export default function OrgAdminDashboard() {
 
       // Get user IDs for reports query
       const userIds = usersData?.map(u => u.id) || [];
+      const managersCount = usersData?.filter(u => u.is_manager).length || 0;
 
       if (userIds.length > 0) {
         // Get reports statistics
@@ -165,22 +191,27 @@ export default function OrgAdminDashboard() {
         if (reportsError) throw reportsError;
 
         const totalReports = reportsData?.length || 0;
-        const openReports = reportsData?.filter(r => r.status === 'open' || r.status === 'pending_approval').length || 0;
+        const openReports = reportsData?.filter(r => r.status === 'open').length || 0;
+        const pendingReports = reportsData?.filter(r => r.status === 'pending_approval').length || 0;
         const closedReports = reportsData?.filter(r => r.status === 'closed').length || 0;
         const totalAmount = reportsData?.reduce((sum, r) => sum + (r.total_amount_ils || 0), 0) || 0;
 
         setStats({
           totalUsers: usersData?.length || 0,
+          totalManagers: managersCount,
           totalReports,
           openReports,
+          pendingReports,
           closedReports,
           totalAmount,
         });
       } else {
         setStats({
           totalUsers: 0,
+          totalManagers: 0,
           totalReports: 0,
           openReports: 0,
+          pendingReports: 0,
           closedReports: 0,
           totalAmount: 0,
         });
@@ -235,6 +266,62 @@ export default function OrgAdminDashboard() {
     }
   };
 
+  const handleUpdateAccounting = async () => {
+    if (!organization) return;
+
+    setSubmitting(true);
+    try {
+      const { error }: any = await (supabase as any)
+        .from('organizations')
+        .update({
+          accounting_type: accountingFormData.accounting_type,
+          external_accounting_email: accountingFormData.accounting_type === 'external' 
+            ? accountingFormData.external_accounting_email 
+            : null,
+          external_accounting_name: accountingFormData.accounting_type === 'external' 
+            ? accountingFormData.external_accounting_name 
+            : null,
+        })
+        .eq('id', organization.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'הגדרות הנהלת חשבונות עודכנו',
+        description: accountingFormData.accounting_type === 'internal' 
+          ? 'הארגון מוגדר להנהלת חשבונות פנימית'
+          : 'הארגון מוגדר להנהלת חשבונות חיצונית',
+      });
+
+      setOrganization({
+        ...organization,
+        accounting_type: accountingFormData.accounting_type,
+        external_accounting_email: accountingFormData.external_accounting_email,
+        external_accounting_name: accountingFormData.external_accounting_name,
+      });
+      setAccountingDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error updating accounting settings:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'אירעה שגיאה בעדכון הגדרות הנהלת החשבונות',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getRoleBadge = (userProfile: UserProfile) => {
+    if (userProfile.id === user?.id) {
+      return <Badge variant="default">מנהל ארגון</Badge>;
+    }
+    if (userProfile.is_manager) {
+      return <Badge variant="secondary">מנהל</Badge>;
+    }
+    return <Badge variant="outline">עובד</Badge>;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -259,8 +346,18 @@ export default function OrgAdminDashboard() {
           <p className="text-muted-foreground mt-1">
             {organization.description || 'ניהול ומעקב אחר הארגון שלך'}
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Badge variant={organization.accounting_type === 'external' ? 'secondary' : 'default'}>
+              {organization.accounting_type === 'external' ? 'הנהלת חשבונות חיצונית' : 'הנהלת חשבונות פנימית'}
+            </Badge>
+            {organization.accounting_type === 'external' && organization.external_accounting_name && (
+              <span className="text-sm text-muted-foreground">
+                ({organization.external_accounting_name})
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             onClick={() => setEditDialogOpen(true)}
@@ -269,13 +366,14 @@ export default function OrgAdminDashboard() {
             ערוך ארגון
           </Button>
           <Button variant="outline" onClick={() => navigate('/')}>
-            חזרה לדף הבית
+            <Home className="w-4 h-4 ml-2" />
+            דף הבית
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -285,6 +383,21 @@ export default function OrgAdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{stats?.totalUsers || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              מנהלים: {stats?.totalManagers || 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-orange-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <FileText className="w-4 h-4 text-orange-600" />
+              ממתינים לאישור
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-orange-600">{stats?.pendingReports || 0}</div>
           </CardContent>
         </Card>
 
@@ -292,14 +405,11 @@ export default function OrgAdminDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <FileText className="w-4 h-4 text-green-600" />
-              דוחות פתוחים
+              דוחות סגורים
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats?.openReports || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              סגורים: {stats?.closedReports || 0}
-            </p>
+            <div className="text-3xl font-bold text-green-600">{stats?.closedReports || 0}</div>
           </CardContent>
         </Card>
 
@@ -337,53 +447,138 @@ export default function OrgAdminDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            פעולות מהירות
+            פעולות ניהול
+          </CardTitle>
+          <CardDescription>
+            כל הפעולות הזמינות לניהול הארגון
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+              onClick={() => navigate('/orgadmin/users')}
+            >
+              <Users className="h-6 w-6 text-blue-600" />
+              <span className="font-medium">ניהול משתמשים</span>
+              <span className="text-xs text-muted-foreground">עריכה, הגדרת מנהלים</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+              onClick={() => navigate('/orgadmin/invitation-codes')}
+            >
+              <Ticket className="h-6 w-6 text-green-600" />
+              <span className="font-medium">קודי הזמנה</span>
+              <span className="text-xs text-muted-foreground">יצירה וניהול קודים</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+              onClick={() => setAccountingDialogOpen(true)}
+            >
+              <Calculator className="h-6 w-6 text-purple-600" />
+              <span className="font-medium">הנהלת חשבונות</span>
+              <span className="text-xs text-muted-foreground">פנימית / חיצונית</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+              onClick={() => navigate('/orgadmin/analytics')}
+            >
+              <BarChart3 className="h-6 w-6 text-amber-600" />
+              <span className="font-medium">דוחות וסטטיסטיקות</span>
+              <span className="text-xs text-muted-foreground">ניתוח הוצאות</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Accounting Info Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            הגדרות הנהלת חשבונות
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button
-            variant="outline"
-            className="h-20 flex flex-col gap-2"
-            onClick={() => navigate('/orgadmin/invitation-codes')}
-          >
-            <Ticket className="h-6 w-6" />
-            <span>ניהול קודי הזמנה</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-20 flex flex-col gap-2"
-            onClick={() => navigate('/orgadmin/users')}
-          >
-            <Users className="h-6 w-6" />
-            <span>ניהול משתמשים</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-20 flex flex-col gap-2"
-            onClick={() => navigate('/orgadmin/analytics')}
-          >
-            <BarChart3 className="h-6 w-6" />
-            <span>דוחות וסטטיסטיקות</span>
-          </Button>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant={organization.accounting_type === 'external' ? 'secondary' : 'default'}
+                  className="text-sm"
+                >
+                  {organization.accounting_type === 'external' ? (
+                    <>
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                      הנהלת חשבונות חיצונית
+                    </>
+                  ) : (
+                    <>
+                      <Building className="w-3 h-3 ml-1" />
+                      הנהלת חשבונות פנימית
+                    </>
+                  )}
+                </Badge>
+              </div>
+              {organization.accounting_type === 'external' && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  <p><strong>שם:</strong> {organization.external_accounting_name || '-'}</p>
+                  <p><strong>אימייל:</strong> {organization.external_accounting_email || '-'}</p>
+                </div>
+              )}
+              {organization.accounting_type === 'internal' && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  דוחות יטופלו על ידי הנהלת חשבונות פנימית של הארגון
+                </p>
+              )}
+            </div>
+            <Button variant="outline" onClick={() => setAccountingDialogOpen(true)}>
+              <Edit className="w-4 h-4 ml-2" />
+              שנה הגדרות
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            משתמשים בארגון
-          </CardTitle>
-          <CardDescription>
-            {users.length} משתמשים רשומים בארגון
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                משתמשים בארגון
+              </CardTitle>
+              <CardDescription>
+                {users.length} משתמשים רשומים בארגון
+              </CardDescription>
+            </div>
+            <Button onClick={() => navigate('/orgadmin/users')}>
+              <UserCog className="w-4 h-4 ml-2" />
+              ניהול מלא
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>אין משתמשים בארגון</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => navigate('/orgadmin/invitation-codes')}
+              >
+                <UserPlus className="w-4 h-4 ml-2" />
+                צור קוד הזמנה
+              </Button>
             </div>
           ) : (
             <Table>
@@ -392,20 +587,29 @@ export default function OrgAdminDashboard() {
                   <TableHead>שם מלא</TableHead>
                   <TableHead>אימייל</TableHead>
                   <TableHead>מחלקה</TableHead>
+                  <TableHead>תפקיד</TableHead>
                   <TableHead>מס' עובד</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.full_name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.department}</TableCell>
-                    <TableCell>{user.employee_id || '-'}</TableCell>
+                {users.slice(0, 10).map((userProfile) => (
+                  <TableRow key={userProfile.id}>
+                    <TableCell className="font-medium">{userProfile.full_name}</TableCell>
+                    <TableCell>{userProfile.email}</TableCell>
+                    <TableCell>{userProfile.department}</TableCell>
+                    <TableCell>{getRoleBadge(userProfile)}</TableCell>
+                    <TableCell>{userProfile.employee_id || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          )}
+          {users.length > 10 && (
+            <div className="text-center mt-4">
+              <Button variant="link" onClick={() => navigate('/orgadmin/users')}>
+                הצג את כל {users.length} המשתמשים
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -465,6 +669,117 @@ export default function OrgAdminDashboard() {
                 </>
               ) : (
                 'שמור שינויים'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Accounting Settings Dialog */}
+      <Dialog open={accountingDialogOpen} onOpenChange={setAccountingDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              הגדרות הנהלת חשבונות
+            </DialogTitle>
+            <DialogDescription>
+              הגדר את סוג הנהלת החשבונות של הארגון
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <RadioGroup
+              value={accountingFormData.accounting_type}
+              onValueChange={(value) =>
+                setAccountingFormData({ ...accountingFormData, accounting_type: value })
+              }
+              className="grid gap-4"
+            >
+              <div className="flex items-start space-x-3 space-x-reverse">
+                <RadioGroupItem value="internal" id="internal" className="mt-1" />
+                <div className="grid gap-1.5 leading-none">
+                  <Label htmlFor="internal" className="flex items-center gap-2 font-medium cursor-pointer">
+                    <Building className="w-4 h-4 text-primary" />
+                    הנהלת חשבונות פנימית
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    הדוחות יטופלו על ידי הנהלת חשבונות פנימית של הארגון
+                  </p>
+                </div>
+              </div>
+              <Separator />
+              <div className="flex items-start space-x-3 space-x-reverse">
+                <RadioGroupItem value="external" id="external" className="mt-1" />
+                <div className="grid gap-1.5 leading-none">
+                  <Label htmlFor="external" className="flex items-center gap-2 font-medium cursor-pointer">
+                    <ExternalLink className="w-4 h-4 text-secondary-foreground" />
+                    הנהלת חשבונות חיצונית
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    הדוחות יישלחו להנהלת חשבונות חיצונית לטיפול
+                  </p>
+                </div>
+              </div>
+            </RadioGroup>
+
+            {accountingFormData.accounting_type === 'external' && (
+              <div className="grid gap-4 pt-2 border-t">
+                <div className="grid gap-2">
+                  <Label htmlFor="external_name">שם הנהלת החשבונות</Label>
+                  <Input
+                    id="external_name"
+                    value={accountingFormData.external_accounting_name}
+                    onChange={(e) =>
+                      setAccountingFormData({
+                        ...accountingFormData,
+                        external_accounting_name: e.target.value,
+                      })
+                    }
+                    placeholder="לדוגמה: משרד רו״ח כהן"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="external_email">אימייל לשליחת דוחות *</Label>
+                  <Input
+                    id="external_email"
+                    type="email"
+                    value={accountingFormData.external_accounting_email}
+                    onChange={(e) =>
+                      setAccountingFormData({
+                        ...accountingFormData,
+                        external_accounting_email: e.target.value,
+                      })
+                    }
+                    placeholder="accounting@example.com"
+                    required={accountingFormData.accounting_type === 'external'}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    דוחות מאושרים יישלחו לכתובת זו לטיפול
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAccountingDialogOpen(false)}
+              disabled={submitting}
+            >
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleUpdateAccounting} 
+              disabled={submitting || (accountingFormData.accounting_type === 'external' && !accountingFormData.external_accounting_email)}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  שומר...
+                </>
+              ) : (
+                'שמור הגדרות'
               )}
             </Button>
           </DialogFooter>
