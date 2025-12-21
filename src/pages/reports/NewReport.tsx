@@ -334,7 +334,7 @@ export default function NewReport() {
         amount_in_ils: exp.amount_in_ils,
         receipts: [], // Receipts will be loaded separately if needed
         notes: exp.notes || '',
-        payment_method: (exp as any).payment_method || 'company_card',
+        payment_method: (exp as any).payment_method || 'out_of_pocket',
         approval_status: exp.approval_status || 'pending',
         manager_comment: exp.manager_comment || undefined,
         reviewed_at: exp.reviewed_at || undefined,
@@ -364,7 +364,7 @@ export default function NewReport() {
       amount_in_ils: 0,
       receipts: [],
       notes: '',
-      payment_method: 'company_card',
+      payment_method: 'out_of_pocket',
     };
     setExpenses([...expenses, newExpense]);
     setExpandedExpense(newExpense.id);
