@@ -255,14 +255,6 @@ const ManagerStats = () => {
             <Shield className="w-4 h-4 ml-2" />
             דשבורד מנהל
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/accounting/home')}>
-            <Calculator className="w-4 h-4 ml-2" />
-            דשבורד הנה"ח
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
-            <UserCog className="w-4 h-4 ml-2" />
-            דשבורד אדמין
-          </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('/')}>
             חזרה לדשבורד
           </Button>
