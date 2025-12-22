@@ -1327,6 +1327,23 @@ const ViewReport = () => {
                             <span className="mx-1.5">•</span>
                             <span>{expense.amount.toFixed(2)}</span>
                           </div>
+                          {/* Receipt viewing buttons */}
+                          {expense.receipts && expense.receipts.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {expense.receipts.map((receipt: any, idx: number) => (
+                                <a
+                                  key={receipt.id || idx}
+                                  href={receipt.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors font-medium border border-blue-200"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  {expense.receipts.length === 1 ? 'צפה בחשבונית' : `חשבונית ${idx + 1}`}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                       
