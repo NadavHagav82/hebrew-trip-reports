@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
@@ -108,7 +108,8 @@ const ViewReport = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   
   // Receipt preview modal state
-  const [previewReceipt, setPreviewReceipt] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [previewReceipts, setPreviewReceipts] = useState<{ url: string; name: string; type: string }[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -1336,11 +1337,15 @@ const ViewReport = () => {
                               {expense.receipts.map((receipt: any, idx: number) => (
                                 <button
                                   key={receipt.id || idx}
-                                  onClick={() => setPreviewReceipt({
-                                    url: receipt.file_url,
-                                    name: receipt.file_name || `חשבונית ${idx + 1}`,
-                                    type: receipt.file_type || 'image'
-                                  })}
+                                  onClick={() => {
+                                    const allReceipts = expense.receipts.map((r: any, i: number) => ({
+                                      url: r.file_url,
+                                      name: r.file_name || `חשבונית ${i + 1}`,
+                                      type: r.file_type || 'image'
+                                    }));
+                                    setPreviewReceipts(allReceipts);
+                                    setPreviewIndex(idx);
+                                  }}
                                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors font-medium border border-blue-200 cursor-pointer"
                                 >
                                   <FileText className="w-3.5 h-3.5" />
@@ -2193,48 +2198,89 @@ const ViewReport = () => {
       </Dialog>
 
       {/* Receipt Preview Modal */}
-      <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
+      <Dialog open={previewReceipts.length > 0} onOpenChange={() => { setPreviewReceipts([]); setPreviewIndex(0); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
           <DialogHeader className="p-4 pb-2 border-b">
-            <DialogTitle className="text-right">{previewReceipt?.name || 'תצוגת חשבונית'}</DialogTitle>
+            <DialogTitle className="text-right flex items-center justify-between">
+              <span>{previewReceipts[previewIndex]?.name || 'תצוגת חשבונית'}</span>
+              {previewReceipts.length > 1 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {previewIndex + 1} מתוך {previewReceipts.length}
+                </span>
+              )}
+            </DialogTitle>
             <DialogDescription className="text-right">
               תצוגה מקדימה של הקובץ המצורף
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50 min-h-[400px]">
-            {previewReceipt && (
-              previewReceipt.type === 'pdf' ? (
+          <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50 min-h-[400px] relative">
+            {/* Navigation arrows */}
+            {previewReceipts.length > 1 && (
+              <>
+                <button
+                  onClick={() => setPreviewIndex((prev) => (prev > 0 ? prev - 1 : previewReceipts.length - 1))}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all hover:scale-110"
+                  aria-label="חשבונית קודמת"
+                >
+                  <ChevronRight className="w-6 h-6 text-slate-700" />
+                </button>
+                <button
+                  onClick={() => setPreviewIndex((prev) => (prev < previewReceipts.length - 1 ? prev + 1 : 0))}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all hover:scale-110"
+                  aria-label="חשבונית הבאה"
+                >
+                  <ChevronLeft className="w-6 h-6 text-slate-700" />
+                </button>
+              </>
+            )}
+            {previewReceipts[previewIndex] && (
+              previewReceipts[previewIndex].type === 'pdf' ? (
                 <iframe
-                  src={previewReceipt.url}
+                  src={previewReceipts[previewIndex].url}
                   className="w-full h-[70vh] border rounded-lg"
                   title="PDF Preview"
                 />
               ) : (
                 <img
-                  src={previewReceipt.url}
-                  alt={previewReceipt.name}
+                  src={previewReceipts[previewIndex].url}
+                  alt={previewReceipts[previewIndex].name}
                   className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
                 />
               )
             )}
           </div>
-          <DialogFooter className="p-4 pt-2 border-t flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => setPreviewReceipt(null)}>
-              סגור
-            </Button>
-            {previewReceipt && (
-              <a
-                href={previewReceipt.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex"
-              >
-                <Button>
-                  <Download className="w-4 h-4 ml-2" />
-                  פתח בחלון חדש
-                </Button>
-              </a>
+          <DialogFooter className="p-4 pt-2 border-t flex gap-2 justify-between items-center">
+            {/* Dots indicator */}
+            {previewReceipts.length > 1 && (
+              <div className="flex gap-1.5">
+                {previewReceipts.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setPreviewIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${idx === previewIndex ? 'bg-primary scale-110' : 'bg-slate-300 hover:bg-slate-400'}`}
+                    aria-label={`חשבונית ${idx + 1}`}
+                  />
+                ))}
+              </div>
             )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setPreviewReceipts([]); setPreviewIndex(0); }}>
+                סגור
+              </Button>
+              {previewReceipts[previewIndex] && (
+                <a
+                  href={previewReceipts[previewIndex].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex"
+                >
+                  <Button>
+                    <Download className="w-4 h-4 ml-2" />
+                    פתח בחלון חדש
+                  </Button>
+                </a>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
