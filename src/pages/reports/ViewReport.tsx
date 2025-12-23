@@ -106,6 +106,9 @@ const ViewReport = () => {
   const [expenseReviews, setExpenseReviews] = useState<Map<string, { expenseId: string; status: 'approved' | 'rejected'; comment: string; attachments: File[] }>>(new Map());
   const [managerGeneralComment, setManagerGeneralComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  
+  // Receipt preview modal state
+  const [previewReceipt, setPreviewReceipt] = useState<{ url: string; name: string; type: string } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -1331,16 +1334,18 @@ const ViewReport = () => {
                           {expense.receipts && expense.receipts.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {expense.receipts.map((receipt: any, idx: number) => (
-                                <a
+                                <button
                                   key={receipt.id || idx}
-                                  href={receipt.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors font-medium border border-blue-200"
+                                  onClick={() => setPreviewReceipt({
+                                    url: receipt.file_url,
+                                    name: receipt.file_name || `חשבונית ${idx + 1}`,
+                                    type: receipt.file_type || 'image'
+                                  })}
+                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors font-medium border border-blue-200 cursor-pointer"
                                 >
                                   <FileText className="w-3.5 h-3.5" />
                                   {expense.receipts.length === 1 ? 'צפה בחשבונית' : `חשבונית ${idx + 1}`}
-                                </a>
+                                </button>
                               ))}
                             </div>
                           )}
@@ -2183,6 +2188,53 @@ const ViewReport = () => {
                 'שמור'
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Preview Modal */}
+      <Dialog open={!!previewReceipt} onOpenChange={() => setPreviewReceipt(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+          <DialogHeader className="p-4 pb-2 border-b">
+            <DialogTitle className="text-right">{previewReceipt?.name || 'תצוגת חשבונית'}</DialogTitle>
+            <DialogDescription className="text-right">
+              תצוגה מקדימה של הקובץ המצורף
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50 min-h-[400px]">
+            {previewReceipt && (
+              previewReceipt.type === 'pdf' ? (
+                <iframe
+                  src={previewReceipt.url}
+                  className="w-full h-[70vh] border rounded-lg"
+                  title="PDF Preview"
+                />
+              ) : (
+                <img
+                  src={previewReceipt.url}
+                  alt={previewReceipt.name}
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                />
+              )
+            )}
+          </div>
+          <DialogFooter className="p-4 pt-2 border-t flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setPreviewReceipt(null)}>
+              סגור
+            </Button>
+            {previewReceipt && (
+              <a
+                href={previewReceipt.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex"
+              >
+                <Button>
+                  <Download className="w-4 h-4 ml-2" />
+                  פתח בחלון חדש
+                </Button>
+              </a>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
