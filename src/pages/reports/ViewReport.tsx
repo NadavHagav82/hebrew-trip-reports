@@ -160,48 +160,90 @@ const ViewReport = () => {
 
       if (expensesError) throw expensesError;
 
-      const enhancedExpenses: Expense[] = await Promise.all(
-        (expensesData || []).map(async (expense: any) => {
-          const receiptsWithSignedUrls = await Promise.all(
-            (expense.receipts || []).map(async (receipt: any) => {
-              const { data } = await supabase
-                .storage
-                .from('receipts')
-                .createSignedUrl(receipt.file_url, 60 * 60); // שעה תוקף
+      // IMPORTANT: don't block the whole page on signed-url generation (can timeout).
+      // Render the report ASAP, then hydrate signed URLs in the background.
+      const baseExpenses: Expense[] = (expensesData || []).map((e: any) => ({
+        ...e,
+        receipts: e.receipts || [],
+        manager_attachments: e.manager_comment_attachments || [],
+      }));
+
+      setExpenses(baseExpenses);
+
+      const withTimeout = async <T,>(p: Promise<T>, ms: number): Promise<T> => {
+        return await Promise.race([
+          p,
+          new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), ms)
+          ),
+        ]);
+      };
+
+      // Hydrate receipts/attachments signed URLs in background (best-effort)
+      void (async () => {
+        try {
+          const enriched = await Promise.all(
+            baseExpenses.map(async (expense: any) => {
+              const receiptsResults = await Promise.allSettled(
+                (expense.receipts || []).map(async (receipt: any) => {
+                  try {
+                    const { data } = await withTimeout(
+                      supabase.storage
+                        .from('receipts')
+                        .createSignedUrl(receipt.file_url, 60 * 60),
+                      6000
+                    );
+
+                    return {
+                      ...receipt,
+                      file_url:
+                        (data as any)?.signedUrl ||
+                        `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/receipts/${receipt.file_url}`,
+                    };
+                  } catch {
+                    // Keep original path; UI will show placeholder if it can't load.
+                    return receipt;
+                  }
+                })
+              );
+
+              const attachmentsResults = await Promise.allSettled(
+                (expense.manager_attachments || []).map(async (attachment: any) => {
+                  try {
+                    const { data } = await withTimeout(
+                      supabase.storage
+                        .from('manager-attachments')
+                        .createSignedUrl(attachment.file_url, 60 * 60),
+                      6000
+                    );
+
+                    return {
+                      ...attachment,
+                      signed_url: (data as any)?.signedUrl || null,
+                    };
+                  } catch {
+                    return { ...attachment, signed_url: null };
+                  }
+                })
+              );
 
               return {
-                ...receipt,
-                file_url:
-                  data?.signedUrl ||
-                  `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/receipts/${receipt.file_url}`,
-              };
+                ...expense,
+                receipts: receiptsResults
+                  .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+                  .map(r => r.value),
+                manager_attachments: attachmentsResults
+                  .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+                  .map(r => r.value),
+              } as Expense;
             })
           );
 
-          // Get signed URLs for manager attachments
-          const attachmentsWithSignedUrls = await Promise.all(
-            (expense.manager_comment_attachments || []).map(async (attachment: any) => {
-              const { data } = await supabase
-                .storage
-                .from('manager-attachments')
-                .createSignedUrl(attachment.file_url, 60 * 60);
-
-              return {
-                ...attachment,
-                signed_url: data?.signedUrl || null,
-              };
-            })
-          );
-
-          return {
-            ...expense,
-            receipts: receiptsWithSignedUrls,
-            manager_attachments: attachmentsWithSignedUrls,
-          };
-        })
-      );
-
-      setExpenses(enhancedExpenses);
+          setExpenses(enriched);
+        } catch {
+          // silent; page already rendered
+        }
+      })();
 
       // Load employee profile with manager details (של בעל הדוח, לא של המשתמש המחובר)
       if (reportData?.user_id) {
