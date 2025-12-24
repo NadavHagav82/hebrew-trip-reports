@@ -729,8 +729,23 @@ export default function NewReport() {
 
     setLoading(true);
     try {
+      const withTimeout = async <T,>(p: Promise<T>, ms: number): Promise<T> => {
+        return await Promise.race([
+          p,
+          new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+        ]);
+      };
+
+      const invokeWithTimeout = async (fnName: string, body: any, ms = 10000) => {
+        try {
+          await withTimeout(supabase.functions.invoke(fnName, { body }), ms);
+        } catch (e) {
+          console.error(`Function invoke timeout/error (${fnName}):`, e);
+        }
+      };
+
       let report;
-      
+
       // Load current user profile when closing report to determine manager / accounting behavior
       let profileData: {
         is_manager?: boolean;
@@ -904,8 +919,10 @@ export default function NewReport() {
             .single();
 
           if (managerProfile?.email && managerProfile?.full_name) {
-            await supabase.functions.invoke('request-report-approval', {
-              body: {
+            // Fire-and-forget (do not block UI if email service is slow)
+            void invokeWithTimeout(
+              'request-report-approval',
+              {
                 reportId: report.id,
                 managerEmail: managerProfile.email,
                 managerName: managerProfile.full_name,
@@ -918,7 +935,8 @@ export default function NewReport() {
                   totalAmount: calculateGrandTotal(),
                 },
               },
-            });
+              10000
+            );
           }
         } catch (approvalError) {
           console.error('Error sending manager approval request:', approvalError);
@@ -943,22 +961,26 @@ export default function NewReport() {
 
           // Send to accounting manager
           if (accountingProfile?.accounting_manager_email) {
-            await supabase.functions.invoke('send-accounting-report', {
-              body: {
+            void invokeWithTimeout(
+              'send-accounting-report',
+              {
                 reportId: report.id,
                 accountingEmail: accountingProfile.accounting_manager_email,
-              }
-            });
+              },
+              10000
+            );
           }
 
           // Send to user's registration email (stored in username)
           if (accountingProfile?.username) {
-            await supabase.functions.invoke('send-accounting-report', {
-              body: {
+            void invokeWithTimeout(
+              'send-accounting-report',
+              {
                 reportId: report.id,
                 accountingEmail: accountingProfile.username,
-              }
-            });
+              },
+              10000
+            );
           }
         } catch (emailError) {
           console.error('Error sending email:', emailError);
