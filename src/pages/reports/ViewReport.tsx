@@ -82,7 +82,7 @@ interface Profile {
 const ViewReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<Report | null>(null);
@@ -112,13 +112,23 @@ const ViewReport = () => {
   const [previewIndex, setPreviewIndex] = useState(0);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      navigate('/auth/login');
+      return;
+    }
+
     if (id) {
       loadReport();
       loadSavedLists();
     }
-  }, [id]);
+  }, [id, authLoading, user]);
 
   const loadReport = async () => {
+    if (!id) return;
+    setLoading(true);
+
     try {
       // Load report
       const { data: reportData, error: reportError } = await supabase
@@ -129,6 +139,13 @@ const ViewReport = () => {
 
       if (reportError) throw reportError;
       setReport(reportData as Report);
+
+      // SEO
+      const safeDestination = (reportData?.trip_destination || 'דוח נסיעה').toString();
+      document.title = `צפייה בדוח נסיעה – ${safeDestination}`.slice(0, 60);
+      const metaDesc = `צפייה בדוח נסיעה ל${safeDestination} כולל הוצאות, חשבוניות וסיכום.`.slice(0, 160);
+      const metaEl = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+      if (metaEl) metaEl.content = metaDesc;
 
       // Load expenses with receipts
       const { data: expensesData, error: expensesError } = await supabase
