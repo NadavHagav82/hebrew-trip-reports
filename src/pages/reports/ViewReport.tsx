@@ -119,11 +119,11 @@ const ViewReport = () => {
       return;
     }
 
-    if (id) {
+    if (id && user) {
       loadReport();
       loadSavedLists();
     }
-  }, [id, authLoading, user]);
+  }, [id, authLoading, user, navigate]);
 
   const loadReport = async () => {
     if (!id) return;
@@ -237,36 +237,39 @@ const ViewReport = () => {
       }
       
       // Check if current logged-in user is accounting manager
-      if (user?.id) {
-        
-        // Check if user is accounting manager
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'accounting_manager');
-        
-        setIsAccountingUser(roles && roles.length > 0);
+      if (user) {
+        try {
+          // Check if user is accounting manager
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'accounting_manager');
+          
+          setIsAccountingUser(roles && roles.length > 0);
 
-        // Check if current user is the manager of this report's owner
-        const { data: currentUserProfile } = await supabase
-          .from('profiles')
-          .select('is_manager')
-          .eq('id', user.id)
-          .single();
+          // Check if current user is the manager of this report's owner
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('is_manager')
+            .eq('id', user.id)
+            .maybeSingle();
 
-        // Get the report owner's profile to check if current user is their manager
-        const { data: reportOwnerProfile } = await supabase
-          .from('profiles')
-          .select('manager_id')
-          .eq('id', reportData.user_id)
-          .single();
+          // Get the report owner's profile to check if current user is their manager
+          const { data: reportOwnerProfile } = await supabase
+            .from('profiles')
+            .select('manager_id')
+            .eq('id', reportData.user_id)
+            .maybeSingle();
 
-        const isManager = currentUserProfile?.is_manager && 
-                         reportData.user_id !== user.id &&
-                         reportOwnerProfile?.manager_id === user.id;
-        
-        setIsManagerOfThisReport(isManager || false);
+          const isManager = currentUserProfile?.is_manager && 
+                           reportData.user_id !== user.id &&
+                           reportOwnerProfile?.manager_id === user.id;
+          
+          setIsManagerOfThisReport(isManager || false);
+        } catch (roleError) {
+          console.error('Error checking user roles:', roleError);
+        }
       }
     } catch (error: any) {
       toast({
