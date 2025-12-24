@@ -16,9 +16,18 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), ms)
+      ),
+    ]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: 'שגיאה',
@@ -31,10 +40,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await withTimeout(signIn(email, password), 12_000);
 
       if (error) {
-        const isNetworkError = typeof error.message === 'string' && error.message.toLowerCase().includes('failed to fetch');
+        const msg = typeof error.message === 'string' ? error.message : '';
+        const lower = msg.toLowerCase();
+        const isNetworkError = lower.includes('failed to fetch') || lower.includes('network');
 
         toast({
           title: isNetworkError ? 'שגיאת שרת' : 'שגיאת התחברות',
@@ -46,6 +57,15 @@ export default function Login() {
       } else {
         navigate('/');
       }
+    } catch (err: any) {
+      const isTimeout = err?.message === 'timeout';
+      toast({
+        title: isTimeout ? 'התחברות לוקחת זמן' : 'שגיאה',
+        description: isTimeout
+          ? 'השרת לא הגיב בזמן. נסה שוב בעוד רגע.'
+          : 'אירעה שגיאה לא צפויה. נסה שוב.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
