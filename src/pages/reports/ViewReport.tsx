@@ -194,11 +194,18 @@ const ViewReport = () => {
                       6000
                     );
 
+                    const signedUrl = (data as any)?.signedUrl as string | undefined;
+                    const absoluteSignedUrl = signedUrl
+                      ? signedUrl.startsWith('http')
+                        ? signedUrl
+                        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`
+                      : null;
+
                     return {
                       ...receipt,
                       file_url:
-                        (data as any)?.signedUrl ||
-                        `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/receipts/${receipt.file_url}`,
+                        absoluteSignedUrl ||
+                        `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/receipts/${receipt.file_url}`,
                     };
                   } catch {
                     // Keep original path; UI will show placeholder if it can't load.
@@ -217,9 +224,16 @@ const ViewReport = () => {
                       6000
                     );
 
+                    const signedUrl = (data as any)?.signedUrl as string | undefined;
+                    const absoluteSignedUrl = signedUrl
+                      ? signedUrl.startsWith('http')
+                        ? signedUrl
+                        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`
+                      : null;
+
                     return {
                       ...attachment,
-                      signed_url: (data as any)?.signedUrl || null,
+                      signed_url: absoluteSignedUrl,
                     };
                   } catch {
                     return { ...attachment, signed_url: null };
