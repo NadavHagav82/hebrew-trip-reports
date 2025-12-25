@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,28 @@ export default function Login() {
     ]);
   };
 
+  const handleHealthCheck = async () => {
+    setLoading(true);
+    try {
+      await withTimeout(supabase.auth.getSession(), 6000);
+      toast({
+        title: 'החיבור תקין',
+        description: 'השרת מגיב. אפשר לנסות להתחבר שוב.',
+      });
+    } catch (err: any) {
+      const isTimeout = err?.message === 'timeout';
+      toast({
+        title: 'אין תגובה מהשרת',
+        description: isTimeout
+          ? 'נראה שהשרת לא הגיב בזמן (ייתכן שהוא מתעורר). נסה שוב בעוד רגע.'
+          : 'נראה שיש בעיית תקשורת. בדוק חיבור אינטרנט/חסימת רשת ונסה שוב.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -40,7 +63,8 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { error } = await withTimeout(signIn(email, password), 12_000);
+      // נותנים יותר זמן כדי למנוע false-timeout בזמן cold-start
+      const { error } = await withTimeout(signIn(email, password), 25_000);
 
       if (error) {
         const msg = typeof error.message === 'string' ? error.message : '';
@@ -50,7 +74,7 @@ export default function Login() {
         toast({
           title: isNetworkError ? 'שגיאת שרת' : 'שגיאת התחברות',
           description: isNetworkError
-            ? 'לא הצלחנו להתחבר לשרת. אנא נסה שוב בעוד מספר דקות.'
+            ? 'לא הצלחנו להתחבר לשרת. נסה שוב בעוד רגע (לעיתים לוקח זמן להתעורר).'
             : 'שם משתמש או סיסמה שגויים',
           variant: 'destructive',
         });
@@ -62,7 +86,7 @@ export default function Login() {
       toast({
         title: isTimeout ? 'התחברות לוקחת זמן' : 'שגיאה',
         description: isTimeout
-          ? 'השרת לא הגיב בזמן. נסה שוב בעוד רגע.'
+          ? 'השרת לא הגיב בזמן (ייתכן שהוא מתעורר). נסה שוב בעוד רגע או בדוק חיבור.'
           : 'אירעה שגיאה לא צפויה. נסה שוב.',
         variant: 'destructive',
       });
@@ -115,6 +139,16 @@ export default function Login() {
             </div>
             <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
               {loading ? 'מתחבר...' : 'התחבר'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 text-base"
+              onClick={handleHealthCheck}
+              disabled={loading}
+            >
+              בדיקת חיבור לשרת
             </Button>
           </form>
           <div className="mt-4 text-center text-sm sm:text-base">
