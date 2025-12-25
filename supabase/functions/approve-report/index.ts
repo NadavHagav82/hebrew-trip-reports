@@ -24,6 +24,47 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Create Supabase clients
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Get authorization header for user verification
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(
+        JSON.stringify({ success: false, error: "לא מורשה - יש להתחבר למערכת" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Create client with user's JWT to get authenticated user
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnon, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(
+        JSON.stringify({ success: false, error: "אימות נכשל - יש להתחבר מחדש" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
+
+    // Service role client for database operations
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const { token, expenseReviews, generalComment }: ApproveReportRequest = await req.json();
 
     console.log(`Processing expense reviews for report with token:`, token);
@@ -39,15 +80,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     // Find report by token
     const { data: report, error: fetchError } = await supabase
       .from('reports')
-      .select('*, profiles!reports_user_id_fkey(username, accounting_manager_email, full_name)')
+      .select('*, profiles!reports_user_id_fkey(id, username, accounting_manager_email, full_name, manager_id)')
       .eq('manager_approval_token', token)
       .single();
 
@@ -61,6 +97,22 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+
+    // CRITICAL: Verify the authenticated user is the manager of the report owner
+    const reportOwnerManagerId = report.profiles?.manager_id;
+    
+    if (reportOwnerManagerId !== user.id) {
+      console.error(`Authorization failed: User ${user.id} is not the manager (${reportOwnerManagerId}) of report owner`);
+      return new Response(
+        JSON.stringify({ success: false, error: "אינך המנהל של עובד זה - אין הרשאה לאשר את הדוח" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log(`Authorization verified: User ${user.id} is the manager of report owner`);
 
     // Check if already processed
     if (report.status !== 'pending_approval') {
@@ -126,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw reportUpdateError;
     }
 
-    // Add history record
+    // Add history record with actual approver's user ID
     const historyAction = allApproved ? 'approved' : 'rejected';
     const historyNotes = allApproved 
       ? `המנהל אישר את כל ההוצאות${generalComment ? `: ${generalComment}` : ''}`
@@ -135,7 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
     await supabase.from('report_history').insert({
       report_id: report.id,
       action: historyAction,
-      performed_by: report.user_id, // Using report owner as performer since manager doesn't have auth
+      performed_by: user.id, // Use authenticated manager's ID, not report owner
       notes: historyNotes,
     });
 
@@ -187,7 +239,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Report review completed: ${approvedCount} approved, ${rejectedCount} rejected`);
+    console.log(`Report review completed by manager ${user.id}: ${approvedCount} approved, ${rejectedCount} rejected`);
 
     return new Response(
       JSON.stringify({ 
