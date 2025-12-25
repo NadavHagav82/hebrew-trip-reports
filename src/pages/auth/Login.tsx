@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,28 +23,6 @@ export default function Login() {
         setTimeout(() => reject(new Error('timeout')), ms)
       ),
     ]);
-  };
-
-  const handleHealthCheck = async () => {
-    setLoading(true);
-    try {
-      await withTimeout(supabase.auth.getSession(), 6000);
-      toast({
-        title: 'החיבור תקין',
-        description: 'השרת מגיב. אפשר לנסות להתחבר שוב.',
-      });
-    } catch (err: any) {
-      const isTimeout = err?.message === 'timeout';
-      toast({
-        title: 'אין תגובה מהשרת',
-        description: isTimeout
-          ? 'נראה שהשרת לא הגיב בזמן (ייתכן שהוא מתעורר). נסה שוב בעוד רגע.'
-          : 'נראה שיש בעיית תקשורת. בדוק חיבור אינטרנט/חסימת רשת ונסה שוב.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,16 +116,6 @@ export default function Login() {
             </div>
             <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
               {loading ? 'מתחבר...' : 'התחבר'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-12 text-base"
-              onClick={handleHealthCheck}
-              disabled={loading}
-            >
-              בדיקת חיבור לשרת
             </Button>
           </form>
           <div className="mt-4 text-center text-sm sm:text-base">
