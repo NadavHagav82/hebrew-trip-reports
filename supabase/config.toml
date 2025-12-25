@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.send-report-email]
 verify_jwt = true
+
+[functions.approve-report]
+verify_jwt = true
