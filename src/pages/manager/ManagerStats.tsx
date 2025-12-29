@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, TrendingUp, TrendingDown, CheckCircle, XCircle, DollarSign, BarChart3, Shield, Calculator, UserCog } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, CheckCircle, XCircle, DollarSign, BarChart3, Shield, Calculator, UserCog, ArrowRight, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -229,103 +229,131 @@ const ManagerStats = () => {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <BarChart3 className="w-8 h-8 text-primary" />
-            דשבורד סטטיסטיקות
-          </h1>
-          <p className="text-muted-foreground mt-1">ניתוח הוצאות ואישורים</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current_month">חודש נוכחי</SelectItem>
-              <SelectItem value="last_month">חודש שעבר</SelectItem>
-              <SelectItem value="last_3_months">3 חודשים אחרונים</SelectItem>
-              <SelectItem value="last_6_months">6 חודשים אחרונים</SelectItem>
-              <SelectItem value="current_year">שנה נוכחית</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={() => navigate('/manager/dashboard')}>
-            <Shield className="w-4 h-4 ml-2" />
-            דשבורד מנהל
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-            חזרה לדשבורד
-          </Button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-green-500 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              הוצאות מאושרות
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats?.approved || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              ₪{(stats?.approvedAmount || 0).toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-red-600" />
-              הוצאות נדחו
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">{stats?.rejected || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              ₪{(stats?.rejectedAmount || 0).toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="border-l-4 border-l-amber-500 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-          onClick={() => navigate('/manager/dashboard')}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-amber-600" />
-              ממתינות לאישור
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-amber-600 hover:text-amber-700 transition-colors">
-              {stats?.pending || 0}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      {/* Header */}
+      <header className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 dark:from-indigo-950/50 dark:via-purple-950/50 dark:to-blue-950/50 border-b border-indigo-100 dark:border-indigo-900/30 sticky top-0 z-10 relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500" />
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-2xl" />
+        
+        <div className="container mx-auto px-4 py-5 relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">דשבורד סטטיסטיקות</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">ניתוח הוצאות ואישורים</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">לחץ לצפייה בדוחות</p>
-          </CardContent>
-        </Card>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-[160px] h-10 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="current_month">חודש נוכחי</SelectItem>
+                  <SelectItem value="last_month">חודש שעבר</SelectItem>
+                  <SelectItem value="last_3_months">3 חודשים אחרונים</SelectItem>
+                  <SelectItem value="last_6_months">6 חודשים אחרונים</SelectItem>
+                  <SelectItem value="current_year">שנה נוכחית</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/manager/dashboard')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 transition-all"
+              >
+                <Shield className="w-4 h-4 ml-1.5" />
+                דשבורד מנהל
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                חזרה לדשבורד
+                <ArrowRight className="w-4 h-4 mr-1.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-        <Card className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
-              אחוז אישור
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{approvalRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              מתוך {(stats?.approved || 0) + (stats?.rejected || 0)} הוצאות
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <main className="container mx-auto px-4 py-8 space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    הוצאות מאושרות
+                  </p>
+                  <p className="text-3xl font-bold text-green-600 mt-1">{stats?.approved || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">₪{(stats?.approvedAmount || 0).toFixed(2)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-red-400 to-rose-500" />
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    הוצאות נדחו
+                  </p>
+                  <p className="text-3xl font-bold text-red-600 mt-1">{stats?.rejected || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">₪{(stats?.rejectedAmount || 0).toFixed(2)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm cursor-pointer"
+            onClick={() => navigate('/manager/dashboard')}
+          >
+            <div className="h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    ממתינות לאישור
+                  </p>
+                  <p className="text-3xl font-bold text-amber-600 mt-1">{stats?.pending || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">לחץ לצפייה בדוחות</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-blue-400 to-indigo-500" />
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                    אחוז אישור
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600 mt-1">{approvalRate}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">מתוך {(stats?.approved || 0) + (stats?.rejected || 0)} הוצאות</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -503,6 +531,7 @@ const ManagerStats = () => {
           </div>
         </CardContent>
       </Card>
+      </main>
     </div>
   );
 };
