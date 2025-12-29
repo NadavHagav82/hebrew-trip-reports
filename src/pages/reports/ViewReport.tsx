@@ -112,9 +112,6 @@ const ViewReport = () => {
   const [previewReceipts, setPreviewReceipts] = useState<{ url: string; name: string; type: string }[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   
-  // Daily allowance decision state - null means not decided, true means include, false means not required
-  const [dailyAllowanceDecision, setDailyAllowanceDecision] = useState<boolean | null>(null);
-
   useEffect(() => {
     if (authLoading) return;
 
@@ -144,15 +141,7 @@ const ViewReport = () => {
       if (reportError) throw reportError;
       setReport(reportData as Report);
       
-      // Initialize daily allowance decision based on report status and existing value
-      if (reportData.status !== 'open' && reportData.status !== 'draft') {
-        // Report already closed/approved - set decision based on whether allowance exists
-        setDailyAllowanceDecision(reportData.daily_allowance ? true : false);
-      } else if (reportData.daily_allowance) {
-        // Open report with existing allowance - user already decided to include it
-        setDailyAllowanceDecision(true);
-      }
-
+      
       // SEO
       const safeDestination = (reportData?.trip_destination || 'דוח נסיעה').toString();
       document.title = `צפייה בדוח נסיעה – ${safeDestination}`.slice(0, 60);
@@ -558,21 +547,6 @@ const ViewReport = () => {
   const handleCloseReport = async () => {
     if (!report || !profile || !user) return;
 
-    // Validate daily allowance decision was made
-    if (dailyAllowanceDecision === null) {
-      toast({
-        title: 'נדרשת החלטה לגבי אש"ל יומי',
-        description: 'יש לבחור האם להוסיף אש"ל יומי לדוח או לסמן "לא נדרש" לפני הפקת הדוח',
-        variant: 'destructive',
-      });
-      // Scroll to the daily allowance section
-      const allowanceSection = document.getElementById('daily-allowance-section');
-      if (allowanceSection) {
-        allowanceSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-
     try {
       console.log('handleCloseReport debug', {
         currentUserId: user.id,
@@ -581,7 +555,6 @@ const ViewReport = () => {
         profileUserId: (profile as any).id,
         profileManagerId: profile.manager_id,
         hasManager: profile.manager_id !== null && profile.manager_id !== undefined,
-        dailyAllowanceDecision,
       });
 
       const isOwner = user.id === report.user_id;
@@ -1609,137 +1582,32 @@ const ViewReport = () => {
             </CardContent>
           </Card>
 
-          {/* Daily Allowance Section */}
-          <Card id="daily-allowance-section" className={`mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative ${
-            report.status === 'open' && dailyAllowanceDecision === null ? 'ring-2 ring-orange-400 ring-offset-2' : ''
-          }`}>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
-            <CardHeader className="pb-4 bg-gradient-to-l from-blue-500/5 to-transparent">
-              <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                אש"ל יומי
-                {report.status === 'open' && dailyAllowanceDecision === null && (
-                  <span className="text-sm font-normal text-orange-600 bg-orange-100 px-3 py-1 rounded-full">
-                    נדרשת החלטה
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                {/* Option 1: Include daily allowance */}
-                <div 
-                  className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    dailyAllowanceDecision === true || (dailyAllowanceDecision === null && report.daily_allowance)
-                      ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-400 shadow-md'
-                      : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50/30'
-                  }`}
-                  onClick={async () => {
-                    setDailyAllowanceDecision(true);
-                    if (!report.daily_allowance) {
-                      try {
-                        await supabase
-                          .from('reports')
-                          .update({ daily_allowance: 100 })
-                          .eq('id', report.id);
-                        loadReport();
-                      } catch (error) {
-                        toast({ title: 'שגיאה', variant: 'destructive' });
-                      }
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                      dailyAllowanceDecision === true || (dailyAllowanceDecision === null && report.daily_allowance)
-                        ? 'border-blue-500 bg-blue-500'
-                        : 'border-slate-300'
-                    }`}>
-                      {(dailyAllowanceDecision === true || (dailyAllowanceDecision === null && report.daily_allowance)) && (
-                        <CheckCircle className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <span className="font-bold text-slate-800">הוסף אש"ל יומי לדוח</span>
+          {/* Daily Allowance Section - View Only */}
+          {report.daily_allowance && (
+            <Card id="daily-allowance-section" className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
+              <CardHeader className="pb-4 bg-gradient-to-l from-blue-500/5 to-transparent">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Calendar className="w-5 h-5 text-white" />
                   </div>
-                  {(dailyAllowanceDecision === true || report.daily_allowance) && (
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        value={report.daily_allowance || 100}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={async (e) => {
-                          const newValue = parseFloat(e.target.value) || 0;
-                          try {
-                            await supabase
-                              .from('reports')
-                              .update({ daily_allowance: newValue })
-                              .eq('id', report.id);
-                            loadReport();
-                          } catch (error) {
-                            toast({ title: 'שגיאה', variant: 'destructive' });
-                          }
-                        }}
-                        className="w-24 px-3 py-2 border-2 border-blue-300 rounded-xl font-bold text-blue-900 text-center bg-white focus:ring-2 focus:ring-blue-400"
-                      />
-                      <span className="text-blue-700 font-semibold">$ ליום</span>
+                  אש"ל יומי
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 p-5 rounded-xl border-2 border-blue-300 dark:border-blue-700">
+                  <div className="flex justify-between items-center">
+                    <div className="text-right">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">סה"כ אש"ל לתקופה ({calculateTripDuration()} ימים × ${report.daily_allowance}/יום)</p>
                     </div>
-                  )}
-                </div>
-                
-                {/* Option 2: Not required */}
-                <div 
-                  className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    dailyAllowanceDecision === false
-                      ? 'bg-gradient-to-r from-slate-50 to-gray-50 border-slate-400 shadow-md'
-                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/30'
-                  }`}
-                  onClick={async () => {
-                    setDailyAllowanceDecision(false);
-                    if (report.daily_allowance) {
-                      try {
-                        await supabase
-                          .from('reports')
-                          .update({ daily_allowance: null })
-                          .eq('id', report.id);
-                        loadReport();
-                      } catch (error) {
-                        toast({ title: 'שגיאה', variant: 'destructive' });
-                      }
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                      dailyAllowanceDecision === false
-                        ? 'border-slate-500 bg-slate-500'
-                        : 'border-slate-300'
-                    }`}>
-                      {dailyAllowanceDecision === false && (
-                        <CheckCircle className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <span className="font-bold text-slate-700">לא נדרש אש"ל יומי לדוח זה</span>
+                    <span className="font-black text-3xl text-blue-900 dark:text-blue-100">
+                      ${(report.daily_allowance * calculateTripDuration()).toLocaleString()}
+                    </span>
                   </div>
                 </div>
-                
-                {/* Summary when allowance is selected */}
-                {(dailyAllowanceDecision === true || report.daily_allowance) && report.daily_allowance && (
-                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 p-5 rounded-xl border-2 border-blue-300 shadow-inner">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-xl text-blue-900">
-                        סה"כ אש"ל לתקופה ({calculateTripDuration()} ימים)
-                      </span>
-                      <span className="font-black text-3xl text-blue-900">
-                        ${(report.daily_allowance * calculateTripDuration()).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Summary */}
           <Card className="shadow-xl border-t-4 border-t-green-500 overflow-hidden">
