@@ -535,10 +535,10 @@ const AdvancedReports = () => {
 
   if (teamMembers.length === 0) {
     return (
-      <div className="container mx-auto p-6" dir="rtl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">דוחות מתקדמים</h1>
-          <Button onClick={() => navigate("/manager/dashboard")}>חזרה לדשבורד</Button>
+      <div className="container mx-auto p-4 sm:p-6" dir="rtl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">דוחות מתקדמים</h1>
+          <Button size="sm" onClick={() => navigate("/manager/dashboard")}>חזרה לדשבורד</Button>
         </div>
         <Card className="p-12 text-center">
           <div className="flex flex-col items-center gap-4">
@@ -627,14 +627,18 @@ const AdvancedReports = () => {
   }
 
   return (
-    <div className="container mx-auto p-6" dir="rtl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">דוחות מתקדמים</h1>
-        <div className="flex gap-2">
-          <Button onClick={() => navigate("/manager/dashboard")}>חזרה לדשבורד</Button>
-          <Button onClick={exportToExcel} variant="outline">
-            <Download className="ml-2 h-4 w-4" />
-            ייצוא ל-Excel
+    <div className="container mx-auto p-4 sm:p-6" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">דוחות מתקדמים</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => navigate("/manager/dashboard")}>
+            <span className="hidden sm:inline">חזרה לדשבורד</span>
+            <span className="sm:hidden">חזרה</span>
+          </Button>
+          <Button size="sm" onClick={exportToExcel} variant="outline">
+            <Download className="ml-1 h-4 w-4" />
+            <span className="hidden sm:inline">ייצוא ל-Excel</span>
+            <span className="sm:hidden">ייצוא</span>
           </Button>
         </div>
       </div>
@@ -729,15 +733,15 @@ const AdvancedReports = () => {
         </div>
 
         {/* Save Preferences */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-col sm:flex-row gap-2">
           <Input
             placeholder="שם המועדף"
             value={preferenceName}
             onChange={(e) => setPreferenceName(e.target.value)}
-            className="max-w-xs"
+            className="max-w-full sm:max-w-xs"
           />
-          <Button onClick={savePreference}>
-            <Save className="ml-2 h-4 w-4" />
+          <Button size="sm" onClick={savePreference} className="w-full sm:w-auto">
+            <Save className="ml-1 h-4 w-4" />
             שמור מועדף
           </Button>
         </div>
