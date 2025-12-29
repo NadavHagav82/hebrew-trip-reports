@@ -1355,129 +1355,148 @@ const ViewReport = () => {
                   const CategoryIcon = getCategoryIcon(expense.category);
                   const categoryColor = getCategoryColor(expense.category);
                   return (
-                    <div key={expense.id} className="group relative border border-border/50 rounded-2xl p-5 bg-gradient-to-br from-card to-muted/20 hover:from-primary/5 hover:to-indigo-500/5 hover:border-primary/30 transition-all duration-300 hover:shadow-lg overflow-hidden">
-                      {/* Decorative gradient line */}
-                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div key={expense.id} className="group relative bg-white dark:bg-slate-900 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200 dark:border-slate-700">
+                      {/* Top colored bar based on category */}
+                      <div className={`h-1.5 ${
+                        expense.category === 'flights' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
+                        expense.category === 'accommodation' ? 'bg-gradient-to-r from-purple-400 to-purple-600' :
+                        expense.category === 'food' ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                        expense.category === 'transportation' ? 'bg-gradient-to-r from-green-400 to-green-600' :
+                        'bg-gradient-to-r from-slate-400 to-slate-600'
+                      }`} />
                       
-                      <div className="absolute top-3 left-3 bg-gradient-to-br from-muted to-muted/50 text-muted-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold group-hover:from-primary group-hover:to-indigo-600 group-hover:text-white transition-all shadow-sm">
-                        {index + 1}
-                      </div>
-                      <div className="flex items-start justify-between gap-4 mr-6">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-3 flex-wrap">
-                            <span className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{expense.description}</span>
+                      <div className="p-5">
+                        {/* Header row with number, amount and category */}
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-slate-800 dark:bg-slate-700 text-white rounded-full flex items-center justify-center text-sm font-bold shadow">
+                              {index + 1}
+                            </div>
                             <span className={`text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 ${categoryColor} shadow-sm`}>
                               <CategoryIcon className="w-4 h-4" />
                               {getCategoryLabel(expense.category)}
                             </span>
                           </div>
-                          <p className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
-                            <Calendar className="w-4 h-4 text-primary/60" />
-                            {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
-                          </p>
-                          {expense.notes && (
-                            <p className="text-sm text-muted-foreground mt-3 italic bg-muted/50 p-3 rounded-xl border-r-2 border-primary/40">
-                              {expense.notes}
-                            </p>
-                          )}
-                          {expense.approval_status && expense.approval_status !== 'pending' && (
-                            <div className={`mt-3 p-3 rounded-xl border-2 ${
-                              expense.approval_status === 'approved'
-                                ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                                : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                            }`}>
-                              <div className="flex items-start gap-2">
-                                <div className={`text-sm font-bold ${
-                                  expense.approval_status === 'approved' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
-                                }`}>
-                                  {expense.approval_status === 'approved' ? '✓ אושר על ידי מנהל' : '✗ נדחה על ידי מנהל'}
-                                </div>
-                              </div>
-                              {expense.manager_comment && (
-                                <div className={`text-xs mt-2 ${
-                                  expense.approval_status === 'approved' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
-                                }`}>
-                                  <span className="font-semibold">הערה: </span>
-                                  {expense.manager_comment}
-                                </div>
-                              )}
-                              {expense.manager_attachments && expense.manager_attachments.length > 0 && (
-                                <div className="mt-3 space-y-1">
-                                  <div className={`text-xs font-semibold mb-1 ${
-                                    expense.approval_status === 'approved' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
-                                  }`}>
-                                    קבצים מצורפים מהמנהל:
-                                  </div>
-                                  {expense.manager_attachments.map((attachment: any) => (
-                                    <a
-                                      key={attachment.id}
-                                      href={attachment.signed_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`flex items-center gap-2 text-xs p-2 rounded-lg border ${
-                                        expense.approval_status === 'approved'
-                                          ? 'bg-green-100 border-green-300 hover:bg-green-200 text-green-800'
-                                          : 'bg-red-100 border-red-300 hover:bg-red-200 text-red-800'
-                                      } transition-colors`}
-                                    >
-                                      {attachment.file_type.startsWith('image/') ? (
-                                        <FileText className="w-3 h-3" />
-                                      ) : (
-                                        <FileText className="w-3 h-3" />
-                                      )}
-                                      <span className="truncate flex-1">{attachment.file_name}</span>
-                                      <Download className="w-3 h-3" />
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-2 shrink-0">
-                          <div className="text-2xl font-black bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent bg-gradient-to-br from-primary/10 to-indigo-500/10 px-4 py-2 rounded-xl border border-primary/20">
+                          <div className="text-2xl font-black text-slate-800 dark:text-white">
                             ₪{expense.amount_in_ils.toFixed(2)}
                           </div>
-                          <div className="text-sm bg-muted/50 px-3 py-1 rounded-full font-semibold text-muted-foreground border border-border/50">
-                            <span>{expense.currency}</span>
-                            <span className="mx-1.5">•</span>
-                            <span>{expense.amount.toFixed(2)}</span>
-                          </div>
-                          {/* Receipt viewing buttons */}
-                          {expense.receipts && expense.receipts.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {expense.receipts.map((receipt: any, idx: number) => (
-                                <button
-                                  key={receipt.id || idx}
-                                  onClick={() => {
-                                    const allReceipts = expense.receipts.map((r: any, i: number) => ({
-                                      url: r.file_url,
-                                      name: r.file_name || `חשבונית ${i + 1}`,
-                                      type: r.file_type || 'image'
-                                    }));
-                                    setPreviewReceipts(allReceipts);
-                                    setPreviewIndex(idx);
-                                  }}
-                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 hover:from-blue-200 hover:to-indigo-200 transition-all font-medium border border-blue-200 dark:border-blue-800 cursor-pointer shadow-sm hover:shadow"
-                                >
-                                  <FileText className="w-3.5 h-3.5" />
-                                  {expense.receipts.length === 1 ? 'צפה בחשבונית' : `חשבונית ${idx + 1}`}
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </div>
+                        
+                        {/* Description */}
+                        <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-3 leading-relaxed">
+                          {expense.description}
+                        </h3>
+                        
+                        {/* Details row */}
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+                            <Calendar className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              {expense.currency} {expense.amount.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Notes */}
+                        {expense.notes && (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 rounded-xl mb-4">
+                            <p className="text-sm text-amber-800 dark:text-amber-200">
+                              <span className="font-semibold">הערות: </span>
+                              {expense.notes}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Manager approval status */}
+                        {expense.approval_status && expense.approval_status !== 'pending' && (
+                          <div className={`p-3 rounded-xl border-2 mb-4 ${
+                            expense.approval_status === 'approved'
+                              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                              : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                          }`}>
+                            <div className={`text-sm font-bold ${
+                              expense.approval_status === 'approved' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                            }`}>
+                              {expense.approval_status === 'approved' ? '✓ אושר על ידי מנהל' : '✗ נדחה על ידי מנהל'}
+                            </div>
+                            {expense.manager_comment && (
+                              <p className={`text-sm mt-2 ${
+                                expense.approval_status === 'approved' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                              }`}>
+                                <span className="font-semibold">הערה: </span>
+                                {expense.manager_comment}
+                              </p>
+                            )}
+                            {expense.manager_attachments && expense.manager_attachments.length > 0 && (
+                              <div className="mt-3 space-y-1">
+                                <div className={`text-xs font-semibold mb-1 ${
+                                  expense.approval_status === 'approved' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                                }`}>
+                                  קבצים מצורפים מהמנהל:
+                                </div>
+                                {expense.manager_attachments.map((attachment: any) => (
+                                  <a
+                                    key={attachment.id}
+                                    href={attachment.signed_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex items-center gap-2 text-xs p-2 rounded-lg border ${
+                                      expense.approval_status === 'approved'
+                                        ? 'bg-green-100 border-green-300 hover:bg-green-200 text-green-800'
+                                        : 'bg-red-100 border-red-300 hover:bg-red-200 text-red-800'
+                                    } transition-colors`}
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                    <span className="truncate flex-1">{attachment.file_name}</span>
+                                    <Download className="w-3 h-3" />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Receipt buttons */}
+                        {expense.receipts && expense.receipts.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {expense.receipts.map((receipt: any, idx: number) => (
+                              <button
+                                key={receipt.id || idx}
+                                onClick={() => {
+                                  const allReceipts = expense.receipts.map((r: any, i: number) => ({
+                                    url: r.file_url,
+                                    name: r.file_name || `חשבונית ${i + 1}`,
+                                    type: r.file_type || 'image'
+                                  }));
+                                  setPreviewReceipts(allReceipts);
+                                  setPreviewIndex(idx);
+                                }}
+                                className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm hover:shadow transition-all cursor-pointer"
+                              >
+                                <FileText className="w-4 h-4" />
+                                {expense.receipts.length === 1 ? 'צפה בחשבונית' : `חשבונית ${idx + 1}`}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Manager Review UI */}
                       {isManagerOfThisReport && report.status === 'pending_approval' && (
-                        <ManagerExpenseReview
-                          expenseId={expense.id}
-                          currentStatus={expense.approval_status}
-                          currentComment={expense.manager_comment}
-                          onReview={handleManagerExpenseReview}
-                          disabled={submittingReview}
-                        />
+                        <div className="border-t border-slate-200 dark:border-slate-700 p-4">
+                          <ManagerExpenseReview
+                            expenseId={expense.id}
+                            currentStatus={expense.approval_status}
+                            currentComment={expense.manager_comment}
+                            onReview={handleManagerExpenseReview}
+                            disabled={submittingReview}
+                          />
+                        </div>
                       )}
                     </div>
                   );
