@@ -1459,11 +1459,14 @@ export default function NewReport() {
                         </div>
 
                         <div>
-                          <Label>תיאור *</Label>
+                          <Label className={!expense.description.trim() ? 'text-orange-600 dark:text-orange-400' : ''}>
+                            תיאור * {!expense.description.trim() && <span className="text-xs font-normal">(חובה)</span>}
+                          </Label>
                           <Input
                             placeholder="תאר את ההוצאה"
                             value={expense.description}
                             onChange={(e) => updateExpense(expense.id, 'description', e.target.value)}
+                            className={!expense.description.trim() ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20' : ''}
                           />
                         </div>
 
@@ -1479,14 +1482,16 @@ export default function NewReport() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label>סכום *</Label>
+                            <Label className={!expense.amount ? 'text-orange-600 dark:text-orange-400' : ''}>
+                              סכום * {!expense.amount && <span className="text-xs font-normal">(חובה)</span>}
+                            </Label>
                             <Input
                               type="number"
                               step="0.01"
                               min="0"
                               value={expense.amount || ''}
                               onChange={(e) => updateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0)}
-                            />
+                              className={!expense.amount ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20' : ''}/>
                           </div>
                           <div>
                             <Label>מטבע *</Label>
