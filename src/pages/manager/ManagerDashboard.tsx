@@ -317,35 +317,51 @@ export default function ManagerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-amber-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/50 dark:via-amber-950/50 dark:to-yellow-950/50 border-b border-orange-100 dark:border-orange-900/30 sticky top-0 z-10 relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-orange-500/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-amber-500/10 to-transparent rounded-full blur-2xl" />
+        
+        <div className="container mx-auto px-4 py-5 relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5 text-orange-600" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Shield className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">דשבורד מנהל.ת</h1>
-                <p className="text-sm text-muted-foreground">אישור דוחות הצוות</p>
+                <h1 className="text-2xl font-bold text-foreground">דשבורד מנהל.ת</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">אישור דוחות הצוות</p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => navigate('/manager/advanced-reports')}>
-                <BarChart3 className="w-4 h-4 ml-1" />
-                <span className="hidden sm:inline">דוחות מתקדמים</span>
-                <span className="sm:hidden">דוחות</span>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/manager/advanced-reports')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/30 transition-all"
+              >
+                <BarChart3 className="w-4 h-4 ml-1.5" />
+                <span className="hidden sm:inline">דוחות</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/manager/stats')}>
-                <BarChart3 className="w-4 h-4 ml-1" />
-                <span className="hidden sm:inline">סטטיסטיקות</span>
-                <span className="sm:hidden">סטט'</span>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/manager/stats')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/30 transition-all"
+              >
+                <BarChart3 className="w-4 h-4 ml-1.5" />
+                <span className="hidden sm:inline">סטט'</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-                <span className="hidden sm:inline">חזרה לדשבורד</span>
-                <span className="sm:hidden">חזרה</span>
-                <ArrowRight className="w-4 h-4 mr-1" />
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <span className="hidden sm:inline">חזרה</span>
+                <ArrowRight className="w-4 h-4 mr-1.5" />
               </Button>
             </div>
           </div>
@@ -355,35 +371,38 @@ export default function ManagerDashboard() {
       <main className="container mx-auto px-4 py-8">
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-500" />
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">דוחות ממתינים</p>
                   <p className="text-3xl font-bold text-orange-600">{reports.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50 rounded-xl flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-500" />
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">נבחרו לאישור</p>
                   <p className="text-3xl font-bold text-blue-600">{selectedReports.size}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 rounded-xl flex items-center justify-center">
                   <CheckSquare className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -392,7 +411,7 @@ export default function ManagerDashboard() {
                     ₪{reports.filter(r => selectedReports.has(r.id)).reduce((sum, r) => sum + (r.total_amount_ils || 0), 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/50 dark:to-emerald-800/50 rounded-xl flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-green-600" />
                 </div>
               </div>
