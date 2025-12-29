@@ -1285,20 +1285,6 @@ export default function NewReport() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {!savedExpenses.has(expense.id) && expandedExpense === expense.id && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              saveExpense(expense.id);
-                            }}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Save className="w-4 h-4 ml-1" />
-                            שמור
-                          </Button>
-                        )}
                         {savedExpenses.has(expense.id) && (
                           <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold">
                             ✓ נשמר
@@ -1445,16 +1431,28 @@ export default function NewReport() {
                                         </div>
                                       )}
                                     </div>
-                                    {!receipt.analyzed && !receipt.analyzing && (
-                                      <Button
-                                        type="button"
-                                        size="default"
-                                        className="mt-2"
-                                        onClick={() => analyzeReceipt(expense.id, idx)}
-                                      >
-                                        ✨ אישור וניתוח
-                                      </Button>
-                                    )}
+                                    <div className="flex flex-col gap-2 mt-2">
+                                      {!receipt.analyzed && !receipt.analyzing && (
+                                        <Button
+                                          type="button"
+                                          size="default"
+                                          onClick={() => analyzeReceipt(expense.id, idx)}
+                                        >
+                                          ✨ אישור וניתוח
+                                        </Button>
+                                      )}
+                                      {!savedExpenses.has(expense.id) && (
+                                        <Button
+                                          type="button"
+                                          size="default"
+                                          className="bg-green-600 hover:bg-green-700"
+                                          onClick={() => saveExpense(expense.id)}
+                                        >
+                                          <Save className="w-4 h-4 ml-1" />
+                                          שמור הוצאה
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
