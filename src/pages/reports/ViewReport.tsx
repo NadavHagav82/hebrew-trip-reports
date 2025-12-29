@@ -1240,24 +1240,26 @@ const ViewReport = () => {
         {/* Screen View */}
         <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl no-print relative">
           {/* Hero Section */}
-          <Card className="mb-6 shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 relative group">
-            {/* Decorative elements */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-500/20 to-transparent rounded-full blur-2xl" />
+          <Card className="mb-6 shadow-xl border-0 overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 relative group">
+            {/* Top accent bar */}
+            <div className="h-1.5 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
             
-            <CardContent className="p-6 sm:p-8 text-white relative">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-500/10 to-transparent rounded-full blur-2xl" />
+            
+            <CardContent className="p-6 sm:p-8 relative">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-white/20 to-white/5 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                       <FileText className="w-6 h-6 text-white" />
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold">דוח נסיעה עסקית</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground">דוח נסיעה עסקית</h2>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-200 text-sm sm:text-base flex-wrap">
-                    <span className="font-semibold bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">{report.trip_destination}</span>
-                    <span className="text-white/50">•</span>
+                  <div className="flex items-center gap-3 text-muted-foreground text-sm sm:text-base flex-wrap">
+                    <span className="font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">{report.trip_destination}</span>
+                    <span className="text-muted-foreground/50">•</span>
                     <span className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
@@ -1266,7 +1268,7 @@ const ViewReport = () => {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <StatusBadge status={report.status} />
-                  <div className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg">
+                  <div className="text-3xl sm:text-4xl font-black text-primary">
                     ₪{report.total_amount_ils?.toFixed(2)}
                   </div>
                 </div>
