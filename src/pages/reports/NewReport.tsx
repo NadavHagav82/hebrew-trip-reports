@@ -1253,7 +1253,7 @@ export default function NewReport() {
             ) : (
               <div className="space-y-4">
                 {expenses.slice().reverse().map((expense, index) => (
-                  <Card key={expense.id} className="border-2 relative">
+                  <Card key={expense.id} className={`border-2 relative transition-colors ${savedExpenses.has(expense.id) ? 'border-green-500' : ''}`}>
                     {/* Saved indicator - top left corner */}
                     {savedExpenses.has(expense.id) && (
                       <div className="absolute top-2 left-2 z-10 bg-green-500 text-white rounded-full p-1.5 shadow-sm" title="נשמר">
