@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -1266,7 +1266,7 @@ export default function NewReport() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-bold flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                  <span className="text-xl">💰</span>
+                  <Receipt className="w-5 h-5" />
                 </div>
                 הוצאות
               </CardTitle>
@@ -1279,44 +1279,61 @@ export default function NewReport() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {expenses.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">עדיין לא הוספת הוצאות</p>
+              <div className="text-center py-12 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl border-2 border-dashed border-green-200 dark:border-green-800">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center">
+                  <Receipt className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+                <p className="text-muted-foreground mb-2 font-medium">עדיין לא הוספת הוצאות</p>
                 <p className="text-sm text-muted-foreground">לחץ על "הוסף הוצאה" כדי להתחיל</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {expenses.slice().reverse().map((expense, index) => (
-                  <Card key={expense.id} className={`border-2 relative transition-colors ${savedExpenses.has(expense.id) ? 'border-green-500' : ''}`}>
+                {expenses.slice().reverse().map((expense, index) => {
+                  const CategoryIcon = expense.category ? categoryIcons[expense.category] : Package;
+                  const categoryColor = expense.category ? categoryColors[expense.category] : 'bg-muted text-muted-foreground';
+                  
+                  return (
+                  <Card 
+                    key={expense.id} 
+                    className={`relative transition-all duration-300 overflow-hidden hover:shadow-lg ${
+                      savedExpenses.has(expense.id) 
+                        ? 'border-2 border-green-500 shadow-green-100 dark:shadow-green-900/20' 
+                        : 'border border-border hover:border-primary/30'
+                    }`}
+                  >
+                    {/* Category color indicator */}
+                    <div className={`absolute top-0 left-0 right-0 h-1 ${categoryColor.split(' ')[0]}`} />
+                    
                     {/* Saved indicator - top left corner */}
                     {savedExpenses.has(expense.id) && (
-                      <div className="absolute top-2 left-2 z-10 bg-green-500 text-white rounded-full p-1.5 shadow-sm" title="נשמר">
+                      <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full p-1.5 shadow-md" title="נשמר">
                         <Save className="w-3.5 h-3.5" />
                       </div>
                     )}
+                    
                     <div
-                      className="p-4 cursor-pointer flex items-center justify-between hover:bg-muted/50"
+                      className="p-4 pt-5 cursor-pointer flex items-center justify-between hover:bg-muted/30 transition-colors"
                       onClick={() => setExpandedExpense(expandedExpense === expense.id ? null : expense.id)}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold">הוצאה #{expenses.length - index}</span>
-                        {expense.description && (
-                          <>
-                            <span className="text-muted-foreground">-</span>
-                            <span>{expense.description}</span>
-                          </>
-                        )}
+                        <div className={`w-10 h-10 rounded-xl ${categoryColor} flex items-center justify-center shadow-sm`}>
+                          <CategoryIcon className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-foreground">הוצאה #{expenses.length - index}</span>
+                          {expense.description && (
+                            <span className="text-sm text-muted-foreground">{expense.description}</span>
+                          )}
+                        </div>
                         {expense.amount > 0 && (
-                          <>
-                            <span className="text-muted-foreground">-</span>
-                            <span className="font-semibold">
-                              {expense.amount.toFixed(2)} {currencyLabels[expense.currency]}
-                            </span>
-                          </>
+                          <div className="mr-4 px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold">
+                            {expense.amount.toFixed(2)} {currencyLabels[expense.currency]?.split(' ')[0]}
+                          </div>
                         )}
                         {expense.approval_status && expense.approval_status !== 'pending' && (
-                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shadow-sm ${
                             expense.approval_status === 'approved' 
                               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -1329,6 +1346,7 @@ export default function NewReport() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeExpense(expense.id);
@@ -1677,7 +1695,8 @@ export default function NewReport() {
                       </div>
                     )}
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
