@@ -123,9 +123,9 @@ export default function MyTeam() {
       {/* Header */}
       <header className="bg-card border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
@@ -133,14 +133,16 @@ export default function MyTeam() {
                 <p className="text-sm text-muted-foreground">עובדים ודוחות הצוות</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => navigate('/manager/stats')}>
-                <BarChart3 className="w-4 h-4 ml-2" />
-                סטטיסטיקות
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => navigate('/manager/stats')}>
+                <BarChart3 className="w-4 h-4 ml-1" />
+                <span className="hidden sm:inline">סטטיסטיקות</span>
+                <span className="sm:hidden">סטט'</span>
               </Button>
-              <Button variant="outline" onClick={() => navigate('/')}>
-                חזרה לדשבורד
-                <ArrowRight className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+                <span className="hidden sm:inline">חזרה לדשבורד</span>
+                <span className="sm:hidden">חזרה</span>
+                <ArrowRight className="w-4 h-4 mr-1" />
               </Button>
             </div>
           </div>
