@@ -119,30 +119,47 @@ export default function MyTeam() {
   const stats = getReportStats();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 border-b border-blue-100 dark:border-blue-900/30 sticky top-0 z-10 relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1.5 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-500/10 to-transparent rounded-full blur-2xl" />
+        
+        <div className="container mx-auto px-4 py-5 relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 text-primary-foreground" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Users className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">הצוות שלי</h1>
-                <p className="text-sm text-muted-foreground">עובדים ודוחות הצוות</p>
+                <h1 className="text-2xl font-bold text-foreground">הצוות שלי</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">עובדים ודוחות הצוות</p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => navigate('/manager/stats')}>
-                <BarChart3 className="w-4 h-4 ml-1" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/manager/stats')}
+                className="h-10 px-4 border-2 border-blue-200 dark:border-blue-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all"
+              >
+                <BarChart3 className="w-4 h-4 ml-1.5 text-blue-600" />
                 <span className="hidden sm:inline">סטטיסטיקות</span>
                 <span className="sm:hidden">סטט'</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+              >
                 <span className="hidden sm:inline">חזרה לדשבורד</span>
                 <span className="sm:hidden">חזרה</span>
-                <ArrowRight className="w-4 h-4 mr-1" />
+                <ArrowRight className="w-4 h-4 mr-1.5" />
               </Button>
             </div>
           </div>
@@ -152,57 +169,61 @@ export default function MyTeam() {
       <main className="container mx-auto px-4 py-8">
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-card overflow-hidden relative group hover:shadow-xl transition-all duration-300">
+            <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
+            <CardContent className="pt-5 pb-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">עובדים בצוות</p>
-                  <p className="text-3xl font-bold text-blue-600">{teamMembers.length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">עובדים בצוות</p>
+                  <p className="text-3xl font-black text-blue-600 mt-1">{teamMembers.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="w-7 h-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-card overflow-hidden relative group hover:shadow-xl transition-all duration-300">
+            <div className="h-1 bg-gradient-to-r from-purple-400 to-purple-600" />
+            <CardContent className="pt-5 pb-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">סה"כ דוחות</p>
-                  <p className="text-3xl font-bold text-purple-600">{stats.total}</p>
+                  <p className="text-sm font-medium text-muted-foreground">סה"כ דוחות</p>
+                  <p className="text-3xl font-black text-purple-600 mt-1">{stats.total}</p>
                 </div>
-                <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-purple-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <FileText className="w-7 h-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-card overflow-hidden relative group hover:shadow-xl transition-all duration-300">
+            <div className="h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
+            <CardContent className="pt-5 pb-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">ממתינים לאישור</p>
-                  <p className="text-3xl font-bold text-orange-600">{stats.pending}</p>
+                  <p className="text-sm font-medium text-muted-foreground">ממתינים לאישור</p>
+                  <p className="text-3xl font-black text-amber-600 mt-1">{stats.pending}</p>
                 </div>
-                <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">⏳</span>
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Loader2 className="w-7 h-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-card overflow-hidden relative group hover:shadow-xl transition-all duration-300">
+            <div className="h-1 bg-gradient-to-r from-emerald-400 to-green-500" />
+            <CardContent className="pt-5 pb-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">דוחות מאושרים</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
+                  <p className="text-sm font-medium text-muted-foreground">דוחות מאושרים</p>
+                  <p className="text-3xl font-black text-emerald-600 mt-1">{stats.approved}</p>
                 </div>
-                <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">✓</span>
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <span className="text-2xl text-white">✓</span>
                 </div>
               </div>
             </CardContent>
