@@ -237,14 +237,18 @@ export default function MyTeam() {
           </TabsList>
 
           <TabsContent value="members">
-            <Card>
-              <CardHeader>
-                <CardTitle>עובדי הצוות</CardTitle>
-                <CardDescription>
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-card/80 backdrop-blur-sm overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-blue-400 via-primary to-indigo-500" />
+              <CardHeader className="bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/20 border-b border-blue-100/50 dark:border-blue-900/30">
+                <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  עובדי הצוות
+                </CardTitle>
+                <CardDescription className="text-primary/80">
                   רשימת העובדים שאתה מנהל הישיר שלהם
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {teamMembers.length === 0 ? (
                   <div className="text-center py-12">
                     <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
@@ -257,20 +261,31 @@ export default function MyTeam() {
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>שם מלא</TableHead>
-                          <TableHead>אימייל</TableHead>
-                          <TableHead>מס' עובד</TableHead>
-                          <TableHead>מחלקה</TableHead>
+                        <TableRow className="bg-gradient-to-r from-slate-50 to-blue-50/50 dark:from-slate-900 dark:to-blue-950/30 border-b border-blue-100 dark:border-blue-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
+                          <TableHead className="text-primary font-bold">שם מלא</TableHead>
+                          <TableHead className="text-primary font-bold">אימייל</TableHead>
+                          <TableHead className="text-primary font-bold">מס' עובד</TableHead>
+                          <TableHead className="text-primary font-bold">מחלקה</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {teamMembers.map((member) => (
-                          <TableRow key={member.id}>
-                            <TableCell className="font-medium">{member.full_name}</TableCell>
-                            <TableCell>{member.username}</TableCell>
-                            <TableCell>{member.employee_id || '-'}</TableCell>
-                            <TableCell>{member.department}</TableCell>
+                        {teamMembers.map((member, index) => (
+                          <TableRow 
+                            key={member.id}
+                            className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                          >
+                            <TableCell className="font-semibold text-foreground">{member.full_name}</TableCell>
+                            <TableCell className="text-muted-foreground">{member.username}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                                {member.employee_id || '-'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                {member.department}
+                              </Badge>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -282,14 +297,18 @@ export default function MyTeam() {
           </TabsContent>
 
           <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>דוחות הצוות</CardTitle>
-                <CardDescription>
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-card/80 backdrop-blur-sm overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-purple-400 via-primary to-indigo-500" />
+              <CardHeader className="bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-950/20 border-b border-purple-100/50 dark:border-purple-900/30">
+                <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-600" />
+                  דוחות הצוות
+                </CardTitle>
+                <CardDescription className="text-primary/80">
                   כל הדוחות שהוגשו על ידי עובדי הצוות שלך
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {teamReports.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
@@ -302,31 +321,34 @@ export default function MyTeam() {
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>עובד</TableHead>
-                          <TableHead>יעד</TableHead>
-                          <TableHead>תאריכי נסיעה</TableHead>
-                          <TableHead>סטטוס</TableHead>
-                          <TableHead>סכום</TableHead>
-                          <TableHead>פעולות</TableHead>
+                        <TableRow className="bg-gradient-to-r from-slate-50 to-purple-50/50 dark:from-slate-900 dark:to-purple-950/30 border-b border-purple-100 dark:border-purple-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
+                          <TableHead className="text-primary font-bold">עובד</TableHead>
+                          <TableHead className="text-primary font-bold">יעד</TableHead>
+                          <TableHead className="text-primary font-bold">תאריכי נסיעה</TableHead>
+                          <TableHead className="text-primary font-bold">סטטוס</TableHead>
+                          <TableHead className="text-primary font-bold">סכום</TableHead>
+                          <TableHead className="text-primary font-bold">פעולות</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {teamReports.map((report) => (
-                          <TableRow key={report.id}>
+                        {teamReports.map((report, index) => (
+                          <TableRow 
+                            key={report.id}
+                            className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-purple-50/50 dark:hover:bg-purple-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                          >
                             <TableCell>
                               <div>
-                                <div className="font-medium">{report.profiles.full_name}</div>
+                                <div className="font-semibold text-foreground">{report.profiles.full_name}</div>
                                 {report.profiles.employee_id && (
-                                  <div className="text-sm text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground">
                                     מס' {report.profiles.employee_id}
                                   </div>
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium">{report.trip_destination}</TableCell>
+                            <TableCell className="font-medium text-foreground">{report.trip_destination}</TableCell>
                             <TableCell>
-                              <div className="text-sm">
+                              <div className="text-sm text-muted-foreground">
                                 {new Date(report.trip_start_date).toLocaleDateString('he-IL')}
                                 {' - '}
                                 {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
@@ -334,7 +356,7 @@ export default function MyTeam() {
                             </TableCell>
                             <TableCell>{getStatusBadge(report.status)}</TableCell>
                             <TableCell>
-                              <Badge variant="secondary" className="font-semibold">
+                              <Badge variant="secondary" className="font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
                                 ₪{(report.total_amount_ils || 0).toLocaleString()}
                               </Badge>
                             </TableCell>
@@ -343,6 +365,7 @@ export default function MyTeam() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => navigate(`/reports/${report.id}`)}
+                                className="hover:bg-primary/10 hover:text-primary"
                               >
                                 <Eye className="w-4 h-4 ml-1" />
                                 צפייה
