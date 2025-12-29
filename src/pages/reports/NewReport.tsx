@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -213,6 +213,7 @@ export default function NewReport() {
   // Trip details
   const [tripDestination, setTripDestination] = useState('');
   const [dailyAllowance, setDailyAllowance] = useState(100);
+  const [includeDailyAllowance, setIncludeDailyAllowance] = useState<boolean | null>(null);
   const [tripStartDate, setTripStartDate] = useState('');
   const [tripEndDate, setTripEndDate] = useState('');
   const [tripPurpose, setTripPurpose] = useState('');
@@ -315,6 +316,10 @@ export default function NewReport() {
       setTripEndDate(report.trip_end_date);
       setTripPurpose(report.trip_purpose);
       setReportNotes(report.notes || '');
+      // Set daily allowance decision based on existing data
+      if (report.daily_allowance !== null && report.daily_allowance !== undefined) {
+        setIncludeDailyAllowance(report.daily_allowance > 0);
+      }
       setDailyAllowance(report.daily_allowance || 100);
 
       // Load expenses
@@ -750,6 +755,21 @@ export default function NewReport() {
       return;
     }
 
+    // Validate daily allowance decision
+    if (closeReport && includeDailyAllowance === null) {
+      toast({
+        title: '⚠️ נדרשת החלטה לגבי אש״ל',
+        description: 'יש לבחור האם להוסיף את האש״ל לדוח או לא',
+        variant: 'destructive',
+      });
+      // Scroll to daily allowance section
+      const dailyAllowanceSection = document.getElementById('daily-allowance-section');
+      if (dailyAllowanceSection) {
+        dailyAllowanceSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
     // Validate expenses have all required fields
     // Helper function to trigger shake animation
     const triggerShake = (expenseId: string, fields: string[]) => {
@@ -873,7 +893,7 @@ export default function NewReport() {
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
             notes: reportNotes,
-            daily_allowance: dailyAllowance,
+            daily_allowance: includeDailyAllowance ? dailyAllowance : null,
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed' || newStatus === 'pending_approval') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -902,7 +922,7 @@ export default function NewReport() {
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
             notes: reportNotes,
-            daily_allowance: dailyAllowance,
+            daily_allowance: includeDailyAllowance ? dailyAllowance : null,
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed' || newStatus === 'pending_approval') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -1185,29 +1205,107 @@ export default function NewReport() {
               />
               <p className="text-xs text-muted-foreground mt-1">הזן את שם המדינה בלבד</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dailyAllowance">אש״ל ליום (USD) *</Label>
-                <Input
-                  id="dailyAllowance"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="100"
-                  value={dailyAllowance}
-                  onChange={(e) => setDailyAllowance(Number(e.target.value))}
-                />
-                <p className="text-xs text-muted-foreground mt-1">מחושב אוטומטית לפי מדינה, ניתן לעריכה</p>
-              </div>
-              <div>
-                <Label>סה״כ אש״ל לנסיעה</Label>
-                <div className="h-10 px-3 py-2 rounded-md border bg-muted flex items-center">
-                  <span className="font-semibold">
-                    ${dailyAllowance * calculateTripDuration()} ({calculateTripDuration()} ימים × ${dailyAllowance})
-                  </span>
+            {/* Daily Allowance Section */}
+            <Card id="daily-allowance-section" className="border-2 border-primary/20 shadow-md overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
+              <CardHeader className="pb-3 pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <CardTitle className="text-lg font-bold">אש״ל יומי</CardTitle>
+                  </div>
+                  {includeDailyAllowance === null && (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                      נדרשת החלטה
+                    </span>
+                  )}
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pb-4">
+                {/* Option 1: Include daily allowance */}
+                <div
+                  onClick={() => setIncludeDailyAllowance(true)}
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    includeDailyAllowance === true
+                      ? 'border-primary bg-primary/5 shadow-md'
+                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                      includeDailyAllowance === true
+                        ? 'border-primary bg-primary'
+                        : 'border-muted-foreground'
+                    }`}>
+                      {includeDailyAllowance === true && (
+                        <Check className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-semibold text-foreground">הוסף אש״ל יומי לדוח</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-muted/80 rounded-lg px-3 py-1.5 border">
+                      <span className="text-xs text-muted-foreground">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={dailyAllowance}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setDailyAllowance(Number(e.target.value));
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-16 h-7 text-center border-0 bg-transparent p-0 font-bold"
+                      />
+                      <span className="text-xs text-muted-foreground">ליום</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 2: Don't include */}
+                <div
+                  onClick={() => setIncludeDailyAllowance(false)}
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    includeDailyAllowance === false
+                      ? 'border-muted-foreground bg-muted/50'
+                      : 'border-border hover:border-muted-foreground/50 hover:bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                      includeDailyAllowance === false
+                        ? 'border-muted-foreground bg-muted-foreground'
+                        : 'border-muted-foreground'
+                    }`}>
+                      {includeDailyAllowance === false && (
+                        <Check className="w-4 h-4 text-white" />
+                      )}
+                    </div>
+                    <span className="font-medium text-muted-foreground">לא נדרש אש״ל יומי לדוח זה</span>
+                  </div>
+                </div>
+
+                {/* Total calculation - show only when including */}
+                {includeDailyAllowance === true && calculateTripDuration() > 0 && (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between">
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">סה״כ אש״ל לתקופה ({calculateTripDuration()} ימים)</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-primary" />
+                        <span className="text-2xl font-bold text-primary">
+                          {(dailyAllowance * calculateTripDuration()).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="startDate">תאריך התחלה *</Label>
