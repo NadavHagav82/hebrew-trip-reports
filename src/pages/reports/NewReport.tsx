@@ -1292,27 +1292,33 @@ export default function NewReport() {
                             )}
                           </div>
                           <div className="space-y-3 mt-2">
-                            <div className="flex gap-4 justify-center">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-16 w-16 border-primary/30 hover:border-primary hover:bg-primary/10"
-                                onClick={() => openCameraDialog(expense.id)}
-                                title="צלם קבלה"
-                              >
-                                <Camera className="w-7 h-7 text-primary" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-16 w-16 border-primary/30 hover:border-primary hover:bg-primary/10"
-                                onClick={() => openFileDialog(expense.id)}
-                                title="העלה מהמכשיר"
-                              >
-                                <Upload className="w-7 h-7 text-primary" />
-                              </Button>
+                            <div className="flex gap-6 justify-center">
+                              <div className="flex flex-col items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-16 w-16 border-primary/30 hover:border-primary hover:bg-primary/10"
+                                  onClick={() => openCameraDialog(expense.id)}
+                                  title="צלם קבלה"
+                                >
+                                  <Camera className="w-7 h-7 text-primary" />
+                                </Button>
+                                <span className="text-xs text-muted-foreground">צלם קבלה</span>
+                              </div>
+                              <div className="flex flex-col items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-16 w-16 border-primary/30 hover:border-primary hover:bg-primary/10"
+                                  onClick={() => openFileDialog(expense.id)}
+                                  title="העלה קובץ"
+                                >
+                                  <Upload className="w-7 h-7 text-primary" />
+                                </Button>
+                                <span className="text-xs text-muted-foreground">העלה קובץ</span>
+                              </div>
                             </div>
 
                             {expense.receipts.length > 0 && (
