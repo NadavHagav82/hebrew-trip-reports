@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt, Calculator } from 'lucide-react';
+import { DuplicateExpenseDetector } from '@/components/DuplicateExpenseDetector';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
@@ -1329,6 +1330,11 @@ const ViewReport = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Duplicate Expense Detector */}
+          {expenses.length > 1 && (
+            <DuplicateExpenseDetector expenses={expenses} />
+          )}
 
           {/* Expenses List */}
           <Card className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
