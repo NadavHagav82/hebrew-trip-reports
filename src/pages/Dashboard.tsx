@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2 } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -881,15 +881,15 @@ export default function Dashboard() {
 
       {/* Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col">
-          <DialogHeader className="border-b pb-4 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50 to-blue-50/30 border-0 shadow-xl">
+          <DialogHeader className="border-b border-blue-100/50 pb-4 flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                <User className="w-7 h-7 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-xl">עריכת פרופיל</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-bold text-foreground">עריכת פרופיל</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
                   {profile?.full_name || user?.email}
                 </DialogDescription>
               </div>
@@ -897,78 +897,86 @@ export default function Dashboard() {
           </DialogHeader>
 
           <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-2 mb-4 flex-shrink-0">
-              <TabsTrigger value="profile">
+            <TabsList className="grid w-full grid-cols-2 mb-4 flex-shrink-0 bg-white/60 border border-blue-100/50 rounded-xl p-1 shadow-sm">
+              <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                 <User className="w-4 h-4 ml-2" />
                 פרטים אישיים
               </TabsTrigger>
-              <TabsTrigger value="security">
+              <TabsTrigger value="security" className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                 🔐 אבטחה
               </TabsTrigger>
             </TabsList>
             
             <div className="overflow-y-auto flex-1 min-h-0 custom-scrollbar">
               <TabsContent value="profile" className="space-y-4 mt-0 pr-2">
-                <Card>
+                <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border border-slate-200/50 shadow-sm rounded-2xl overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-slate-400 to-gray-500" />
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <span>📋</span>
+                    <CardTitle className="text-base flex items-center gap-2 text-slate-700">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center shadow-sm">
+                        <FileText className="w-4 h-4 text-white" />
+                      </div>
                       פרטי המשתמש
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username" className="text-sm">שם משתמש</Label>
+                      <Label htmlFor="username" className="text-sm font-medium text-slate-600">שם משתמש</Label>
                       <Input 
                         id="username" 
                         value={profile?.username || ''} 
                         disabled 
-                        className="bg-muted"
+                        className="bg-white/70 border-slate-200 rounded-xl"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="employee_id" className="text-sm">מספר עובד</Label>
+                      <Label htmlFor="employee_id" className="text-sm font-medium text-slate-600">מספר עובד</Label>
                       <Input 
                         id="employee_id" 
                         value={profile?.employee_id || ''} 
                         disabled 
-                        className="bg-muted"
+                        className="bg-white/70 border-slate-200 rounded-xl"
                       />
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-primary/50">
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50 shadow-sm rounded-2xl overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-600" />
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2 text-primary">
-                      <Edit className="w-4 h-4" />
+                    <CardTitle className="text-base flex items-center gap-2 text-blue-700">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                        <Edit className="w-4 h-4 text-white" />
+                      </div>
                       ניתן לעריכה
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="full_name" className="text-sm">שם מלא *</Label>
+                      <Label htmlFor="full_name" className="text-sm font-medium text-slate-600">שם מלא *</Label>
                       <Input 
                         id="full_name" 
                         value={editedProfile.full_name}
                         onChange={(e) => setEditedProfile({ ...editedProfile, full_name: e.target.value })}
                         placeholder="הזן שם מלא"
+                        className="bg-white/70 border-blue-200 rounded-xl focus:border-blue-400 focus:ring-blue-400"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="department" className="text-sm">מחלקה / חברה *</Label>
+                      <Label htmlFor="department" className="text-sm font-medium text-slate-600">מחלקה / חברה *</Label>
                       <Input 
                         id="department" 
                         value={editedProfile.department}
                         onChange={(e) => setEditedProfile({ ...editedProfile, department: e.target.value })}
                         placeholder="הזן שם מחלקה או חברה"
+                        className="bg-white/70 border-blue-200 rounded-xl focus:border-blue-400 focus:ring-blue-400"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="accounting_manager_email" className="text-sm">
+                      <Label htmlFor="accounting_manager_email" className="text-sm font-medium text-slate-600">
                         מייל הנהלת חשבונות
                         <span className="text-xs text-muted-foreground mr-1">(אופציונלי)</span>
                       </Label>
@@ -979,6 +987,7 @@ export default function Dashboard() {
                         onChange={(e) => setEditedProfile({ ...editedProfile, accounting_manager_email: e.target.value })}
                         placeholder="accounting@company.com"
                         dir="ltr"
+                        className="bg-white/70 border-blue-200 rounded-xl focus:border-blue-400 focus:ring-blue-400"
                       />
                       <p className="text-xs text-muted-foreground">
                         דוחות מאושרים יישלחו אוטומטית לכתובת זו. עדכונים על דוחות יישלחו למייל הרישום שלך.
@@ -987,7 +996,7 @@ export default function Dashboard() {
 
                     {!profile?.is_manager && managers.length > 0 && (
                       <div className="space-y-2">
-                        <Label htmlFor="manager_id" className="text-sm">
+                        <Label htmlFor="manager_id" className="text-sm font-medium text-slate-600">
                           מנהל ישיר
                           <span className="text-xs text-muted-foreground mr-1">(נדרש לעובדים)</span>
                         </Label>
@@ -995,7 +1004,7 @@ export default function Dashboard() {
                           value={editedProfile.manager_id} 
                           onValueChange={(value) => setEditedProfile({ ...editedProfile, manager_id: value })}
                         >
-                          <SelectTrigger className="bg-background">
+                          <SelectTrigger className="bg-white/70 border-blue-200 rounded-xl">
                             <SelectValue placeholder="בחר מנהל מהרשימה" />
                           </SelectTrigger>
                           <SelectContent className="bg-background z-50 max-h-[200px]">
@@ -1019,57 +1028,67 @@ export default function Dashboard() {
                     variant="outline" 
                     onClick={() => setShowProfileDialog(false)}
                     disabled={savingProfile}
-                    className="flex-1"
+                    className="flex-1 rounded-xl border-slate-300 hover:bg-slate-100"
                   >
                     ביטול
                   </Button>
                   <Button 
                     onClick={handleSaveProfile}
                     disabled={savingProfile || !editedProfile.full_name || !editedProfile.department}
-                    className="flex-1"
+                    className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md"
                   >
                     {savingProfile ? 'שומר...' : 'שמור שינויים'}
                   </Button>
                 </div>
               </TabsContent>
 
-              <TabsContent value="security" className="space-y-4 mt-0">
-                <Card>
+              <TabsContent value="security" className="space-y-4 mt-0 pr-2">
+                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/50 shadow-sm rounded-2xl overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-600" />
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      🔑 אימות נדרש
+                    <CardTitle className="text-base flex items-center gap-2 text-amber-700">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
+                        <Key className="w-4 h-4 text-white" />
+                      </div>
+                      אימות נדרש
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
-                      <Label htmlFor="current_password" className="text-sm">סיסמה נוכחית *</Label>
+                      <Label htmlFor="current_password" className="text-sm font-medium text-slate-600">סיסמה נוכחית *</Label>
                       <Input 
                         id="current_password" 
                         type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="הזן סיסמה נוכחית"
+                        className="bg-white/70 border-amber-200 rounded-xl focus:border-amber-400 focus:ring-amber-400"
                       />
                       <p className="text-xs text-muted-foreground">נדרשת לאימות שינויים</p>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200/50 shadow-sm rounded-2xl overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-purple-500 to-pink-600" />
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      📧 שינוי אימייל
+                    <CardTitle className="text-base flex items-center gap-2 text-purple-700">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-sm">
+                        <Mail className="w-4 h-4 text-white" />
+                      </div>
+                      שינוי אימייל
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
-                      <Label htmlFor="new_email" className="text-sm">אימייל חדש</Label>
+                      <Label htmlFor="new_email" className="text-sm font-medium text-slate-600">אימייל חדש</Label>
                       <Input 
                         id="new_email" 
                         type="email"
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
                         placeholder={user?.email || "הזן כתובת אימייל חדשה"}
+                        className="bg-white/70 border-purple-200 rounded-xl focus:border-purple-400 focus:ring-purple-400"
                       />
                       <p className="text-xs text-muted-foreground">
                         האימייל הנוכחי: {user?.email}
@@ -1080,8 +1099,7 @@ export default function Dashboard() {
                       <Button 
                         onClick={handleChangeEmail}
                         disabled={savingProfile}
-                        className="w-full"
-                        variant="secondary"
+                        className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-md"
                       >
                         {savingProfile ? 'שולח אימות...' : 'שנה אימייל'}
                       </Button>
@@ -1089,33 +1107,39 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50 shadow-sm rounded-2xl overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-600" />
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      🔒 שינוי סיסמה
+                    <CardTitle className="text-base flex items-center gap-2 text-green-700">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-sm">
+                        <LockKeyhole className="w-4 h-4 text-white" />
+                      </div>
+                      שינוי סיסמה
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
-                      <Label htmlFor="new_password" className="text-sm">סיסמה חדשה</Label>
+                      <Label htmlFor="new_password" className="text-sm font-medium text-slate-600">סיסמה חדשה</Label>
                       <Input 
                         id="new_password" 
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="לפחות 8 תווים"
+                        className="bg-white/70 border-green-200 rounded-xl focus:border-green-400 focus:ring-green-400"
                       />
                       <PasswordStrengthIndicator password={newPassword} />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirm_password" className="text-sm">אישור סיסמה</Label>
+                      <Label htmlFor="confirm_password" className="text-sm font-medium text-slate-600">אישור סיסמה</Label>
                       <Input 
                         id="confirm_password" 
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="הזן שוב את הסיסמה החדשה"
+                        className="bg-white/70 border-green-200 rounded-xl focus:border-green-400 focus:ring-green-400"
                       />
                       {confirmPassword && newPassword !== confirmPassword && (
                         <p className="text-xs text-destructive">
@@ -1133,8 +1157,7 @@ export default function Dashboard() {
                       <Button 
                         onClick={handleChangePassword}
                         disabled={savingProfile}
-                        className="w-full"
-                        variant="secondary"
+                        className="w-full rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md"
                       >
                         {savingProfile ? 'מעדכן סיסמה...' : 'עדכן סיסמה'}
                       </Button>
