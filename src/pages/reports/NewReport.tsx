@@ -260,6 +260,7 @@ export default function NewReport() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [currentExpenseForUpload, setCurrentExpenseForUpload] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [shakingFields, setShakingFields] = useState<{[expenseId: string]: string[]}>({});
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -686,53 +687,49 @@ export default function NewReport() {
     }
 
     // Validate expenses have all required fields
+    // Helper function to trigger shake animation
+    const triggerShake = (expenseId: string, fields: string[]) => {
+      setShakingFields(prev => ({ ...prev, [expenseId]: fields }));
+      setTimeout(() => {
+        setShakingFields(prev => {
+          const newState = { ...prev };
+          delete newState[expenseId];
+          return newState;
+        });
+      }, 500);
+    };
+
     if (expenses.length > 0) {
       console.log('Validating expenses', expenses);
       for (let i = 0; i < expenses.length; i++) {
         const expense = expenses[i];
         const expenseNum = expenses.length - i;
         
-        if (!expense.expense_date) {
-          console.log('Missing expense_date', expense);
-          toast({
-            title: '⚠️ שגיאה',
-            description: `הוצאה #${expenseNum}: יש למלא תאריך`,
-            variant: 'destructive',
-          });
-          setExpandedExpense(expense.id);
-          return;
-        }
+        // Collect all missing fields for this expense
+        const missingFields: string[] = [];
+        if (!expense.expense_date) missingFields.push('date');
+        if (!expense.description || expense.description.trim() === '') missingFields.push('description');
+        if (!expense.amount || expense.amount <= 0) missingFields.push('amount');
+        if (!expense.payment_method) missingFields.push('payment_method');
         
-        if (!expense.description || expense.description.trim() === '') {
-          console.log('Missing description', expense);
+        if (missingFields.length > 0) {
+          console.log('Missing fields', missingFields, expense);
+          setExpandedExpense(expense.id);
+          triggerShake(expense.id, missingFields);
+          
+          const fieldNames: Record<string, string> = {
+            date: 'תאריך',
+            description: 'תיאור',
+            amount: 'סכום',
+            payment_method: 'אמצעי תשלום'
+          };
+          
+          const missingFieldNames = missingFields.map(f => fieldNames[f]).join(', ');
           toast({
-            title: '⚠️ שגיאה',
-            description: `הוצאה #${expenseNum}: יש למלא תיאור`,
+            title: '⚠️ שדות חובה חסרים',
+            description: `הוצאה #${expenseNum}: ${missingFieldNames}`,
             variant: 'destructive',
           });
-          setExpandedExpense(expense.id);
-          return;
-        }
-        
-        if (!expense.amount || expense.amount <= 0) {
-          console.log('Invalid amount', expense);
-          toast({
-            title: '⚠️ שגיאה',
-            description: `הוצאה #${expenseNum}: יש למלא סכום תקין`,
-            variant: 'destructive',
-          });
-          setExpandedExpense(expense.id);
-          return;
-        }
-        
-        if (!expense.payment_method) {
-          console.log('Missing payment method', expense);
-          toast({
-            title: '⚠️ שגיאה',
-            description: `הוצאה #${expenseNum}: יש לבחור אמצעי תשלום`,
-            variant: 'destructive',
-          });
-          setExpandedExpense(expense.id);
           return;
         }
       }
@@ -1367,14 +1364,17 @@ export default function NewReport() {
                         <Separator />
 
                         {/* Expense Details - After Receipt Upload */}
-                        <div>
-                          <Label>תאריך *</Label>
+                        <div className={shakingFields[expense.id]?.includes('date') ? 'animate-shake' : ''}>
+                          <Label className={!expense.expense_date ? 'text-orange-600 dark:text-orange-400' : ''}>
+                            תאריך * {!expense.expense_date && <span className="text-xs font-normal">(חובה)</span>}
+                          </Label>
                           <Input
                             type="date"
                             value={expense.expense_date}
                             onChange={(e) => updateExpense(expense.id, 'expense_date', e.target.value)}
                             min={tripStartDate}
                             max={tripEndDate}
+                            className={!expense.expense_date ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20' : ''}
                           />
                         </div>
 
@@ -1424,7 +1424,7 @@ export default function NewReport() {
                           !expense.payment_method 
                             ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' 
                             : 'border-muted bg-muted/30'
-                        }`}>
+                        } ${shakingFields[expense.id]?.includes('payment_method') ? 'animate-shake' : ''}`}>
                           <Label className="text-base font-semibold mb-3 block">
                             אמצעי תשלום * <span className="text-sm font-normal text-muted-foreground">(חובה לבחור)</span>
                           </Label>
@@ -1458,7 +1458,7 @@ export default function NewReport() {
                           </div>
                         </div>
 
-                        <div>
+                        <div className={shakingFields[expense.id]?.includes('description') ? 'animate-shake' : ''}>
                           <Label className={!expense.description.trim() ? 'text-orange-600 dark:text-orange-400' : ''}>
                             תיאור * {!expense.description.trim() && <span className="text-xs font-normal">(חובה)</span>}
                           </Label>
@@ -1481,7 +1481,7 @@ export default function NewReport() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
+                          <div className={shakingFields[expense.id]?.includes('amount') ? 'animate-shake' : ''}>
                             <Label className={!expense.amount ? 'text-orange-600 dark:text-orange-400' : ''}>
                               סכום * {!expense.amount && <span className="text-xs font-normal">(חובה)</span>}
                             </Label>
@@ -1491,7 +1491,8 @@ export default function NewReport() {
                               min="0"
                               value={expense.amount || ''}
                               onChange={(e) => updateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0)}
-                              className={!expense.amount ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20' : ''}/>
+                              className={!expense.amount ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20' : ''}
+                            />
                           </div>
                           <div>
                             <Label>מטבע *</Label>
