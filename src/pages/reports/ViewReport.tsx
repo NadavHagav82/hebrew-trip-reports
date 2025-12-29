@@ -1075,21 +1075,21 @@ const ViewReport = () => {
         </div>
 
         {/* Header */}
-        <header className="bg-card/80 backdrop-blur-md border-b border-border/50 shadow-sm sticky top-0 z-10 no-print">
-          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg sticky top-0 z-10 no-print">
+          <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-5">
             {/* Mobile Layout */}
             <div className="flex md:hidden flex-col gap-3">
-              <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => navigate('/')}
-                    className="hover:bg-primary/10 rounded-xl"
+                    className="hover:bg-white/20 text-white rounded-xl"
                   >
                     <ArrowRight className="w-4 h-4" />
                   </Button>
-                  <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                  <h1 className="text-lg font-bold text-white">
                     צפייה בדוח
                   </h1>
                 </div>
@@ -1103,7 +1103,7 @@ const ViewReport = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate(`/reports/edit/${report.id}`)}
-                      className="whitespace-nowrap shadow-sm hover:shadow-md transition-all rounded-xl border-border/50"
+                      className="whitespace-nowrap bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all rounded-xl"
                     >
                       <Edit className="w-4 h-4 ml-1" />
                       עריכה
@@ -1142,18 +1142,16 @@ const ViewReport = () => {
                 <Button 
                   onClick={printPDF}
                   size="sm"
-                  variant="outline"
-                  className="whitespace-nowrap shadow-sm hover:shadow-md transition-all rounded-xl border-border/50"
+                  className="whitespace-nowrap bg-white/10 border border-white/30 text-white hover:bg-white/20 transition-all rounded-xl"
                 >
                   <Printer className="w-4 h-4 ml-1" />
                   ייצא PDF
                 </Button>
                 {report.status === 'closed' && (
                   <Button 
-                    variant="outline" 
                     size="sm" 
                     onClick={() => setShowEmailDialog(true)}
-                    className="whitespace-nowrap rounded-xl border-border/50"
+                    className="whitespace-nowrap bg-white/10 border border-white/30 text-white hover:bg-white/20 rounded-xl"
                   >
                     <Mail className="w-4 h-4 ml-1" />
                     שלח במייל
@@ -1169,12 +1167,12 @@ const ViewReport = () => {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => navigate('/')}
-                  className="hover:bg-primary/10 rounded-xl"
+                  className="hover:bg-white/20 text-white rounded-xl"
                 >
                   <ArrowRight className="w-4 h-4 ml-2" />
                   חזרה
                 </Button>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-white">
                   צפייה בדוח
                 </h1>
               </div>
@@ -1184,7 +1182,7 @@ const ViewReport = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => navigate(`/reports/edit/${report.id}`)}
-                      className="shadow-sm hover:shadow-md transition-all rounded-xl border-border/50"
+                      className="bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all rounded-xl"
                     >
                       <Edit className="w-4 h-4 ml-2" />
                       עריכה
@@ -1219,7 +1217,7 @@ const ViewReport = () => {
                 )}
                 <Button 
                   onClick={printPDF}
-                  className="shadow-md hover:shadow-lg transition-all rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500"
+                  className="shadow-md hover:shadow-lg transition-all rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/20"
                 >
                   <Printer className="w-4 h-4 ml-2" />
                   ייצא PDF
@@ -1227,7 +1225,7 @@ const ViewReport = () => {
                 {report.status === 'closed' && (
                   <Button 
                     onClick={() => setShowEmailDialog(true)}
-                    className="rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400"
+                    className="rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/20"
                   >
                     <Mail className="w-4 h-4 ml-2" />
                     שלח במייל
