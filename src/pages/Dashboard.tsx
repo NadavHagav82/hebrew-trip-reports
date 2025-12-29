@@ -413,41 +413,52 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-blue-50/30 dark:from-slate-950 dark:via-background dark:to-blue-950/20">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl" />
+      </div>
+
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={() => setShowProfileDialog(true)}
-                className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 via-primary to-indigo-600 rounded-full flex items-center justify-center hover:from-blue-400 hover:via-primary/90 hover:to-indigo-500 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg"
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 via-primary to-indigo-600 rounded-xl flex items-center justify-center hover:from-blue-400 hover:via-primary/90 hover:to-indigo-500 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer shadow-lg shadow-primary/25 hover:shadow-primary/40"
                 title="פרופיל"
               >
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </button>
-              <h1 className="hidden sm:block text-base sm:text-lg font-rubik font-semibold">{profile?.full_name || 'דוחות נסיעה'}</h1>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-rubik font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                  {profile?.full_name || 'דוחות נסיעה'}
+                </h1>
+                <p className="text-xs text-muted-foreground">{profile?.department}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {isAccountingManager && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={() => navigate('/accounting')}
-                  className="h-8 w-8 sm:h-9 sm:w-9 bg-blue-500/10 hover:bg-blue-500/20"
+                  className="h-9 w-9 sm:h-10 sm:w-10 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl"
                   title="דשבורד הנהלת חשבונות"
                 >
-                  <Calculator className="w-4 h-4 text-blue-600" />
+                  <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </Button>
               )}
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate('/analytics')}
-                className="h-8 w-8 sm:h-9 sm:w-9 bg-purple-500/10 hover:bg-purple-500/20"
+                className="h-9 w-9 sm:h-10 sm:w-10 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl"
                 title="אנליטיקה"
               >
-                <BarChart3 className="w-4 h-4 text-purple-600" />
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </Button>
               {isManager && (
                 <>
@@ -455,28 +466,28 @@ export default function Dashboard() {
                     variant="ghost" 
                     size="icon" 
                     onClick={() => navigate('/manager/dashboard')}
-                    className="h-8 w-8 sm:h-9 sm:w-9 bg-orange-500/10 hover:bg-orange-500/20"
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl"
                     title="דשבורד מנהלים"
                   >
-                    <Shield className="w-4 h-4 text-orange-600" />
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     onClick={() => navigate('/manager/team')}
-                    className="h-8 w-8 sm:h-9 sm:w-9 bg-green-500/10 hover:bg-green-500/20"
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-green-500/10 hover:bg-green-500/20 rounded-xl"
                     title="הצוות שלי"
                   >
-                    <FileStack className="w-4 h-4 text-green-600" />
+                    <FileStack className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     onClick={() => navigate('/manager/stats')}
-                    className="h-8 w-8 sm:h-9 sm:w-9 bg-indigo-500/10 hover:bg-indigo-500/20"
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-xl hidden sm:flex"
                     title="סטטיסטיקות"
                   >
-                    <BarChart3 className="w-4 h-4 text-indigo-600" />
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
                   </Button>
                 </>
               )}
@@ -485,10 +496,10 @@ export default function Dashboard() {
                   variant="ghost" 
                   size="icon" 
                   onClick={() => navigate('/orgadmin')}
-                  className="h-8 w-8 sm:h-9 sm:w-9 bg-emerald-500/10 hover:bg-emerald-500/20"
+                  className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl"
                   title="ניהול ארגון"
                 >
-                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
                 </Button>
               )}
               {isAdmin && (
@@ -496,88 +507,100 @@ export default function Dashboard() {
                   variant="ghost" 
                   size="icon" 
                   onClick={() => navigate('/admin/roles')}
-                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl"
                   title="ניהול משתמשים"
                 >
-                  <Shield className="w-4 h-4" />
+                  <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               )}
-              <div className="bg-amber-500/10 hover:bg-amber-500/20 rounded-md">
+              <div className="bg-amber-500/10 hover:bg-amber-500/20 rounded-xl">
                 <NotificationBell />
               </div>
-              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 sm:h-9 gap-1 sm:gap-2">
-                <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="text-xs sm:text-sm">יציאה</span>
+              <Button variant="ghost" size="sm" onClick={signOut} className="h-9 sm:h-10 gap-1 sm:gap-2 rounded-xl hover:bg-destructive/10 hover:text-destructive">
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">יציאה</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 relative">
         {/* Create New Report Button */}
         <div className="mb-6">
           <Button 
             onClick={() => navigate('/reports/new')} 
             size="lg"
-            className="w-full h-16 text-lg font-bold shadow-lg hover:shadow-xl transition-all gap-3 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary hover:via-primary/90 hover:to-primary/80 relative overflow-hidden group"
+            className="w-full h-16 sm:h-20 text-lg font-bold shadow-xl hover:shadow-2xl transition-all gap-3 bg-gradient-to-r from-blue-500 via-primary to-indigo-600 hover:from-blue-400 hover:via-primary/90 hover:to-indigo-500 relative overflow-hidden group rounded-2xl"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center ring-2 ring-white/30 group-hover:scale-110 transition-transform relative z-10">
-              <Plus className="w-6 h-6" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center ring-2 ring-white/30 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300 relative z-10 backdrop-blur-sm">
+              <Plus className="w-7 h-7" />
             </div>
-            <span className="relative z-10">דוח נסיעה חדש</span>
+            <span className="relative z-10 text-xl">דוח נסיעה חדש</span>
           </Button>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-orange-300/50" onClick={() => setActiveTab('open')}>
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center gap-1">
-                <div className="w-8 h-8 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-lg">🟠</span>
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <Card 
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.03] border-0 bg-gradient-to-br from-orange-50 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/20 overflow-hidden group relative" 
+            onClick={() => setActiveTab('open')}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 sm:p-6 relative">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                  <FolderOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <p className="text-xs text-muted-foreground">פתוחים</p>
-                <p className="text-xl font-bold text-orange-600">{stats.open}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">פתוחים</p>
+                <p className="text-2xl sm:text-3xl font-bold text-orange-600">{stats.open}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-green-300/50" onClick={() => setActiveTab('closed')}>
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center gap-1">
-                <div className="w-8 h-8 bg-green-600/10 rounded-full flex items-center justify-center">
-                  <span className="text-lg">🟢</span>
+          <Card 
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.03] border-0 bg-gradient-to-br from-green-50 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/20 overflow-hidden group relative" 
+            onClick={() => setActiveTab('closed')}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 sm:p-6 relative">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                  <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <p className="text-xs text-muted-foreground">סגורים</p>
-                <p className="text-xl font-bold text-green-600">{stats.closed}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">סגורים</p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.closed}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] border hover:border-gray-300/50" onClick={() => setActiveTab('drafts')}>
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center gap-1">
-                <div className="w-8 h-8 bg-gray-500/10 rounded-full flex items-center justify-center">
-                  <span className="text-lg">🔘</span>
+          <Card 
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.03] border-0 bg-gradient-to-br from-slate-50 to-gray-50/50 dark:from-slate-950/30 dark:to-gray-950/20 overflow-hidden group relative" 
+            onClick={() => setActiveTab('drafts')}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 to-gray-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-4 sm:p-6 relative">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-slate-400 to-gray-500 rounded-xl flex items-center justify-center shadow-lg shadow-slate-500/30 group-hover:scale-110 transition-transform">
+                  <FilePen className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <p className="text-xs text-muted-foreground">טיוטות</p>
-                <p className="text-xl font-bold text-gray-600">{stats.draft}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">טיוטות</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-600">{stats.draft}</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Tabs and Filters */}
-        <Card className="shadow-lg">
+        <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm rounded-2xl overflow-hidden">
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full grid grid-cols-4 h-auto bg-muted/50 p-1 gap-1">
+                <TabsList className="w-full grid grid-cols-4 h-auto bg-muted/30 p-1.5 gap-1.5 rounded-xl">
                   <TabsTrigger 
                     value="all" 
-                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-indigo-600 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all flex items-center gap-1.5 justify-center rounded-lg"
                   >
                     <FileStack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>כל הדוחות</span>
@@ -587,7 +610,7 @@ export default function Dashboard() {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="open" 
-                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-open data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all flex items-center gap-1.5 justify-center rounded-lg"
                   >
                     <FolderOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>פתוחים</span>
@@ -597,7 +620,7 @@ export default function Dashboard() {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="closed" 
-                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-approved data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all flex items-center gap-1.5 justify-center rounded-lg"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>סגורים</span>
@@ -607,7 +630,7 @@ export default function Dashboard() {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="drafts" 
-                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-status-draft data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex items-center gap-1.5 justify-center rounded-md"
+                    className="text-xs sm:text-sm py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-gray-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all flex items-center gap-1.5 justify-center rounded-lg"
                   >
                     <FilePen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>טיוטות</span>
@@ -620,13 +643,13 @@ export default function Dashboard() {
             </div>
 
             {/* Search */}
-            <div className="mb-4 sm:mb-6 relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <div className="mb-4 sm:mb-6 relative group">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5 group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="חיפוש לפי יעד..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 h-12 sm:h-10 text-base"
+                className="pr-11 h-12 text-base bg-background/50 border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all"
               />
             </div>
 
