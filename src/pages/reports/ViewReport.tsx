@@ -1707,6 +1707,51 @@ const ViewReport = () => {
             </CardContent>
           </Card>
 
+          {/* Payment Method Summary */}
+          <Card className="shadow-xl border-t-4 border-t-purple-500 overflow-hidden">
+            <CardHeader className="pb-4 bg-gradient-to-br from-purple-600 to-violet-700 text-white">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <div className="w-1 h-6 bg-white rounded-full"></div>
+                סיכום לפי סוג תשלום
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 bg-gradient-to-br from-purple-50 to-violet-50">
+              <div className="space-y-4">
+                {/* Company Card Total */}
+                <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <span className="font-semibold text-gray-700 flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600 shadow-sm">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    כרטיס חברה
+                  </span>
+                  <span className="font-bold text-lg text-gray-900">
+                    ₪{expenses
+                      .filter(e => e.payment_method === 'company_card')
+                      .reduce((sum, e) => sum + e.amount_in_ils, 0)
+                      .toFixed(2)}
+                  </span>
+                </div>
+                
+                {/* Out of Pocket Total */}
+                <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <span className="font-semibold text-gray-700 flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-orange-100 text-orange-600 shadow-sm">
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                    הוצאה עצמית (להחזר)
+                  </span>
+                  <span className="font-bold text-lg text-gray-900">
+                    ₪{expenses
+                      .filter(e => e.payment_method === 'out_of_pocket' || !e.payment_method)
+                      .reduce((sum, e) => sum + e.amount_in_ils, 0)
+                      .toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Report History */}
           <ReportHistory reportId={report.id} />
           

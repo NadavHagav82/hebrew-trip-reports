@@ -850,9 +850,7 @@ export default function Dashboard() {
                           className={`w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all rounded-xl gap-2 ${
                             report.status === 'draft' 
                               ? 'bg-gradient-to-r from-slate-500 to-gray-600 hover:from-slate-400 hover:to-gray-500 text-white' 
-                              : report.status === 'closed'
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white'
-                              : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white'
+                              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white'
                           }`}
                           onClick={(e) => {
                             e.stopPropagation();
