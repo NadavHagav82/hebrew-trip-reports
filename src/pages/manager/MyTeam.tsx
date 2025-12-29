@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Eye, Loader2, ArrowRight, FileText, BarChart3 } from 'lucide-react';
+import { Users, Eye, Loader2, ArrowRight, FileText, BarChart3, UserPlus, Copy, Ticket, Calendar, Hash } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface TeamMember {
   id: string;
@@ -32,10 +35,27 @@ interface TeamReport {
   };
 }
 
+interface InvitationCode {
+  id: string;
+  code: string;
+  expires_at: string;
+  is_used: boolean;
+  use_count: number;
+  max_uses: number;
+  notes: string | null;
+  created_at: string;
+}
+
 export default function MyTeam() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamReports, setTeamReports] = useState<TeamReport[]>([]);
+  const [invitationCodes, setInvitationCodes] = useState<InvitationCode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newCodeNotes, setNewCodeNotes] = useState('');
+  const [newCodeMaxUses, setNewCodeMaxUses] = useState(1);
+  const [newCodeExpiryDays, setNewCodeExpiryDays] = useState(7);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -46,7 +66,96 @@ export default function MyTeam() {
       return;
     }
     loadTeamData();
+    loadInvitationCodes();
   }, [user]);
+
+  const loadInvitationCodes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('invitation_codes')
+        .select('*')
+        .eq('manager_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvitationCodes(data || []);
+    } catch (error) {
+      console.error('Error loading invitation codes:', error);
+    }
+  };
+
+  const generateCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const createInvitationCode = async () => {
+    if (!user) return;
+    
+    setIsCreating(true);
+    try {
+      // Get manager's organization
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.organization_id) {
+        throw new Error('לא נמצא ארגון למנהל');
+      }
+
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + newCodeExpiryDays);
+
+      const { error } = await supabase
+        .from('invitation_codes')
+        .insert({
+          code: generateCode(),
+          organization_id: profile.organization_id,
+          manager_id: user.id,
+          created_by: user.id,
+          expires_at: expiryDate.toISOString(),
+          max_uses: newCodeMaxUses,
+          notes: newCodeNotes || null,
+          role: 'user',
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'קוד הזמנה נוצר',
+        description: 'קוד ההזמנה נוצר בהצלחה',
+      });
+
+      setIsCreateDialogOpen(false);
+      setNewCodeNotes('');
+      setNewCodeMaxUses(1);
+      setNewCodeExpiryDays(7);
+      loadInvitationCodes();
+    } catch (error: any) {
+      console.error('Error creating invitation code:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן ליצור קוד הזמנה',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({
+      title: 'הקוד הועתק',
+      description: 'קוד ההזמנה הועתק ללוח',
+    });
+  };
 
   const loadTeamData = async () => {
     try {
@@ -231,9 +340,10 @@ export default function MyTeam() {
         </div>
 
         <Tabs defaultValue="members" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="members">עובדי הצוות</TabsTrigger>
             <TabsTrigger value="reports">דוחות הצוות</TabsTrigger>
+            <TabsTrigger value="invitations">קודי הזמנה</TabsTrigger>
           </TabsList>
 
           <TabsContent value="members">
@@ -373,6 +483,173 @@ export default function MyTeam() {
                             </TableCell>
                           </TableRow>
                         ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="invitations">
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-card/80 backdrop-blur-sm overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-500" />
+              <CardHeader className="bg-gradient-to-br from-teal-50/50 to-transparent dark:from-teal-950/20 border-b border-teal-100/50 dark:border-teal-900/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                      <Ticket className="w-5 h-5 text-teal-600" />
+                      קודי הזמנה
+                    </CardTitle>
+                    <CardDescription className="text-primary/80">
+                      צור קודי הזמנה לעובדים חדשים שיצטרפו לצוות שלך
+                    </CardDescription>
+                  </div>
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg">
+                        <UserPlus className="w-4 h-4 ml-2" />
+                        צור קוד הזמנה
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md" dir="rtl">
+                      <DialogHeader>
+                        <DialogTitle>יצירת קוד הזמנה חדש</DialogTitle>
+                        <DialogDescription>
+                          צור קוד הזמנה עבור עובד חדש שיצטרף לצוות שלך
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="maxUses">מספר שימושים מקסימלי</Label>
+                          <Input
+                            id="maxUses"
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={newCodeMaxUses}
+                            onChange={(e) => setNewCodeMaxUses(parseInt(e.target.value) || 1)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="expiryDays">תוקף (ימים)</Label>
+                          <Input
+                            id="expiryDays"
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={newCodeExpiryDays}
+                            onChange={(e) => setNewCodeExpiryDays(parseInt(e.target.value) || 7)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="notes">הערות (אופציונלי)</Label>
+                          <Input
+                            id="notes"
+                            placeholder="לדוגמה: הזמנה למחלקת פיתוח"
+                            value={newCodeNotes}
+                            onChange={(e) => setNewCodeNotes(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                          ביטול
+                        </Button>
+                        <Button onClick={createInvitationCode} disabled={isCreating}>
+                          {isCreating && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                          צור קוד
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {invitationCodes.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Ticket className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">אין קודי הזמנה</h3>
+                    <p className="text-muted-foreground mb-4">
+                      צור קוד הזמנה כדי להזמין עובדים חדשים לצוות שלך
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gradient-to-r from-slate-50 to-teal-50/50 dark:from-slate-900 dark:to-teal-950/30 border-b border-teal-100 dark:border-teal-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
+                          <TableHead className="text-primary font-bold">קוד</TableHead>
+                          <TableHead className="text-primary font-bold">תוקף</TableHead>
+                          <TableHead className="text-primary font-bold">שימושים</TableHead>
+                          <TableHead className="text-primary font-bold">סטטוס</TableHead>
+                          <TableHead className="text-primary font-bold">הערות</TableHead>
+                          <TableHead className="text-primary font-bold">פעולות</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {invitationCodes.map((code, index) => {
+                          const isExpired = new Date(code.expires_at) < new Date();
+                          const isFullyUsed = code.use_count >= code.max_uses;
+                          return (
+                            <TableRow 
+                              key={code.id}
+                              className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-teal-50/50 dark:hover:bg-teal-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                            >
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <code className="font-mono font-bold text-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                    {code.code}
+                                  </code>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Calendar className="w-4 h-4" />
+                                  {new Date(code.expires_at).toLocaleDateString('he-IL')}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Hash className="w-4 h-4 text-muted-foreground" />
+                                  <span className={code.use_count >= code.max_uses ? 'text-red-600' : ''}>
+                                    {code.use_count} / {code.max_uses}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {isExpired ? (
+                                  <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                                    פג תוקף
+                                  </Badge>
+                                ) : isFullyUsed ? (
+                                  <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                    נוצל במלואו
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="default" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                    פעיל
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {code.notes || '-'}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => copyCode(code.code)}
+                                  className="hover:bg-primary/10 hover:text-primary"
+                                  disabled={isExpired || isFullyUsed}
+                                >
+                                  <Copy className="w-4 h-4 ml-1" />
+                                  העתק
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
