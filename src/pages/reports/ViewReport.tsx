@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt, Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
@@ -1612,44 +1612,53 @@ const ViewReport = () => {
           )}
 
           {/* Summary */}
-          <Card className="shadow-xl border-t-4 border-t-green-500 overflow-hidden">
-            <CardHeader className="pb-4 bg-gradient-to-br from-green-600 to-emerald-700 text-white">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <div className="w-1 h-6 bg-white rounded-full"></div>
+          <Card className="shadow-xl border-0 overflow-hidden bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-950/50 dark:via-green-950/50 dark:to-teal-950/50 relative">
+            {/* Top accent bar */}
+            <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500" />
+            
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-teal-500/10 to-transparent rounded-full blur-2xl" />
+            
+            <CardHeader className="pb-4 relative">
+              <CardTitle className="text-xl font-bold flex items-center gap-3 text-foreground">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Calculator className="w-5 h-5 text-white" />
+                </div>
                 סיכום הוצאות
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 bg-gradient-to-br from-green-50 to-emerald-50">
-              <div className="space-y-4">
+            <CardContent className="pt-2 relative">
+              <div className="space-y-3">
                 {Object.entries(categoryTotals).map(([category, total]) => {
                   const CategoryIcon = getCategoryIcon(category);
                   const categoryColor = getCategoryColor(category);
                   return (
-                    <div key={category} className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                      <span className="font-semibold text-gray-700 flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${categoryColor} shadow-sm`}>
+                    <div key={category} className="flex justify-between items-center bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-foreground flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${categoryColor} shadow-sm`}>
                           <CategoryIcon className="w-5 h-5" />
                         </div>
                         {getCategoryLabel(category)}
                       </span>
-                      <span className="font-bold text-lg text-gray-900">₪{total.toFixed(2)}</span>
+                      <span className="font-bold text-lg text-foreground">₪{total.toFixed(2)}</span>
                     </div>
                   );
                 })}
-                <div className="bg-gradient-to-r from-slate-600 to-slate-700 p-6 rounded-xl shadow-lg mt-6">
+                <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-5 rounded-xl shadow-lg mt-4">
                   <div className="flex justify-between items-center">
-                    <span className="font-black text-2xl text-white">סה"כ כולל:</span>
+                    <span className="font-bold text-xl text-white">סה"כ כולל:</span>
                     <span className="font-black text-3xl text-white">₪{report.total_amount_ils.toFixed(2)}</span>
                   </div>
                 </div>
                 {Object.entries(grandTotalByCurrency).length > 0 && (
-                  <div className="bg-white p-5 rounded-xl border-2 border-slate-200 mt-4">
-                    <div className="text-base text-slate-800 mb-3 font-bold">סה"כ לפי מטבעות:</div>
+                  <div className="bg-white/70 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30 mt-3">
+                    <div className="text-sm text-muted-foreground mb-3 font-semibold">סה"כ לפי מטבעות:</div>
                     <div className="space-y-2">
                       {Object.entries(grandTotalByCurrency).map(([currency, amount]) => (
-                        <div key={currency} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
-                          <span className="text-gray-700 font-semibold">{currency}</span>
-                          <span className="font-bold text-slate-800">{amount.toFixed(2)}</span>
+                        <div key={currency} className="flex justify-between items-center p-2.5 bg-emerald-50/50 dark:bg-emerald-950/30 rounded-lg">
+                          <span className="text-muted-foreground font-medium">{currency}</span>
+                          <span className="font-bold text-foreground">{amount.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
