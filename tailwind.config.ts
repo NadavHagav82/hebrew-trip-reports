@@ -101,22 +101,13 @@ export default {
         },
         "shake": {
           "0%, 100%": {
-            transform: "rotate(0deg)",
+            transform: "translateX(0)",
           },
-          "15%": {
-            transform: "rotate(-15deg)",
+          "10%, 30%, 50%, 70%, 90%": {
+            transform: "translateX(-4px)",
           },
-          "30%": {
-            transform: "rotate(10deg)",
-          },
-          "45%": {
-            transform: "rotate(-10deg)",
-          },
-          "60%": {
-            transform: "rotate(5deg)",
-          },
-          "75%": {
-            transform: "rotate(-5deg)",
+          "20%, 40%, 60%, 80%": {
+            transform: "translateX(4px)",
           },
         },
       },
