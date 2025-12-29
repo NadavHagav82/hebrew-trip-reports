@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { BriefcaseBusiness, ArrowRight } from 'lucide-react';
+import { BriefcaseBusiness, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function RegisterManager() {
@@ -48,6 +48,8 @@ export default function RegisterManager() {
   const [loading, setLoading] = useState(false);
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -251,27 +253,47 @@ export default function RegisterManager() {
             
             <div className="space-y-2">
               <Label htmlFor="password">סיסמה *</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="לפחות 8 תווים"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={loading}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="לפחות 8 תווים"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="pl-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">אימות סיסמה *</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="הזן סיסמה שוב"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                disabled={loading}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="הזן סיסמה שוב"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="pl-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <Button 
               type="submit" 
