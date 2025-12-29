@@ -1233,20 +1233,20 @@ export default function NewReport() {
                       : 'border-border hover:border-primary/50 hover:bg-muted/50'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                      includeDailyAllowance === true
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground'
-                    }`}>
-                      {includeDailyAllowance === true && (
-                        <Check className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
+                        includeDailyAllowance === true
+                          ? 'border-primary bg-primary'
+                          : 'border-muted-foreground'
+                      }`}>
+                        {includeDailyAllowance === true && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </div>
                       <span className="font-semibold text-foreground">הוסף אש״ל יומי לדוח</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-muted/80 rounded-lg px-3 py-1.5 border">
+                    <div className="flex items-center gap-2 bg-muted/80 rounded-lg px-3 py-1.5 border mr-9 sm:mr-0">
                       <span className="text-xs text-muted-foreground">$</span>
                       <Input
                         type="number"
