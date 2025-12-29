@@ -95,22 +95,7 @@ export default function BootstrapTokenManagement() {
     }
   };
 
-  const generateToken = () => {
-    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoiding ambiguous characters
-    const segments = 4;
-    const segmentLength = 4;
-    
-    const tokenSegments = [];
-    for (let i = 0; i < segments; i++) {
-      let segment = '';
-      for (let j = 0; j < segmentLength; j++) {
-        segment += characters.charAt(Math.floor(Math.random() * characters.length));
-      }
-      tokenSegments.push(segment);
-    }
-    
-    return `BOOTSTRAP-${tokenSegments.join('-')}`;
-  };
+  // Token is now generated server-side for security
 
   const handleCreateToken = async () => {
     if (!newTokenData.expiryDays || parseInt(newTokenData.expiryDays) < 1) {
@@ -124,25 +109,27 @@ export default function BootstrapTokenManagement() {
 
     setCreating(true);
     try {
-      const newToken = generateToken();
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + parseInt(newTokenData.expiryDays));
-
-      const { error } = await supabase
-        .from('bootstrap_tokens')
-        .insert({
-          token: newToken,
-          expires_at: expiryDate.toISOString(),
+      const { data, error } = await supabase.functions.invoke('bootstrap-token', {
+        body: {
+          action: 'create',
           notes: newTokenData.notes.trim() || null,
-          is_used: false
-        });
+          expiryDays: parseInt(newTokenData.expiryDays),
+        },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
+      // Show the plain token to the user (only time it's visible)
       toast({
         title: "קוד נוצר בהצלחה!",
-        description: "הקוד החדש נוצר ונשמר במערכת",
+        description: `הקוד: ${data.token} - העתק אותו עכשיו כי הוא לא יוצג שוב!`,
+        duration: 15000,
       });
+
+      // Copy to clipboard automatically
+      navigator.clipboard.writeText(data.token);
+      setCopiedToken(data.token);
 
       // Reset form and reload
       setNewTokenData({ notes: '', expiryDays: '7' });
@@ -372,22 +359,25 @@ export default function BootstrapTokenManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>קוד</TableHead>
+                      <TableHead>מזהה קוד</TableHead>
                       <TableHead>סטטוס</TableHead>
                       <TableHead>תאריך יצירה</TableHead>
                       <TableHead>תוקף עד</TableHead>
                       <TableHead>נוצל על ידי</TableHead>
                       <TableHead>תאריך שימוש</TableHead>
                       <TableHead>הערות</TableHead>
-                      <TableHead>פעולות</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {tokens.map((token) => (
                       <TableRow key={token.id}>
                         <TableCell>
-                          <div className="font-mono text-sm font-semibold">
-                            {token.token}
+                          <div className="font-mono text-sm font-semibold text-muted-foreground">
+                            {/* Token is hashed - show partial hash for reference */}
+                            {token.token.substring(0, 8)}...{token.token.substring(token.token.length - 8)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            (מוצפן - הטוקן המקורי הוצג בזמן היצירה בלבד)
                           </div>
                         </TableCell>
                         <TableCell>
@@ -430,19 +420,6 @@ export default function BootstrapTokenManagement() {
                           <div className="text-sm max-w-xs truncate">
                             {token.notes || '-'}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => copyToClipboard(token.token)}
-                          >
-                            {copiedToken === token.token ? (
-                              <Check className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
-                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
