@@ -76,19 +76,18 @@ export default function RegisterBootstrap() {
 
     setValidatingToken(true);
     try {
-      const { data, error } = await supabase
-        .from('bootstrap_tokens')
-        .select('id, is_used, expires_at')
-        .eq('token', token.trim())
-        .eq('is_used', false)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke('bootstrap-token', {
+        body: {
+          action: 'validate',
+          token: token.trim(),
+        },
+      });
 
       if (error) throw error;
       
-      setTokenValid(!!data);
+      setTokenValid(data?.valid === true);
       
-      if (!data) {
+      if (!data?.valid) {
         toast({
           title: 'קוד לא תקין',
           description: 'הקוד שהוזן לא קיים, כבר נוצל, או שפג תוקפו',
@@ -157,15 +156,15 @@ export default function RegisterBootstrap() {
     setLoading(true);
     
     try {
-      const { data: tokenData, error: tokenError } = await supabase
-        .from('bootstrap_tokens')
-        .select('id, is_used')
-        .eq('token', formData.bootstrapToken.trim())
-        .eq('is_used', false)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
+      // Validate token via edge function
+      const { data: validateData, error: validateError } = await supabase.functions.invoke('bootstrap-token', {
+        body: {
+          action: 'validate',
+          token: formData.bootstrapToken.trim(),
+        },
+      });
 
-      if (tokenError || !tokenData) {
+      if (validateError || !validateData?.valid) {
         toast({
           title: 'קוד הזמנה לא תקין',
           description: 'הקוד שהוזן לא קיים, כבר נוצל, או שפג תוקפו',
@@ -221,18 +220,17 @@ export default function RegisterBootstrap() {
 
       if (roleError) throw roleError;
 
-      // Mark token as used
-      const { error: updateError } = await supabase
-        .from('bootstrap_tokens')
-        .update({
-          is_used: true,
-          used_by: user.id,
-          used_at: new Date().toISOString()
-        })
-        .eq('id', tokenData.id);
+      // Mark token as used via edge function
+      const { error: useTokenError } = await supabase.functions.invoke('bootstrap-token', {
+        body: {
+          action: 'use',
+          token: formData.bootstrapToken.trim(),
+          userId: user.id,
+        },
+      });
 
-      if (updateError) {
-        console.error('Error marking token as used:', updateError);
+      if (useTokenError) {
+        console.error('Error marking token as used:', useTokenError);
       }
 
       toast({
