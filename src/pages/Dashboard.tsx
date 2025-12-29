@@ -426,7 +426,7 @@ export default function Dashboard() {
               >
                 <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </button>
-              <h1 className="text-base sm:text-lg font-bold">{profile?.full_name || 'דוחות נסיעה'}</h1>
+              <h1 className="text-base sm:text-lg font-rubik font-semibold">{profile?.full_name || 'דוחות נסיעה'}</h1>
             </div>
             <div className="flex items-center gap-2">
               {isAccountingManager && (
