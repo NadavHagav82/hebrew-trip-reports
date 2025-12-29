@@ -730,6 +730,16 @@ export default function NewReport() {
             description: `הוצאה #${expenseNum}: ${missingFieldNames}`,
             variant: 'destructive',
           });
+          
+          // Scroll to the first missing field after a short delay to allow expansion
+          setTimeout(() => {
+            const firstMissingField = missingFields[0];
+            const fieldElement = document.querySelector(`[data-field="${expense.id}-${firstMissingField}"]`);
+            if (fieldElement) {
+              fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+          
           return;
         }
       }
@@ -1364,7 +1374,7 @@ export default function NewReport() {
                         <Separator />
 
                         {/* Expense Details - After Receipt Upload */}
-                        <div className={shakingFields[expense.id]?.includes('date') ? 'animate-shake' : ''}>
+                        <div data-field={`${expense.id}-date`} className={shakingFields[expense.id]?.includes('date') ? 'animate-shake' : ''}>
                           <Label className={!expense.expense_date ? 'text-orange-600 dark:text-orange-400' : ''}>
                             תאריך * {!expense.expense_date && <span className="text-xs font-normal">(חובה)</span>}
                           </Label>
@@ -1420,7 +1430,9 @@ export default function NewReport() {
                         </div>
 
                         {/* Payment Method - Prominent buttons */}
-                        <div className={`p-4 rounded-lg border-2 transition-all ${
+                        <div 
+                          data-field={`${expense.id}-payment_method`}
+                          className={`p-4 rounded-lg border-2 transition-all ${
                           !expense.payment_method 
                             ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' 
                             : 'border-muted bg-muted/30'
@@ -1458,7 +1470,7 @@ export default function NewReport() {
                           </div>
                         </div>
 
-                        <div className={shakingFields[expense.id]?.includes('description') ? 'animate-shake' : ''}>
+                        <div data-field={`${expense.id}-description`} className={shakingFields[expense.id]?.includes('description') ? 'animate-shake' : ''}>
                           <Label className={!expense.description.trim() ? 'text-orange-600 dark:text-orange-400' : ''}>
                             תיאור * {!expense.description.trim() && <span className="text-xs font-normal">(חובה)</span>}
                           </Label>
@@ -1481,7 +1493,7 @@ export default function NewReport() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          <div className={shakingFields[expense.id]?.includes('amount') ? 'animate-shake' : ''}>
+                          <div data-field={`${expense.id}-amount`} className={shakingFields[expense.id]?.includes('amount') ? 'animate-shake' : ''}>
                             <Label className={!expense.amount ? 'text-orange-600 dark:text-orange-400' : ''}>
                               סכום * {!expense.amount && <span className="text-xs font-normal">(חובה)</span>}
                             </Label>
