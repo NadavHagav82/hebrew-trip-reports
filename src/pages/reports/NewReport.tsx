@@ -1096,17 +1096,35 @@ export default function NewReport() {
   const grandTotal = calculateGrandTotal();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-blue-50/30 dark:from-slate-950 dark:via-background dark:to-blue-950/20">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl" />
+      </div>
+
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-9">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/')} 
+                className="h-9 hover:bg-primary/10 rounded-xl"
+              >
                 <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
                 <span className="text-sm">חזרה</span>
               </Button>
-              <h1 className="text-base sm:text-xl font-bold flex-1 sm:flex-none">{isEditMode ? 'עריכת דוח' : 'דוח חדש'}</h1>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/25">
+                  <FileOutput className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                  {isEditMode ? 'עריכת דוח' : 'דוח נסיעה חדש'}
+                </h1>
+              </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto sm:mr-auto">
               {isEditMode && (
@@ -1115,18 +1133,27 @@ export default function NewReport() {
                   size="icon"
                   onClick={() => setShowDeleteDialog(true)} 
                   disabled={loading} 
-                  className="h-10 w-10 sm:h-9 sm:w-9"
+                  className="h-10 w-10 sm:h-9 sm:w-9 rounded-xl shadow-md"
                   title="מחק דוח"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               )}
-              <Button variant="outline" onClick={() => handleSave(false, false)} disabled={loading} className="flex-1 sm:flex-none h-10 sm:h-9 text-sm">
+              <Button 
+                variant="outline" 
+                onClick={() => handleSave(false, false)} 
+                disabled={loading} 
+                className="flex-1 sm:flex-none h-10 sm:h-9 text-sm rounded-xl border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
+              >
                 <Save className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                 <span className="hidden sm:inline">שמור</span>
                 <span className="sm:hidden">שמור</span>
               </Button>
-              <Button onClick={() => handleSave(false, true)} disabled={loading} className="flex-1 sm:flex-none h-10 sm:h-9 text-sm">
+              <Button 
+                onClick={() => handleSave(false, true)} 
+                disabled={loading} 
+                className="flex-1 sm:flex-none h-10 sm:h-9 text-sm rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 shadow-md hover:shadow-lg transition-all"
+              >
                 <FileOutput className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                 <span className="hidden sm:inline">הפק דוח</span>
                 <span className="sm:hidden">הפק</span>
@@ -1136,16 +1163,18 @@ export default function NewReport() {
         </div>
       </header>
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl relative z-10">
         {/* Trip Details */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5" />
+        <Card className="mb-6 shadow-xl border-t-4 border-t-blue-500 overflow-hidden">
+          <CardHeader className="pb-4 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+            <CardTitle className="text-xl font-bold flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <Globe className="w-5 h-5" />
+              </div>
               פרטי הנסיעה
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             <div>
               <Label htmlFor="destination">מדינת היעד *</Label>
               <Input
@@ -1232,13 +1261,19 @@ export default function NewReport() {
         </Card>
 
         {/* Expenses */}
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="mb-6 shadow-xl border-t-4 border-t-green-500 overflow-hidden">
+          <CardHeader className="pb-4 bg-gradient-to-br from-green-600 to-emerald-700 text-white">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                💰 הוצאות
+              <CardTitle className="text-xl font-bold flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <span className="text-xl">💰</span>
+                </div>
+                הוצאות
               </CardTitle>
-              <Button onClick={addExpense}>
+              <Button 
+                onClick={addExpense} 
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30 border rounded-xl shadow-md"
+              >
                 <Plus className="w-4 h-4 ml-2" />
                 הוסף הוצאה
               </Button>
@@ -1650,11 +1685,16 @@ export default function NewReport() {
 
         {/* Summary */}
         {expenses.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>סיכום הוצאות</CardTitle>
+          <Card className="shadow-xl border-t-4 border-t-purple-500 overflow-hidden">
+            <CardHeader className="pb-4 bg-gradient-to-br from-purple-600 to-violet-700 text-white">
+              <CardTitle className="text-xl font-bold flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <span className="text-xl">📊</span>
+                </div>
+                סיכום הוצאות
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
               <div>
                 <p className="font-semibold mb-3">סיכום לפי קטגוריה:</p>
                 <div className="space-y-2">
