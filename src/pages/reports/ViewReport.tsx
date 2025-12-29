@@ -2341,29 +2341,46 @@ const ViewReport = () => {
 
       {/* Save List Dialog */}
       <Dialog open={showSaveListDialog} onOpenChange={setShowSaveListDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>שמור רשימת נמענים</DialogTitle>
-            <DialogDescription>
-              שמור את רשימת הנמענים הנוכחית לשימוש חוזר
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="list_name">שם הרשימה</Label>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 border-0 shadow-2xl">
+          {/* Header with gradient accent */}
+          <div className="relative">
+            <div className="h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500" />
+            <DialogHeader className="p-6 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-foreground">שמור רשימת נמענים</DialogTitle>
+                  <DialogDescription className="text-sm mt-0.5">
+                    שמור את רשימת הנמענים הנוכחית לשימוש חוזר
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          
+          <div className="px-6 pb-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="list_name" className="text-sm font-semibold text-foreground">שם הרשימה</Label>
               <Input
                 id="list_name"
                 placeholder="למשל: צוות הנהלת חשבונות"
                 value={newListName}
                 onChange={(e) => setNewListName(e.target.value)}
                 disabled={savingList}
+                className="h-11 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl text-base transition-all"
               />
             </div>
-            <div className="text-sm text-muted-foreground">
-              רשימה זו תכלול {recipientEmails.filter(e => e.trim()).length} נמענים
+            <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
+              <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg flex items-center justify-center">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">{recipientEmails.filter(e => e.trim()).length}</span>
+              </div>
+              <span className="text-sm text-emerald-700 dark:text-emerald-300">נמענים ברשימה זו</span>
             </div>
           </div>
-          <DialogFooter>
+          
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 gap-2">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -2371,10 +2388,15 @@ const ViewReport = () => {
                 setNewListName('');
               }}
               disabled={savingList}
+              className="h-11 px-6 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
             >
               ביטול
             </Button>
-            <Button onClick={handleSaveList} disabled={savingList}>
+            <Button 
+              onClick={handleSaveList} 
+              disabled={savingList}
+              className="h-11 px-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
               {savingList ? (
                 <>
                   <Loader2 className="w-4 h-4 ml-2 animate-spin" />
