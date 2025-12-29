@@ -1194,60 +1194,110 @@ export default function NewReport() {
               פרטי הנסיעה
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div>
-              <Label htmlFor="destination">מדינת היעד *</Label>
+          <CardContent className="pt-6 space-y-5">
+            {/* Destination */}
+            <div className="space-y-2">
+              <Label htmlFor="destination" className="text-sm font-semibold flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                מדינת היעד *
+              </Label>
               <Input
                 id="destination"
                 placeholder="לדוגמה: ארה״ב, בולגריה, יפן"
                 value={tripDestination}
                 onChange={(e) => setTripDestination(e.target.value)}
+                className="h-12 text-base"
               />
-              <p className="text-xs text-muted-foreground mt-1">הזן את שם המדינה בלבד</p>
+              <p className="text-xs text-muted-foreground">הזן את שם המדינה בלבד</p>
             </div>
-            {/* Daily Allowance Section */}
-            <Card id="daily-allowance-section" className="border-2 border-primary/20 shadow-md overflow-hidden">
-              <div className="h-1.5 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
-              <CardHeader className="pb-3 pt-4">
+
+            {/* Dates Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate" className="text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  תאריך התחלה *
+                </Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={tripStartDate}
+                  onChange={(e) => setTripStartDate(e.target.value)}
+                  className="h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate" className="text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  תאריך סיום *
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={tripEndDate}
+                  onChange={(e) => setTripEndDate(e.target.value)}
+                  min={tripStartDate}
+                  className="h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">משך הנסיעה</Label>
+                <div className="h-12 px-4 rounded-xl border-2 border-primary/20 bg-primary/5 flex items-center justify-center">
+                  <span className="text-lg font-bold text-primary">
+                    {calculateTripDuration()} ימים
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Allowance Section - Moved here after trip duration */}
+            <div id="daily-allowance-section" className={`rounded-xl border-2 overflow-hidden transition-all ${
+              includeDailyAllowance === null 
+                ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20' 
+                : 'border-primary/20 bg-card'
+            }`}>
+              <div className="h-1 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
+              <div className="p-4 space-y-4">
+                {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
-                      <Calendar className="w-5 h-5 text-white" />
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                      <DollarSign className="w-4 h-4 text-white" />
                     </div>
-                    <CardTitle className="text-lg font-bold">אש״ל יומי</CardTitle>
+                    <span className="text-base font-bold">אש״ל יומי</span>
                   </div>
                   {includeDailyAllowance === null && (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium animate-pulse">
                       נדרשת החלטה
                     </span>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4 pb-4">
-                {/* Option 1: Include daily allowance */}
-                <div
-                  onClick={() => setIncludeDailyAllowance(true)}
-                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                    includeDailyAllowance === true
-                      ? 'border-primary bg-primary/5 shadow-md'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
+
+                {/* Options */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Option 1: Include */}
+                  <div
+                    onClick={() => setIncludeDailyAllowance(true)}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      includeDailyAllowance === true
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
                         includeDailyAllowance === true
                           ? 'border-primary bg-primary'
-                          : 'border-muted-foreground'
+                          : 'border-muted-foreground/50'
                       }`}>
                         {includeDailyAllowance === true && (
-                          <Check className="w-4 h-4 text-white" />
+                          <Check className="w-3 h-3 text-white" />
                         )}
                       </div>
-                      <span className="font-semibold text-foreground">הוסף אש״ל יומי לדוח</span>
+                      <span className="font-semibold text-sm">הוסף אש״ל יומי לדוח</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-muted/80 rounded-lg px-3 py-1.5 border mr-9 sm:mr-0">
-                      <span className="text-xs text-muted-foreground">$</span>
+                    <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border mr-8">
+                      <span className="text-sm text-muted-foreground">$</span>
                       <Input
                         type="number"
                         min="0"
@@ -1258,101 +1308,75 @@ export default function NewReport() {
                           setDailyAllowance(Number(e.target.value));
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-16 h-7 text-center border-0 bg-transparent p-0 font-bold"
+                        className="w-20 h-8 text-center border-0 bg-transparent p-0 font-bold text-lg"
                       />
-                      <span className="text-xs text-muted-foreground">ליום</span>
+                      <span className="text-sm text-muted-foreground">ליום</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Option 2: Don't include */}
-                <div
-                  onClick={() => setIncludeDailyAllowance(false)}
-                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                    includeDailyAllowance === false
-                      ? 'border-muted-foreground bg-muted/50'
-                      : 'border-border hover:border-muted-foreground/50 hover:bg-muted/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  {/* Option 2: Don't include */}
+                  <div
+                    onClick={() => setIncludeDailyAllowance(false)}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center ${
                       includeDailyAllowance === false
-                        ? 'border-muted-foreground bg-muted-foreground'
-                        : 'border-muted-foreground'
-                    }`}>
-                      {includeDailyAllowance === false && (
-                        <Check className="w-4 h-4 text-white" />
-                      )}
+                        ? 'border-muted-foreground bg-muted/50'
+                        : 'border-border hover:border-muted-foreground/50 hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
+                        includeDailyAllowance === false
+                          ? 'border-muted-foreground bg-muted-foreground'
+                          : 'border-muted-foreground/50'
+                      }`}>
+                        {includeDailyAllowance === false && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <span className="font-medium text-sm text-muted-foreground">לא נדרש אש״ל יומי לדוח זה</span>
                     </div>
-                    <span className="font-medium text-muted-foreground">לא נדרש אש״ל יומי לדוח זה</span>
                   </div>
                 </div>
 
-                {/* Total calculation - show only when including */}
+                {/* Total calculation */}
                 {includeDailyAllowance === true && calculateTripDuration() > 0 && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
                     <div className="flex items-center justify-between">
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">סה״כ אש״ל לתקופה ({calculateTripDuration()} ימים)</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-primary" />
-                        <span className="text-2xl font-bold text-primary">
-                          {(dailyAllowance * calculateTripDuration()).toLocaleString()}
-                        </span>
-                      </div>
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        סה״כ אש״ל לתקופה ({calculateTripDuration()} ימים)
+                      </span>
+                      <span className="text-2xl font-black text-blue-700 dark:text-blue-300">
+                        ${(dailyAllowance * calculateTripDuration()).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="startDate">תאריך התחלה *</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={tripStartDate}
-                  onChange={(e) => setTripStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDate">תאריך סיום *</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={tripEndDate}
-                  onChange={(e) => setTripEndDate(e.target.value)}
-                  min={tripStartDate}
-                />
-              </div>
-              <div>
-                <Label>משך הנסיעה</Label>
-                <div className="h-10 px-3 py-2 rounded-md border bg-muted flex items-center">
-                  <span className="font-semibold">
-                    {calculateTripDuration()} ימים
-                  </span>
-                </div>
               </div>
             </div>
-            <div>
-              <Label htmlFor="purpose">מטרת הנסיעה *</Label>
+
+            {/* Trip Purpose */}
+            <div className="space-y-2">
+              <Label htmlFor="purpose" className="text-sm font-semibold">מטרת הנסיעה *</Label>
               <Textarea
                 id="purpose"
                 placeholder="תאר את מטרת הנסיעה העסקית"
                 rows={3}
                 value={tripPurpose}
                 onChange={(e) => setTripPurpose(e.target.value)}
+                className="resize-none"
               />
             </div>
-            <div>
-              <Label htmlFor="reportNotes">הערות כלליות על הדוח</Label>
+
+            {/* Report Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="reportNotes" className="text-sm font-semibold">הערות כלליות על הדוח</Label>
               <Textarea
                 id="reportNotes"
                 placeholder="הוסף הערות, הסברים או פרטים נוספים על הדוח (אופציונלי)"
                 rows={3}
                 value={reportNotes}
                 onChange={(e) => setReportNotes(e.target.value)}
+                className="resize-none"
               />
             </div>
           </CardContent>
