@@ -1381,7 +1381,48 @@ export default function NewReport() {
 
                         <Separator />
 
-                        {/* Expense Details - After Receipt Upload */}
+                        {/* Payment Method - Prominent buttons - FIRST */}
+                        <div 
+                          data-field={`${expense.id}-payment_method`}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                          !expense.payment_method 
+                            ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' 
+                            : 'border-muted bg-muted/30'
+                        } ${shakingFields[expense.id]?.includes('payment_method') ? 'animate-shake' : ''}`}>
+                          <Label className="text-base font-semibold mb-3 block">
+                            אמצעי תשלום * <span className="text-sm font-normal text-muted-foreground">(חובה לבחור)</span>
+                          </Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => updateExpense(expense.id, 'payment_method', 'out_of_pocket')}
+                              className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                expense.payment_method === 'out_of_pocket'
+                                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                              }`}
+                            >
+                              <span className="text-3xl">💵</span>
+                              <span className="font-medium text-sm text-center">מכיס העובד</span>
+                              <span className="text-xs text-muted-foreground">(נדרש החזר)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateExpense(expense.id, 'payment_method', 'company_card')}
+                              className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                expense.payment_method === 'company_card'
+                                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                              }`}
+                            >
+                              <span className="text-3xl">💳</span>
+                              <span className="font-medium text-sm text-center">כרטיס חברה</span>
+                              <span className="text-xs text-muted-foreground">(אשראי)</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expense Details - Date */}
                         <div data-field={`${expense.id}-date`} className={shakingFields[expense.id]?.includes('date') ? 'animate-shake' : ''}>
                           <Label className={!expense.expense_date ? 'text-orange-600 dark:text-orange-400' : ''}>
                             תאריך * {!expense.expense_date && <span className="text-xs font-normal">(חובה)</span>}
@@ -1435,47 +1476,6 @@ export default function NewReport() {
                               })}
                             </SelectContent>
                           </Select>
-                        </div>
-
-                        {/* Payment Method - Prominent buttons */}
-                        <div 
-                          data-field={`${expense.id}-payment_method`}
-                          className={`p-4 rounded-lg border-2 transition-all ${
-                          !expense.payment_method 
-                            ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' 
-                            : 'border-muted bg-muted/30'
-                        } ${shakingFields[expense.id]?.includes('payment_method') ? 'animate-shake' : ''}`}>
-                          <Label className="text-base font-semibold mb-3 block">
-                            אמצעי תשלום * <span className="text-sm font-normal text-muted-foreground">(חובה לבחור)</span>
-                          </Label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <button
-                              type="button"
-                              onClick={() => updateExpense(expense.id, 'payment_method', 'out_of_pocket')}
-                              className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                                expense.payment_method === 'out_of_pocket'
-                                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
-                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                              }`}
-                            >
-                              <span className="text-3xl">💵</span>
-                              <span className="font-medium text-sm text-center">מכיס העובד</span>
-                              <span className="text-xs text-muted-foreground">(נדרש החזר)</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => updateExpense(expense.id, 'payment_method', 'company_card')}
-                              className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                                expense.payment_method === 'company_card'
-                                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
-                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                              }`}
-                            >
-                              <span className="text-3xl">💳</span>
-                              <span className="font-medium text-sm text-center">כרטיס חברה</span>
-                              <span className="text-xs text-muted-foreground">(אשראי)</span>
-                            </button>
-                          </div>
                         </div>
 
                         <div data-field={`${expense.id}-description`} className={shakingFields[expense.id]?.includes('description') ? 'animate-shake' : ''}>
