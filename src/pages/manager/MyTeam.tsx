@@ -368,39 +368,72 @@ export default function MyTeam() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-slate-50 to-blue-50/50 dark:from-slate-900 dark:to-blue-950/30 border-b border-blue-100 dark:border-blue-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
-                          <TableHead className="text-primary font-bold">שם מלא</TableHead>
-                          <TableHead className="text-primary font-bold">אימייל</TableHead>
-                          <TableHead className="text-primary font-bold">מס' עובד</TableHead>
-                          <TableHead className="text-primary font-bold">מחלקה</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teamMembers.map((member, index) => (
-                          <TableRow 
-                            key={member.id}
-                            className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
-                          >
-                            <TableCell className="font-semibold text-foreground">{member.full_name}</TableCell>
-                            <TableCell className="text-muted-foreground">{member.username}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                                {member.employee_id || '-'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                {member.department}
-                              </Badge>
-                            </TableCell>
+                  <>
+                    {/* Mobile view - cards */}
+                    <div className="md:hidden p-4 space-y-3">
+                      {teamMembers.map((member) => (
+                        <div 
+                          key={member.id}
+                          className="bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20 rounded-xl p-4 border border-blue-100 dark:border-blue-900/30 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {member.full_name.charAt(0)}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-foreground">{member.full_name}</h4>
+                                <p className="text-sm text-muted-foreground">{member.username}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                              מס' {member.employee_id || '-'}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                              {member.department}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop view - table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gradient-to-r from-slate-50 to-blue-50/50 dark:from-slate-900 dark:to-blue-950/30 border-b border-blue-100 dark:border-blue-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
+                            <TableHead className="text-primary font-bold">שם מלא</TableHead>
+                            <TableHead className="text-primary font-bold">אימייל</TableHead>
+                            <TableHead className="text-primary font-bold">מס' עובד</TableHead>
+                            <TableHead className="text-primary font-bold">מחלקה</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {teamMembers.map((member, index) => (
+                            <TableRow 
+                              key={member.id}
+                              className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                            >
+                              <TableCell className="font-semibold text-foreground">{member.full_name}</TableCell>
+                              <TableCell className="text-muted-foreground">{member.username}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                                  {member.employee_id || '-'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                  {member.department}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -428,64 +461,107 @@ export default function MyTeam() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-slate-50 to-purple-50/50 dark:from-slate-900 dark:to-purple-950/30 border-b border-purple-100 dark:border-purple-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
-                          <TableHead className="text-primary font-bold">עובד</TableHead>
-                          <TableHead className="text-primary font-bold">יעד</TableHead>
-                          <TableHead className="text-primary font-bold">תאריכי נסיעה</TableHead>
-                          <TableHead className="text-primary font-bold">סטטוס</TableHead>
-                          <TableHead className="text-primary font-bold">סכום</TableHead>
-                          <TableHead className="text-primary font-bold">פעולות</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teamReports.map((report, index) => (
-                          <TableRow 
-                            key={report.id}
-                            className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-purple-50/50 dark:hover:bg-purple-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
-                          >
-                            <TableCell>
+                  <>
+                    {/* Mobile view - cards */}
+                    <div className="md:hidden p-4 space-y-3">
+                      {teamReports.map((report) => (
+                        <div 
+                          key={report.id}
+                          className="bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-900 dark:to-purple-950/20 rounded-xl p-4 border border-purple-100 dark:border-purple-900/30 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {report.profiles.full_name.charAt(0)}
+                              </div>
                               <div>
-                                <div className="font-semibold text-foreground">{report.profiles.full_name}</div>
-                                {report.profiles.employee_id && (
-                                  <div className="text-xs text-muted-foreground">
-                                    מס' {report.profiles.employee_id}
-                                  </div>
-                                )}
+                                <h4 className="font-semibold text-foreground">{report.profiles.full_name}</h4>
+                                <p className="text-sm text-muted-foreground">{report.trip_destination}</p>
                               </div>
-                            </TableCell>
-                            <TableCell className="font-medium text-foreground">{report.trip_destination}</TableCell>
-                            <TableCell>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(report.trip_start_date).toLocaleDateString('he-IL')}
-                                {' - '}
-                                {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
-                              </div>
-                            </TableCell>
-                            <TableCell>{getStatusBadge(report.status)}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
-                                ₪{(report.total_amount_ils || 0).toLocaleString()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => navigate(`/reports/${report.id}`)}
-                                className="hover:bg-primary/10 hover:text-primary"
-                              >
-                                <Eye className="w-4 h-4 ml-1" />
-                                צפייה
-                              </Button>
-                            </TableCell>
+                            </div>
+                            {getStatusBadge(report.status)}
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+                            <span>
+                              {new Date(report.trip_start_date).toLocaleDateString('he-IL')} - {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                            </span>
+                            <Badge variant="secondary" className="font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">
+                              ₪{(report.total_amount_ils || 0).toLocaleString()}
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/reports/${report.id}`)}
+                            className="w-full"
+                          >
+                            <Eye className="w-4 h-4 ml-1" />
+                            צפייה בדוח
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop view - table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gradient-to-r from-slate-50 to-purple-50/50 dark:from-slate-900 dark:to-purple-950/30 border-b border-purple-100 dark:border-purple-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
+                            <TableHead className="text-primary font-bold">עובד</TableHead>
+                            <TableHead className="text-primary font-bold">יעד</TableHead>
+                            <TableHead className="text-primary font-bold">תאריכי נסיעה</TableHead>
+                            <TableHead className="text-primary font-bold">סטטוס</TableHead>
+                            <TableHead className="text-primary font-bold">סכום</TableHead>
+                            <TableHead className="text-primary font-bold">פעולות</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {teamReports.map((report, index) => (
+                            <TableRow 
+                              key={report.id}
+                              className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-purple-50/50 dark:hover:bg-purple-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                            >
+                              <TableCell>
+                                <div>
+                                  <div className="font-semibold text-foreground">{report.profiles.full_name}</div>
+                                  {report.profiles.employee_id && (
+                                    <div className="text-xs text-muted-foreground">
+                                      מס' {report.profiles.employee_id}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium text-foreground">{report.trip_destination}</TableCell>
+                              <TableCell>
+                                <div className="text-sm text-muted-foreground">
+                                  {new Date(report.trip_start_date).toLocaleDateString('he-IL')}
+                                  {' - '}
+                                  {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                                </div>
+                              </TableCell>
+                              <TableCell>{getStatusBadge(report.status)}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
+                                  ₪{(report.total_amount_ils || 0).toLocaleString()}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => navigate(`/reports/${report.id}`)}
+                                  className="hover:bg-primary/10 hover:text-primary"
+                                >
+                                  <Eye className="w-4 h-4 ml-1" />
+                                  צפייה
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -575,84 +651,145 @@ export default function MyTeam() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-slate-50 to-teal-50/50 dark:from-slate-900 dark:to-teal-950/30 border-b border-teal-100 dark:border-teal-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
-                          <TableHead className="text-primary font-bold">קוד</TableHead>
-                          <TableHead className="text-primary font-bold">תוקף</TableHead>
-                          <TableHead className="text-primary font-bold">שימושים</TableHead>
-                          <TableHead className="text-primary font-bold">סטטוס</TableHead>
-                          <TableHead className="text-primary font-bold">הערות</TableHead>
-                          <TableHead className="text-primary font-bold">פעולות</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {invitationCodes.map((code, index) => {
-                          const isExpired = new Date(code.expires_at) < new Date();
-                          const isFullyUsed = code.use_count >= code.max_uses;
-                          return (
-                            <TableRow 
-                              key={code.id}
-                              className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-teal-50/50 dark:hover:bg-teal-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                  <>
+                    {/* Mobile view - cards */}
+                    <div className="md:hidden p-4 space-y-3">
+                      {invitationCodes.map((code) => {
+                        const isExpired = new Date(code.expires_at) < new Date();
+                        const isFullyUsed = code.use_count >= code.max_uses;
+                        return (
+                          <div 
+                            key={code.id}
+                            className="bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-900 dark:to-teal-950/20 rounded-xl p-4 border border-teal-100 dark:border-teal-900/30 shadow-sm"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <code className="font-mono font-bold text-xl bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+                                {code.code}
+                              </code>
+                              {isExpired ? (
+                                <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                                  פג תוקף
+                                </Badge>
+                              ) : isFullyUsed ? (
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                  נוצל במלואו
+                                </Badge>
+                              ) : (
+                                <Badge variant="default" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                  פעיל
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-3">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(code.expires_at).toLocaleDateString('he-IL')}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Hash className="w-4 h-4" />
+                                <span className={code.use_count >= code.max_uses ? 'text-red-600' : ''}>
+                                  {code.use_count} / {code.max_uses}
+                                </span>
+                              </div>
+                            </div>
+                            {code.notes && (
+                              <p className="text-sm text-muted-foreground mb-3">{code.notes}</p>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyCode(code.code)}
+                              className="w-full"
+                              disabled={isExpired || isFullyUsed}
                             >
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <code className="font-mono font-bold text-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                                    {code.code}
-                                  </code>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Calendar className="w-4 h-4" />
-                                  {new Date(code.expires_at).toLocaleDateString('he-IL')}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Hash className="w-4 h-4 text-muted-foreground" />
-                                  <span className={code.use_count >= code.max_uses ? 'text-red-600' : ''}>
-                                    {code.use_count} / {code.max_uses}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {isExpired ? (
-                                  <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
-                                    פג תוקף
-                                  </Badge>
-                                ) : isFullyUsed ? (
-                                  <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                    נוצל במלואו
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="default" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                                    פעיל
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">
-                                {code.notes || '-'}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => copyCode(code.code)}
-                                  className="hover:bg-primary/10 hover:text-primary"
-                                  disabled={isExpired || isFullyUsed}
-                                >
-                                  <Copy className="w-4 h-4 ml-1" />
-                                  העתק
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                              <Copy className="w-4 h-4 ml-1" />
+                              העתק קוד
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Desktop view - table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gradient-to-r from-slate-50 to-teal-50/50 dark:from-slate-900 dark:to-teal-950/30 border-b border-teal-100 dark:border-teal-900/30 hover:bg-slate-50 dark:hover:bg-slate-900">
+                            <TableHead className="text-primary font-bold">קוד</TableHead>
+                            <TableHead className="text-primary font-bold">תוקף</TableHead>
+                            <TableHead className="text-primary font-bold">שימושים</TableHead>
+                            <TableHead className="text-primary font-bold">סטטוס</TableHead>
+                            <TableHead className="text-primary font-bold">הערות</TableHead>
+                            <TableHead className="text-primary font-bold">פעולות</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {invitationCodes.map((code, index) => {
+                            const isExpired = new Date(code.expires_at) < new Date();
+                            const isFullyUsed = code.use_count >= code.max_uses;
+                            return (
+                              <TableRow 
+                                key={code.id}
+                                className={`border-b border-slate-100 dark:border-slate-800 transition-colors hover:bg-teal-50/50 dark:hover:bg-teal-950/20 ${index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50/50 dark:bg-slate-900/30'}`}
+                              >
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <code className="font-mono font-bold text-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                      {code.code}
+                                    </code>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <Calendar className="w-4 h-4" />
+                                    {new Date(code.expires_at).toLocaleDateString('he-IL')}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Hash className="w-4 h-4 text-muted-foreground" />
+                                    <span className={code.use_count >= code.max_uses ? 'text-red-600' : ''}>
+                                      {code.use_count} / {code.max_uses}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {isExpired ? (
+                                    <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                                      פג תוקף
+                                    </Badge>
+                                  ) : isFullyUsed ? (
+                                    <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                      נוצל במלואו
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="default" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                      פעיל
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {code.notes || '-'}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => copyCode(code.code)}
+                                    className="hover:bg-primary/10 hover:text-primary"
+                                    disabled={isExpired || isFullyUsed}
+                                  >
+                                    <Copy className="w-4 h-4 ml-1" />
+                                    העתק
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
