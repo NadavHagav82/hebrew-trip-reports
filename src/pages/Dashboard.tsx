@@ -420,14 +420,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center">
-                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+                <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
               <h1 className="text-lg sm:text-xl font-bold">{profile?.full_name || 'דוחות נסיעה'}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm text-muted-foreground hidden md:inline">
-                {profile?.full_name || user?.email}
-              </span>
               {isAccountingManager && (
                 <Button 
                   variant="ghost" 
