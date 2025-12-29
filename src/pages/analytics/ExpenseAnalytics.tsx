@@ -430,18 +430,25 @@ export default function ExpenseAnalytics() {
   const outlierWarnings = getOutlierWarnings();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white sticky top-0 z-10 shadow-lg">
-        <div className="container mx-auto px-4 py-5">
-          <div className="flex items-center justify-between">
+      <header className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 border-b border-blue-100 dark:border-blue-900/30 sticky top-0 z-10 relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-2xl" />
+        
+        <div className="container mx-auto px-4 py-5 relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-6 h-6 text-white" />
+              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">אנליטיקה והוצאות</h1>
-                <p className="text-sm text-blue-100">
+                <h1 className="text-2xl font-bold text-foreground">אנליטיקה והוצאות</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {isManager ? 'סיכום דוחות הצוות שלך' : 'סיכום הדוחות שלך'}
                 </p>
               </div>
@@ -449,10 +456,10 @@ export default function ExpenseAnalytics() {
             <Button 
               variant="outline" 
               onClick={() => navigate('/')}
-              className="bg-white/10 border-white/30 text-white hover:bg-white/20 rounded-xl"
+              className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
             >
               חזרה לדשבורד
-              <ArrowRight className="w-4 h-4 mr-2" />
+              <ArrowRight className="w-4 h-4 mr-1.5" />
             </Button>
           </div>
         </div>
