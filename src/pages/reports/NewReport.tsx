@@ -1419,6 +1419,45 @@ export default function NewReport() {
                           </Select>
                         </div>
 
+                        {/* Payment Method - Prominent buttons */}
+                        <div className={`p-4 rounded-lg border-2 transition-all ${
+                          !expense.payment_method 
+                            ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' 
+                            : 'border-muted bg-muted/30'
+                        }`}>
+                          <Label className="text-base font-semibold mb-3 block">
+                            אמצעי תשלום * <span className="text-sm font-normal text-muted-foreground">(חובה לבחור)</span>
+                          </Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => updateExpense(expense.id, 'payment_method', 'out_of_pocket')}
+                              className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                expense.payment_method === 'out_of_pocket'
+                                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                              }`}
+                            >
+                              <span className="text-3xl">💵</span>
+                              <span className="font-medium text-sm text-center">מכיס העובד</span>
+                              <span className="text-xs text-muted-foreground">(נדרש החזר)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateExpense(expense.id, 'payment_method', 'company_card')}
+                              className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                expense.payment_method === 'company_card'
+                                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                              }`}
+                            >
+                              <span className="text-3xl">💳</span>
+                              <span className="font-medium text-sm text-center">כרטיס חברה</span>
+                              <span className="text-xs text-muted-foreground">(אשראי)</span>
+                            </button>
+                          </div>
+                        </div>
+
                         <div>
                           <Label>תיאור *</Label>
                           <Input
@@ -1436,32 +1475,6 @@ export default function NewReport() {
                             value={expense.notes || ''}
                             onChange={(e) => updateExpense(expense.id, 'notes', e.target.value)}
                           />
-                        </div>
-
-                        <div>
-                          <Label>אמצעי תשלום *</Label>
-                          <Select
-                            value={expense.payment_method}
-                            onValueChange={(value) => updateExpense(expense.id, 'payment_method', value)}
-                          >
-                            <SelectTrigger className={!expense.payment_method ? 'border-orange-400' : ''}>
-                              <SelectValue placeholder="בחר אמצעי תשלום" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="out_of_pocket">
-                                <div className="flex items-center gap-2">
-                                  <span>💵</span>
-                                  <span>מכיס העובד (נדרש החזר)</span>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="company_card">
-                                <div className="flex items-center gap-2">
-                                  <span>💳</span>
-                                  <span>כרטיס אשראי חברה</span>
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
