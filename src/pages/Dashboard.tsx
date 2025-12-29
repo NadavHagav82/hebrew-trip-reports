@@ -419,9 +419,13 @@ export default function Dashboard() {
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center">
+              <button 
+                onClick={() => setShowProfileDialog(true)}
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer"
+                title="פרופיל"
+              >
                 <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
-              </div>
+              </button>
               <h1 className="text-lg sm:text-xl font-bold">{profile?.full_name || 'דוחות נסיעה'}</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -501,15 +505,6 @@ export default function Dashboard() {
               <div className="bg-amber-500/10 hover:bg-amber-500/20 rounded-md">
                 <NotificationBell />
               </div>
-              <Button 
-                variant="ghost"
-                size="icon" 
-                onClick={() => setShowProfileDialog(true)}
-                className="h-8 w-8 sm:h-9 sm:w-9"
-                title="פרופיל"
-              >
-                <User className="w-4 h-4" />
-              </Button>
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 sm:h-9 gap-1 sm:gap-2">
                 <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="text-xs sm:text-sm">יציאה</span>
