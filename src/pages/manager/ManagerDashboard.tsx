@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign, CheckSquare, FileText } from "lucide-react";
+import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign, CheckSquare, BarChart3, FileText, PieChart } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -343,10 +343,19 @@ export default function ManagerDashboard() {
                 variant="outline" 
                 onClick={() => navigate('/manager/advanced-reports')}
                 className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/30 transition-all"
-                title="דוחות וסטטיסטיקות מתקדמות"
+                title="רשימת דוחות מפורטת עם סינון וייצוא"
               >
                 <FileText className="w-4 h-4 ml-1.5" />
                 <span className="hidden sm:inline">דוחות</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/manager/stats')}
+                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/30 transition-all"
+                title="גרפים וניתוח מגמות"
+              >
+                <PieChart className="w-4 h-4 ml-1.5" />
+                <span className="hidden sm:inline">סטט'</span>
               </Button>
               <Button 
                 variant="outline" 
