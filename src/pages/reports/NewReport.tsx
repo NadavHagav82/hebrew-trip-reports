@@ -261,6 +261,7 @@ export default function NewReport() {
   const [currentExpenseForUpload, setCurrentExpenseForUpload] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shakingFields, setShakingFields] = useState<{[expenseId: string]: string[]}>({});
+  const [savedExpenses, setSavedExpenses] = useState<Set<string>>(new Set());
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -396,6 +397,69 @@ export default function NewReport() {
       });
     }
     setExpenses(expenses.filter(exp => exp.id !== id));
+    setSavedExpenses(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+  };
+
+  const saveExpense = (expenseId: string) => {
+    const expense = expenses.find(exp => exp.id === expenseId);
+    if (!expense) return;
+
+    // Validate expense
+    const missingFields: string[] = [];
+    if (!expense.expense_date) missingFields.push('date');
+    if (!expense.description || expense.description.trim() === '') missingFields.push('description');
+    if (!expense.amount || expense.amount <= 0) missingFields.push('amount');
+    if (!expense.payment_method) missingFields.push('payment_method');
+
+    if (missingFields.length > 0) {
+      // Trigger shake animation
+      setShakingFields(prev => ({ ...prev, [expenseId]: missingFields }));
+      setTimeout(() => {
+        setShakingFields(prev => {
+          const newState = { ...prev };
+          delete newState[expenseId];
+          return newState;
+        });
+      }, 500);
+
+      const fieldNames: Record<string, string> = {
+        date: 'תאריך',
+        description: 'תיאור',
+        amount: 'סכום',
+        payment_method: 'אמצעי תשלום'
+      };
+      
+      const missingFieldNames = missingFields.map(f => fieldNames[f]).join(', ');
+      toast({
+        title: '⚠️ שדות חובה חסרים',
+        description: missingFieldNames,
+        variant: 'destructive',
+      });
+
+      // Scroll to first missing field
+      setTimeout(() => {
+        const firstMissingField = missingFields[0];
+        const fieldElement = document.querySelector(`[data-field="${expenseId}-${firstMissingField}"]`);
+        if (fieldElement) {
+          fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
+      return;
+    }
+
+    // Mark as saved
+    setSavedExpenses(prev => new Set(prev).add(expenseId));
+    setExpandedExpense(null);
+    
+    toast({
+      title: '✓ ההוצאה נשמרה',
+      description: `${expense.description} - ${expense.amount.toFixed(2)} ${currencyLabels[expense.currency]}`,
+    });
   };
 
   const handleFileSelect = async (expenseId: string, files: FileList | null) => {
@@ -1221,6 +1285,25 @@ export default function NewReport() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
+                        {!savedExpenses.has(expense.id) && expandedExpense === expense.id && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              saveExpense(expense.id);
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Save className="w-4 h-4 ml-1" />
+                            שמור
+                          </Button>
+                        )}
+                        {savedExpenses.has(expense.id) && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold">
+                            ✓ נשמר
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1540,6 +1623,23 @@ export default function NewReport() {
                             {expense.amount_in_ils.toLocaleString('he-IL', { minimumFractionDigits: 2 })} ₪
                           </p>
                         </div>
+
+                        {/* Save button at bottom */}
+                        {!savedExpenses.has(expense.id) && (
+                          <Button
+                            onClick={() => saveExpense(expense.id)}
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            size="lg"
+                          >
+                            <Save className="w-5 h-5 ml-2" />
+                            שמור הוצאה
+                          </Button>
+                        )}
+                        {savedExpenses.has(expense.id) && (
+                          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-200 dark:border-green-800 text-center">
+                            <span className="text-green-700 dark:text-green-400 font-semibold">✓ ההוצאה נשמרה בהצלחה</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </Card>
