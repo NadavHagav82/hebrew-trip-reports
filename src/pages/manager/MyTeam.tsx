@@ -571,7 +571,7 @@ export default function MyTeam() {
             <Card className="border-0 shadow-lg bg-white/80 dark:bg-card/80 backdrop-blur-sm overflow-hidden">
               <div className="h-1 bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-500" />
               <CardHeader className="bg-gradient-to-br from-teal-50/50 to-transparent dark:from-teal-950/20 border-b border-teal-100/50 dark:border-teal-900/30">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <CardTitle className="text-xl text-foreground flex items-center gap-2">
                       <Ticket className="w-5 h-5 text-teal-600" />
@@ -583,7 +583,7 @@ export default function MyTeam() {
                   </div>
                   <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg">
+                      <Button className="w-full sm:w-auto bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg rounded-xl h-11 px-5">
                         <UserPlus className="w-4 h-4 ml-2" />
                         צור קוד הזמנה
                       </Button>
