@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart3, Loader2, ArrowRight, Download, TrendingUp, AlertTriangle } from "lucide-react";
+import { BarChart3, Loader2, ArrowRight, Download, TrendingUp, AlertTriangle, Users, Calendar, Filter, PieChartIcon } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subMonths, subQuarters } from "date-fns";
 import { he } from "date-fns/locale";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -430,23 +430,27 @@ export default function ExpenseAnalytics() {
   const outlierWarnings = getOutlierWarnings();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white sticky top-0 z-10 shadow-lg">
+        <div className="container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-primary-foreground" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">אנליטיקה והוצאות</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-2xl font-bold">אנליטיקה והוצאות</h1>
+                <p className="text-sm text-blue-100">
                   {isManager ? 'סיכום דוחות הצוות שלך' : 'סיכום הדוחות שלך'}
                 </p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="bg-white/10 border-white/30 text-white hover:bg-white/20 rounded-xl"
+            >
               חזרה לדשבורד
               <ArrowRight className="w-4 h-4 mr-2" />
             </Button>
@@ -456,22 +460,28 @@ export default function ExpenseAnalytics() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Period Selector */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
               <div className="flex gap-4 items-center flex-wrap">
-                <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="month">חודשי</SelectItem>
-                    <SelectItem value="quarter">רבעוני</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                    <Calendar className="w-4 h-4 text-white" />
+                  </div>
+                  <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
+                    <SelectTrigger className="w-[150px] rounded-xl border-blue-200 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">חודשי</SelectItem>
+                      <SelectItem value="quarter">רבעוני</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 <Select value={selectedPeriod.toString()} onValueChange={(v) => setSelectedPeriod(parseInt(v))}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px] rounded-xl border-blue-200 bg-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -490,23 +500,31 @@ export default function ExpenseAnalytics() {
                 </Select>
 
                 {isManager && teamMembers.length > 0 && (
-                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="בחר עובד" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">כל הצוות</SelectItem>
-                      {teamMembers.map(member => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-sm">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                    <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                      <SelectTrigger className="w-[200px] rounded-xl border-purple-200 bg-white">
+                        <SelectValue placeholder="בחר עובד" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">כל הצוות</SelectItem>
+                        {teamMembers.map(member => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
 
-              <Button onClick={exportData} variant="outline">
+              <Button 
+                onClick={exportData} 
+                className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md"
+              >
                 <Download className="w-4 h-4 ml-2" />
                 ייצוא דוח
               </Button>
@@ -516,10 +534,13 @@ export default function ExpenseAnalytics() {
 
         {/* Outlier Warnings for Managers */}
         {isManager && outlierWarnings.length > 0 && selectedEmployee === 'all' && (
-          <Card className="mb-6 border-orange-500/50 bg-orange-50/50 dark:bg-orange-950/20">
+          <Card className="mb-6 bg-gradient-to-br from-orange-50 to-amber-50 border-0 shadow-lg rounded-2xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-orange-500 to-amber-500" />
             <CardHeader>
-              <CardTitle className="text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
+              <CardTitle className="text-orange-700 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-md">
+                  <TrendingUp className="w-5 h-5 text-white" />
+                </div>
                 התראות על חריגות בהוצאות
               </CardTitle>
               <CardDescription>עובדים שחורגים ב-50% ומעלה מהממוצע</CardDescription>
@@ -527,17 +548,17 @@ export default function ExpenseAnalytics() {
             <CardContent>
               <div className="space-y-3">
                 {outlierWarnings.map((warning, idx) => (
-                  <div key={idx} className="p-4 bg-white dark:bg-card rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div key={idx} className="p-4 bg-white/80 rounded-xl border border-orange-200 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-orange-900 dark:text-orange-100">{warning.name}</p>
+                        <p className="font-bold text-orange-900">{warning.name}</p>
                         <p className="text-sm text-muted-foreground">
                           הוציא ₪{warning.amount.toLocaleString()} ({warning.percentage}%+ מהממוצע)
                         </p>
                       </div>
                       <div className="text-left">
                         <p className="text-sm text-muted-foreground">ממוצע הצוות</p>
-                        <p className="font-bold">₪{warning.average.toLocaleString()}</p>
+                        <p className="font-bold text-orange-700">₪{warning.average.toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
@@ -549,29 +570,36 @@ export default function ExpenseAnalytics() {
 
         {/* Employee Statistics for Managers */}
         {isManager && employeeStats.length > 0 && selectedEmployee === 'all' && (
-          <Card className="mb-6">
+          <Card className="mb-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
             <CardHeader>
-              <CardTitle>סטטיסטיקות עובדים</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-md">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                סטטיסטיקות עובדים
+              </CardTitle>
               <CardDescription>סיכום פעילות כל עובד בצוות</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {employeeStats.map((stat, idx) => (
-                  <Card key={idx} className="border-2 hover:border-primary transition-colors">
+                  <Card key={idx} className="bg-gradient-to-br from-slate-50 to-purple-50/30 border border-purple-100 hover:border-purple-300 transition-all rounded-2xl overflow-hidden hover:shadow-md">
+                    <div className="h-1 bg-gradient-to-r from-purple-400 to-pink-400" />
                     <CardContent className="pt-6">
                       <div className="text-center">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <span className="text-2xl">👤</span>
+                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                          <span className="text-2xl text-white font-bold">{stat.name.charAt(0)}</span>
                         </div>
-                        <h3 className="font-bold text-lg mb-2">{stat.name}</h3>
-                        <div className="space-y-2">
+                        <h3 className="font-bold text-lg mb-3 text-slate-800">{stat.name}</h3>
+                        <div className="space-y-2 bg-white/50 rounded-xl p-3">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">דוחות:</span>
-                            <span className="font-semibold">{stat.reportCount}</span>
+                            <span className="font-bold text-purple-700">{stat.reportCount}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">סה"כ:</span>
-                            <span className="font-bold text-primary">₪{stat.totalAmount.toLocaleString()}</span>
+                            <span className="font-bold text-lg text-purple-700">₪{stat.totalAmount.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -585,15 +613,21 @@ export default function ExpenseAnalytics() {
 
         {/* Employee Comparison Chart for Managers */}
         {isManager && employeeComparisonData.length > 0 && selectedEmployee === 'all' && (
-          <Card className="mb-6">
+          <Card className="mb-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-indigo-500 to-blue-500" />
             <CardHeader>
-              <CardTitle>השוואת הוצאות בין עובדים</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-md">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                השוואת הוצאות בין עובדים
+              </CardTitle>
               <CardDescription>גרף עמודות המציג את ההוצאות של כל עובד</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={employeeComparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                   <YAxis />
                   <Tooltip 
@@ -602,6 +636,7 @@ export default function ExpenseAnalytics() {
                       if (name === 'reports') return [value, 'דוחות'];
                       return value;
                     }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   />
                   <Legend 
                     formatter={(value: string) => {
@@ -610,8 +645,18 @@ export default function ExpenseAnalytics() {
                       return value;
                     }}
                   />
-                  <Bar dataKey="amount" fill="#8884d8" name="amount" />
-                  <Bar dataKey="reports" fill="#82ca9d" name="reports" />
+                  <Bar dataKey="amount" fill="url(#colorAmount)" name="amount" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="reports" fill="url(#colorReports)" name="reports" radius={[8, 8, 0, 0]} />
+                  <defs>
+                    <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                    <linearGradient id="colorReports" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -619,19 +664,27 @@ export default function ExpenseAnalytics() {
         )}
 
         {reports.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <BarChart3 className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">אין נתונים לתקופה זו</h3>
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
+            <CardContent className="py-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                <BarChart3 className="w-10 h-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-slate-700">אין נתונים לתקופה זו</h3>
               <p className="text-muted-foreground">לא נמצאו דוחות מאושרים ב{periodLabel}</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {/* Category Pie Chart */}
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-cyan-500 to-teal-500" />
               <CardHeader>
-                <CardTitle>התפלגות לפי קטגוריה</CardTitle>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-md">
+                    <PieChartIcon className="w-5 h-5 text-white" />
+                  </div>
+                  התפלגות לפי קטגוריה
+                </CardTitle>
                 <CardDescription>חלוקת ההוצאות לפי סוג</CardDescription>
               </CardHeader>
               <CardContent>
@@ -643,7 +696,7 @@ export default function ExpenseAnalytics() {
                       cy="50%"
                       labelLine={false}
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -651,7 +704,10 @@ export default function ExpenseAnalytics() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
+                    <Tooltip 
+                      formatter={(value: number) => `₪${value.toLocaleString()}`} 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -659,20 +715,35 @@ export default function ExpenseAnalytics() {
 
             {/* Timeline Chart */}
             {timelineData.length > 1 && (
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
                 <CardHeader>
-                  <CardTitle>מגמת הוצאות לאורך זמן</CardTitle>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    מגמת הוצאות לאורך זמן
+                  </CardTitle>
                   <CardDescription>סה"כ הוצאות ליום/חודש</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={timelineData}>
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="date" />
                       <YAxis />
-                      <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
+                      <Tooltip 
+                        formatter={(value: number) => `₪${value.toLocaleString()}`}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      />
                       <Legend />
-                      <Line type="monotone" dataKey="amount" stroke="#8884d8" strokeWidth={2} name="סכום (₪)" />
+                      <Line type="monotone" dataKey="amount" stroke="url(#lineGradient)" strokeWidth={3} name="סכום (₪)" dot={{ fill: '#6366f1', strokeWidth: 2 }} />
+                      <defs>
+                        <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#6366f1" />
+                          <stop offset="100%" stopColor="#8b5cf6" />
+                        </linearGradient>
+                      </defs>
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -680,24 +751,30 @@ export default function ExpenseAnalytics() {
             )}
 
             {/* Summary Table */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-500" />
               <CardHeader>
-                <CardTitle>סיכום מפורט</CardTitle>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-md">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  סיכום מפורט
+                </CardTitle>
                 <CardDescription>פירוט הוצאות לפי קטגוריה</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {categoryData.map((cat, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
+                    <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-green-50/30 rounded-xl border border-slate-100 hover:shadow-sm transition-shadow">
+                      <div className="flex items-center gap-4">
                         <div 
-                          className="w-4 h-4 rounded-full" 
+                          className="w-5 h-5 rounded-full shadow-sm" 
                           style={{ backgroundColor: COLORS[idx % COLORS.length] }}
                         />
-                        <span className="font-medium">{cat.name}</span>
+                        <span className="font-semibold text-slate-700">{cat.name}</span>
                       </div>
                       <div className="text-left">
-                        <div className="font-bold">₪{cat.amount.toLocaleString()}</div>
+                        <div className="font-bold text-lg text-slate-800">₪{cat.amount.toLocaleString()}</div>
                         <div className="text-xs text-muted-foreground">
                           {((cat.value / totalAmount) * 100).toFixed(1)}% מסה"כ
                         </div>
