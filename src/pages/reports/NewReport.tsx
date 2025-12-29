@@ -1253,7 +1253,13 @@ export default function NewReport() {
             ) : (
               <div className="space-y-4">
                 {expenses.slice().reverse().map((expense, index) => (
-                  <Card key={expense.id} className="border-2">
+                  <Card key={expense.id} className="border-2 relative">
+                    {/* Saved indicator - top left corner */}
+                    {savedExpenses.has(expense.id) && (
+                      <div className="absolute top-2 left-2 z-10 bg-green-500 text-white rounded-full p-1.5 shadow-sm" title="נשמר">
+                        <Save className="w-3.5 h-3.5" />
+                      </div>
+                    )}
                     <div
                       className="p-4 cursor-pointer flex items-center justify-between hover:bg-muted/50"
                       onClick={() => setExpandedExpense(expandedExpense === expense.id ? null : expense.id)}
@@ -1285,11 +1291,6 @@ export default function NewReport() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {savedExpenses.has(expense.id) && (
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold">
-                            ✓ נשמר
-                          </span>
-                        )}
                         <Button
                           variant="ghost"
                           size="sm"
