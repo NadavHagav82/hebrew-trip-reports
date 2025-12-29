@@ -2146,16 +2146,29 @@ const ViewReport = () => {
 
       {/* Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>שלח דוח במייל</DialogTitle>
-            <DialogDescription>
-              הדוח יישלח כקובץ PDF מצורף למייל לכל הנמענים
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>כתובות מייל</Label>
+        <DialogContent className="max-w-md p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 border-0 shadow-2xl">
+          {/* Header with gradient accent */}
+          <div className="relative">
+            <div className="h-1 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
+            <DialogHeader className="p-6 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Mail className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-foreground">שלח דוח במייל</DialogTitle>
+                  <DialogDescription className="text-sm mt-0.5">
+                    הדוח יישלח כקובץ PDF מצורף למייל לכל הנמענים
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          
+          <div className="px-6 pb-6 space-y-5">
+            {/* Email inputs section */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-foreground">כתובות מייל</Label>
               {recipientEmails.map((email, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
@@ -2168,7 +2181,7 @@ const ViewReport = () => {
                       setRecipientEmails(newEmails);
                     }}
                     dir="ltr"
-                    className="flex-1"
+                    className="flex-1 h-11 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-base transition-all"
                   />
                   {recipientEmails.length > 1 && (
                     <Button
@@ -2179,6 +2192,7 @@ const ViewReport = () => {
                         setRecipientEmails(newEmails);
                       }}
                       disabled={sendingEmail}
+                      className="h-11 w-11 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-950/30 transition-all"
                     >
                       ×
                     </Button>
@@ -2190,15 +2204,17 @@ const ViewReport = () => {
                 size="sm"
                 onClick={() => setRecipientEmails([...recipientEmails, ''])}
                 disabled={sendingEmail}
-                className="w-full"
+                className="w-full h-10 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl hover:border-primary hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all"
               >
                 + הוסף נמען
               </Button>
             </div>
-            <div className="border-t pt-4 space-y-3">
+            
+            {/* Saved lists and templates section */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
               {savedLists.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">רשימות שמורות</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">רשימות שמורות</Label>
                   <div className="space-y-2">
                     {savedLists.map((list) => (
                       <div key={list.id} className="flex items-center gap-2">
@@ -2207,7 +2223,7 @@ const ViewReport = () => {
                           size="sm"
                           onClick={() => handleLoadList(list)}
                           disabled={sendingEmail}
-                          className="flex-1 justify-start"
+                          className="flex-1 justify-start h-10 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
                         >
                           {list.list_name} ({list.recipient_emails.length})
                         </Button>
@@ -2216,6 +2232,7 @@ const ViewReport = () => {
                           size="sm"
                           onClick={() => handleDeleteList(list.id)}
                           disabled={sendingEmail}
+                          className="h-10 w-10 rounded-xl hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 transition-all"
                         >
                           ×
                         </Button>
@@ -2230,70 +2247,82 @@ const ViewReport = () => {
                 size="sm"
                 onClick={() => setShowSaveListDialog(true)}
                 disabled={sendingEmail || recipientEmails.filter(e => e.trim()).length === 0}
-                className="w-full"
+                className="w-full h-10 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
               >
                 שמור רשימה זו
               </Button>
               
-              <Label className="text-xs text-muted-foreground">תבניות מהירות</Label>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (!profile?.manager_email) {
-                      toast({
-                        title: 'שגיאה',
-                        description: 'לא הוגדר מנהל אחראי למשתמש זה',
-                        variant: 'destructive',
-                      });
-                      return;
-                    }
-                    const managerEmail = profile.manager_email;
-                    // Find first empty field, or add new one
-                    const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
-                    if (firstEmptyIndex !== -1) {
-                      const newEmails = [...recipientEmails];
-                      newEmails[firstEmptyIndex] = managerEmail;
-                      setRecipientEmails(newEmails);
-                    } else {
-                      setRecipientEmails([...recipientEmails, managerEmail]);
-                    }
-                  }}
-                  disabled={sendingEmail}
-                >
-                  מנהל אחראי
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const accountingEmail = profile?.accounting_manager_email || 'accounting@company.com';
-                    // Find first empty field, or add new one
-                    const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
-                    if (firstEmptyIndex !== -1) {
-                      const newEmails = [...recipientEmails];
-                      newEmails[firstEmptyIndex] = accountingEmail;
-                      setRecipientEmails(newEmails);
-                    } else {
-                      setRecipientEmails([...recipientEmails, accountingEmail]);
-                    }
-                  }}
-                  disabled={sendingEmail}
-                >
-                  הנהלת חשבונות
-                </Button>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">תבניות מהירות</Label>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!profile?.manager_email) {
+                        toast({
+                          title: 'שגיאה',
+                          description: 'לא הוגדר מנהל אחראי למשתמש זה',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      const managerEmail = profile.manager_email;
+                      const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
+                      if (firstEmptyIndex !== -1) {
+                        const newEmails = [...recipientEmails];
+                        newEmails[firstEmptyIndex] = managerEmail;
+                        setRecipientEmails(newEmails);
+                      } else {
+                        setRecipientEmails([...recipientEmails, managerEmail]);
+                      }
+                    }}
+                    disabled={sendingEmail}
+                    className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-600 transition-all"
+                  >
+                    מנהל אחראי
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const accountingEmail = profile?.accounting_manager_email || 'accounting@company.com';
+                      const firstEmptyIndex = recipientEmails.findIndex(e => e.trim() === '');
+                      if (firstEmptyIndex !== -1) {
+                        const newEmails = [...recipientEmails];
+                        newEmails[firstEmptyIndex] = accountingEmail;
+                        setRecipientEmails(newEmails);
+                      } else {
+                        setRecipientEmails([...recipientEmails, accountingEmail]);
+                      }
+                    }}
+                    disabled={sendingEmail}
+                    className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 transition-all"
+                  >
+                    הנהלת חשבונות
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowEmailDialog(false);
-              setRecipientEmails(['']);
-            }} disabled={sendingEmail}>
+          
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowEmailDialog(false);
+                setRecipientEmails(['']);
+              }} 
+              disabled={sendingEmail}
+              className="h-11 px-6 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            >
               ביטול
             </Button>
-            <Button onClick={handleSendEmail} disabled={sendingEmail}>
+            <Button 
+              onClick={handleSendEmail} 
+              disabled={sendingEmail}
+              className="h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
               {sendingEmail ? (
                 <>
                   <Loader2 className="w-4 h-4 ml-2 animate-spin" />
