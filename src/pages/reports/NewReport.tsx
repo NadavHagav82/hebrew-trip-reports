@@ -42,7 +42,7 @@ interface Expense {
   amount_in_ils: number;
   receipts: ReceiptFile[];
   notes?: string;
-  payment_method: 'company_card' | 'out_of_pocket';
+  payment_method: 'company_card' | 'out_of_pocket' | '';
   approval_status?: 'pending' | 'approved' | 'rejected';
   manager_comment?: string;
   reviewed_at?: string;
@@ -334,7 +334,7 @@ export default function NewReport() {
         amount_in_ils: exp.amount_in_ils,
         receipts: [], // Receipts will be loaded separately if needed
         notes: exp.notes || '',
-        payment_method: (exp as any).payment_method || 'out_of_pocket',
+        payment_method: (exp as any).payment_method || '',
         approval_status: exp.approval_status || 'pending',
         manager_comment: exp.manager_comment || undefined,
         reviewed_at: exp.reviewed_at || undefined,
@@ -364,7 +364,7 @@ export default function NewReport() {
       amount_in_ils: 0,
       receipts: [],
       notes: '',
-      payment_method: 'out_of_pocket',
+      payment_method: '',
     };
     setExpenses([...expenses, newExpense]);
     setExpandedExpense(newExpense.id);
@@ -719,6 +719,17 @@ export default function NewReport() {
           toast({
             title: '⚠️ שגיאה',
             description: `הוצאה #${expenseNum}: יש למלא סכום תקין`,
+            variant: 'destructive',
+          });
+          setExpandedExpense(expense.id);
+          return;
+        }
+        
+        if (!expense.payment_method) {
+          console.log('Missing payment method', expense);
+          toast({
+            title: '⚠️ שגיאה',
+            description: `הוצאה #${expenseNum}: יש לבחור אמצעי תשלום`,
             variant: 'destructive',
           });
           setExpandedExpense(expense.id);
@@ -1433,8 +1444,8 @@ export default function NewReport() {
                             value={expense.payment_method}
                             onValueChange={(value) => updateExpense(expense.id, 'payment_method', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue />
+                            <SelectTrigger className={!expense.payment_method ? 'border-orange-400' : ''}>
+                              <SelectValue placeholder="בחר אמצעי תשלום" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="out_of_pocket">
