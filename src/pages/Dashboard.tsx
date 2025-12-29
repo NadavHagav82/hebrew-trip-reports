@@ -672,50 +672,99 @@ export default function Dashboard() {
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
-                    <thead className="border-b">
+                    <thead className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl">
                       <tr>
-                        <th className="text-right p-4 font-semibold">סטטוס</th>
-                        <th className="text-right p-4 font-semibold">יעד</th>
-                        <th className="text-right p-4 font-semibold">תאריכים</th>
-                        <th className="text-right p-4 font-semibold">סה"כ (₪)</th>
-                        <th className="text-right p-4 font-semibold">הוגש</th>
-                        <th className="text-right p-4 font-semibold">פעולות</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground first:rounded-tr-xl">סטטוס</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground">יעד</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground">תאריכים</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground">סה"כ (₪)</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground">הוגש</th>
+                        <th className="text-right p-4 font-semibold text-muted-foreground last:rounded-tl-xl">פעולות</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {displayedReports.map((report) => (
-                        <tr key={report.id} className="border-b hover:bg-muted/50 transition-colors">
+                    <tbody className="divide-y divide-border/50">
+                      {displayedReports.map((report, index) => (
+                        <tr 
+                          key={report.id} 
+                          className="group hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent transition-all duration-300 cursor-pointer"
+                          onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
+                        >
                           <td className="p-4">
                             <StatusBadge 
                               status={report.status} 
                               daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
                             />
                           </td>
-                          <td className="p-4 font-medium">{report.trip_destination}</td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {new Date(report.trip_start_date).toLocaleDateString('he-IL')} - {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                                report.status === 'closed' 
+                                  ? 'bg-gradient-to-br from-green-100 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/20' 
+                                  : report.status === 'draft'
+                                  ? 'bg-gradient-to-br from-slate-100 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/20'
+                                  : 'bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20'
+                              }`}>
+                                <FileText className={`w-5 h-5 ${
+                                  report.status === 'closed' 
+                                    ? 'text-green-600' 
+                                    : report.status === 'draft'
+                                    ? 'text-slate-600'
+                                    : 'text-orange-600'
+                                }`} />
+                              </div>
+                              <span className="font-semibold group-hover:text-primary transition-colors">{report.trip_destination}</span>
+                            </div>
                           </td>
-                          <td className="p-4 font-semibold">
-                            {report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
+                          <td className="p-4">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span className="bg-muted/50 px-2 py-1 rounded-md">
+                                {new Date(report.trip_start_date).toLocaleDateString('he-IL')}
+                              </span>
+                              <span>→</span>
+                              <span className="bg-muted/50 px-2 py-1 rounded-md">
+                                {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                              ₪{report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
+                            </span>
                           </td>
                           <td className="p-4 text-sm text-muted-foreground">
-                            {report.submitted_at ? new Date(report.submitted_at).toLocaleDateString('he-IL') : '-'}
+                            {report.submitted_at ? (
+                              <span className="bg-muted/50 px-2 py-1 rounded-md">
+                                {new Date(report.submitted_at).toLocaleDateString('he-IL')}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50">-</span>
+                            )}
                           </td>
                           <td className="p-4">
                             {report.status === 'draft' ? (
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                onClick={() => navigate(`/reports/edit/${report.id}`)}
+                                className="gap-2 border-slate-200 hover:bg-slate-100 hover:border-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 rounded-xl transition-all"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/reports/edit/${report.id}`);
+                                }}
                               >
+                                <Edit className="w-4 h-4" />
                                 המשך עריכה
                               </Button>
                             ) : (
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                onClick={() => navigate(`/reports/${report.id}`)}
+                                className="gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 rounded-xl transition-all"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/reports/${report.id}`);
+                                }}
                               >
+                                <Eye className="w-4 h-4" />
                                 צפייה
                               </Button>
                             )}
@@ -727,16 +776,52 @@ export default function Dashboard() {
                 </div>
 
                 {/* Mobile Cards */}
-                <div className="md:hidden space-y-3">
-                  {displayedReports.map((report) => (
-                    <Card key={report.id} className="overflow-hidden">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="font-bold text-lg mb-1">{report.trip_destination}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(report.trip_start_date).toLocaleDateString('he-IL')} - {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
-                            </p>
+                <div className="md:hidden space-y-4">
+                  {displayedReports.map((report, index) => (
+                    <Card 
+                      key={report.id} 
+                      className={`overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group relative ${
+                        report.status === 'closed' 
+                          ? 'bg-gradient-to-br from-green-50/80 via-card to-emerald-50/50 dark:from-green-950/30 dark:via-card dark:to-emerald-950/20' 
+                          : report.status === 'draft'
+                          ? 'bg-gradient-to-br from-slate-50/80 via-card to-gray-50/50 dark:from-slate-950/30 dark:via-card dark:to-gray-950/20'
+                          : 'bg-gradient-to-br from-orange-50/80 via-card to-amber-50/50 dark:from-orange-950/30 dark:via-card dark:to-amber-950/20'
+                      }`}
+                      onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
+                    >
+                      {/* Decorative gradient line */}
+                      <div className={`absolute top-0 left-0 right-0 h-1.5 ${
+                        report.status === 'closed' 
+                          ? 'bg-gradient-to-r from-green-400 via-emerald-500 to-green-400' 
+                          : report.status === 'draft'
+                          ? 'bg-gradient-to-r from-slate-400 via-gray-500 to-slate-400'
+                          : 'bg-gradient-to-r from-orange-400 via-amber-500 to-orange-400'
+                      }`} />
+                      
+                      <CardContent className="p-5 pt-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ${
+                              report.status === 'closed' 
+                                ? 'bg-gradient-to-br from-green-400 to-emerald-500' 
+                                : report.status === 'draft'
+                                ? 'bg-gradient-to-br from-slate-400 to-gray-500'
+                                : 'bg-gradient-to-br from-orange-400 to-amber-500'
+                            }`}>
+                              <FileText className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-lg mb-1 truncate group-hover:text-primary transition-colors">{report.trip_destination}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="bg-background/60 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-border/30">
+                                  {new Date(report.trip_start_date).toLocaleDateString('he-IL')}
+                                </span>
+                                <span className="text-muted-foreground/50">→</span>
+                                <span className="bg-background/60 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-border/30">
+                                  {new Date(report.trip_end_date).toLocaleDateString('he-IL')}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                           <StatusBadge 
                             status={report.status} 
@@ -744,36 +829,44 @@ export default function Dashboard() {
                           />
                         </div>
                         
-                        <div className="flex items-center justify-between mb-3 pt-3 border-t">
-                          <span className="text-sm text-muted-foreground">סה"כ</span>
-                          <span className="text-xl font-bold">
-                            ₪{report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
-                          </span>
+                        <div className="flex items-center justify-between mb-4 pt-4 border-t border-border/30">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-muted-foreground mb-1">סכום כולל</span>
+                            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                              ₪{report.total_amount_ils?.toLocaleString('he-IL', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          {report.submitted_at && (
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs text-muted-foreground mb-1">תאריך הגשה</span>
+                              <span className="text-sm font-medium bg-background/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border/30">
+                                {new Date(report.submitted_at).toLocaleDateString('he-IL')}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
-                        {report.submitted_at && (
-                          <p className="text-xs text-muted-foreground mb-3">
-                            הוגש: {new Date(report.submitted_at).toLocaleDateString('he-IL')}
-                          </p>
-                        )}
-
                         <Button
-                          className={`w-full h-12 text-base font-semibold shadow-sm hover:shadow-md transition-all ${
+                          className={`w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all rounded-xl gap-2 ${
                             report.status === 'draft' 
-                              ? '' 
-                              : 'bg-primary hover:bg-primary/90 text-primary-foreground border-0'
+                              ? 'bg-gradient-to-r from-slate-500 to-gray-600 hover:from-slate-400 hover:to-gray-500 text-white' 
+                              : report.status === 'closed'
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white'
+                              : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white'
                           }`}
-                          variant={report.status === 'draft' ? 'default' : 'default'}
-                          onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`);
+                          }}
                         >
                           {report.status === 'draft' ? (
                             <>
-                              <Edit className="w-5 h-5 ml-2" />
+                              <Edit className="w-5 h-5" />
                               המשך עריכה
                             </>
                           ) : (
                             <>
-                              <Eye className="w-5 h-5 ml-2" />
+                              <Eye className="w-5 h-5" />
                               צפה בדוח
                             </>
                           )}
