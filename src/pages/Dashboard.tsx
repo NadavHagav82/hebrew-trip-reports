@@ -421,10 +421,10 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={() => setShowProfileDialog(true)}
-                className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center hover:bg-primary/90 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg"
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 via-primary to-indigo-600 rounded-full flex items-center justify-center hover:from-blue-400 hover:via-primary/90 hover:to-indigo-500 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg"
                 title="פרופיל"
               >
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+                <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </button>
               <h1 className="text-lg sm:text-xl font-bold">{profile?.full_name || 'דוחות נסיעה'}</h1>
             </div>
