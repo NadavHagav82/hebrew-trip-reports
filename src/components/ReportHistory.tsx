@@ -81,17 +81,23 @@ export const ReportHistory = ({ reportId }: ReportHistoryProps) => {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            היסטוריית שינויים
+      <Card className="mt-6 shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500" />
+        <CardHeader className="pb-4 bg-gradient-to-l from-purple-500/10 to-transparent">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-2xl">היסטוריית שינויים</span>
+              <p className="text-sm font-normal text-muted-foreground mt-0.5">מעקב אחר פעולות בדוח</p>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -99,11 +105,17 @@ export const ReportHistory = ({ reportId }: ReportHistoryProps) => {
 
   if (history.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            היסטוריית שינויים
+      <Card className="mt-6 shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500" />
+        <CardHeader className="pb-4 bg-gradient-to-l from-purple-500/10 to-transparent">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-2xl">היסטוריית שינויים</span>
+              <p className="text-sm font-normal text-muted-foreground mt-0.5">מעקב אחר פעולות בדוח</p>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -116,17 +128,28 @@ export const ReportHistory = ({ reportId }: ReportHistoryProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          היסטוריית שינויים ({history.length})
-        </CardTitle>
+    <Card className="mt-6 shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500" />
+      <CardHeader className="pb-4 bg-gradient-to-l from-purple-500/10 to-transparent">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-2xl">היסטוריית שינויים</span>
+              <p className="text-sm font-normal text-muted-foreground mt-0.5">מעקב אחר פעולות בדוח</p>
+            </div>
+          </CardTitle>
+          <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md">
+            {history.length} פעולות
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute right-[19px] top-0 bottom-0 w-0.5 bg-border" />
+          <div className="absolute right-[23px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-300 via-indigo-300 to-blue-300 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800" />
           
           <div className="space-y-6">
             {history.map((entry, index) => {
@@ -136,32 +159,32 @@ export const ReportHistory = ({ reportId }: ReportHistoryProps) => {
               return (
                 <div key={entry.id} className="relative flex gap-4">
                   {/* Timeline dot */}
-                  <div className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${colorClass} ring-4 ring-background`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`relative z-10 flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center ${colorClass} ring-4 ring-background shadow-md`}>
+                    <Icon className="w-6 h-6" />
                   </div>
                   
                   {/* Content */}
                   <div className="flex-1 pb-6">
-                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${colorClass}`}>
+                          <span className={`inline-block px-3 py-1.5 rounded-xl text-xs font-bold ${colorClass}`}>
                             {getActionLabel(entry.action)}
                           </span>
                         </div>
-                        <div className="text-xs text-muted-foreground text-left">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 text-left bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
                           {format(new Date(entry.timestamp), 'dd/MM/yyyy HH:mm', { locale: he })}
                         </div>
                       </div>
                       
-                      <div className="text-sm">
-                        <span className="font-semibold">{entry.profiles?.full_name || 'משתמש לא ידוע'}</span>
-                        <span className="text-muted-foreground mx-1">•</span>
-                        <span className="text-muted-foreground">{getActionLabel(entry.action)}</span>
+                      <div className="text-sm mt-3">
+                        <span className="font-bold text-slate-800 dark:text-white">{entry.profiles?.full_name || 'משתמש לא ידוע'}</span>
+                        <span className="text-slate-400 mx-2">•</span>
+                        <span className="text-slate-600 dark:text-slate-400">{getActionLabel(entry.action)}</span>
                       </div>
                       
                       {entry.notes && (
-                        <div className="mt-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded border-r-2 border-primary">
+                        <div className="mt-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border-r-4 border-purple-400">
                           {entry.notes}
                         </div>
                       )}

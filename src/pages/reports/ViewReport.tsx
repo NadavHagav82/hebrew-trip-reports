@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
@@ -36,6 +36,7 @@ interface Expense {
   amount_in_ils: number;
   receipts: any[];
   notes?: string;
+  payment_method?: 'company_card' | 'out_of_pocket';
   approval_status?: 'pending' | 'approved' | 'rejected';
   manager_comment?: string;
   reviewed_at?: string;
@@ -1329,18 +1330,21 @@ const ViewReport = () => {
           </Card>
 
           {/* Expenses List */}
-          <Card className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500" />
-            <CardHeader className="pb-4 bg-gradient-to-l from-orange-500/5 to-transparent">
-              <div className="flex items-center justify-between">
+          <Card className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500" />
+            <CardHeader className="pb-4 bg-gradient-to-l from-orange-500/10 to-transparent">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Package className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <Receipt className="w-6 h-6 text-white" />
                   </div>
-                  הוצאות
+                  <div>
+                    <span className="text-2xl">הוצאות</span>
+                    <p className="text-sm font-normal text-muted-foreground mt-0.5">רשימת כל ההוצאות בנסיעה</p>
+                  </div>
                 </CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-300 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md">
                     {expenses.length} פריטים
                   </div>
                   {isAccountingUser && (
@@ -1399,6 +1403,24 @@ const ViewReport = () => {
                             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                               {expense.currency} {expense.amount.toFixed(2)}
                             </span>
+                          </div>
+                          {/* Payment method indicator */}
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm ${
+                            expense.payment_method === 'company_card'
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                              : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                          }`}>
+                            {expense.payment_method === 'company_card' ? (
+                              <>
+                                <CreditCard className="w-4 h-4" />
+                                <span>כרטיס חברה</span>
+                              </>
+                            ) : (
+                              <>
+                                <Wallet className="w-4 h-4" />
+                                <span>הוצאה עצמית</span>
+                              </>
+                            )}
                           </div>
                         </div>
                         
