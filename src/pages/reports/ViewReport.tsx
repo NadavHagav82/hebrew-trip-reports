@@ -1065,9 +1065,16 @@ const ViewReport = () => {
         }
       `}</style>
       
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 font-sans">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-blue-50/30 dark:from-slate-950 dark:via-background dark:to-blue-950/20 font-sans">
+        {/* Background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/3 rounded-full blur-3xl" />
+        </div>
+
         {/* Header */}
-        <header className="bg-card/95 backdrop-blur-sm border-b shadow-sm sticky top-0 z-10 no-print">
+        <header className="bg-card/80 backdrop-blur-md border-b border-border/50 shadow-sm sticky top-0 z-10 no-print">
           <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
             {/* Mobile Layout */}
             <div className="flex md:hidden flex-col gap-3">
@@ -1077,11 +1084,11 @@ const ViewReport = () => {
                     variant="ghost" 
                     size="sm" 
                     onClick={() => navigate('/')}
-                    className="hover:bg-accent"
+                    className="hover:bg-primary/10 rounded-xl"
                   >
                     <ArrowRight className="w-4 h-4" />
                   </Button>
-                  <h1 className="text-lg font-bold bg-gradient-to-l from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
                     צפייה בדוח
                   </h1>
                 </div>
@@ -1095,7 +1102,7 @@ const ViewReport = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate(`/reports/edit/${report.id}`)}
-                      className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
+                      className="whitespace-nowrap shadow-sm hover:shadow-md transition-all rounded-xl border-border/50"
                     >
                       <Edit className="w-4 h-4 ml-1" />
                       עריכה
@@ -1103,7 +1110,7 @@ const ViewReport = () => {
                     <Button 
                       size="sm"
                       onClick={handleCloseReport}
-                      className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                      className="whitespace-nowrap bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-md hover:shadow-lg transition-all rounded-xl"
                     >
                       <CheckCircle className="w-4 h-4 ml-1" />
                       הפק דוח
@@ -1114,7 +1121,7 @@ const ViewReport = () => {
                   <Button 
                     size="sm"
                     onClick={handleApproveReport}
-                    className="whitespace-nowrap bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                    className="whitespace-nowrap bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-md hover:shadow-lg transition-all rounded-xl"
                   >
                     <CheckCircle className="w-4 h-4 ml-1" />
                     אשר דוח
@@ -1125,7 +1132,7 @@ const ViewReport = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => navigate(`/reports/edit/${report.id}`)}
-                    className="whitespace-nowrap bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all"
+                    className="whitespace-nowrap bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all rounded-xl"
                   >
                     <Edit className="w-4 h-4 ml-1" />
                     עריכה
@@ -1135,7 +1142,7 @@ const ViewReport = () => {
                   onClick={printPDF}
                   size="sm"
                   variant="outline"
-                  className="whitespace-nowrap shadow-sm hover:shadow-md transition-shadow"
+                  className="whitespace-nowrap shadow-sm hover:shadow-md transition-all rounded-xl border-border/50"
                 >
                   <Printer className="w-4 h-4 ml-1" />
                   ייצא PDF
@@ -1145,7 +1152,7 @@ const ViewReport = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => setShowEmailDialog(true)}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap rounded-xl border-border/50"
                   >
                     <Mail className="w-4 h-4 ml-1" />
                     שלח במייל
@@ -1161,12 +1168,12 @@ const ViewReport = () => {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => navigate('/')}
-                  className="hover:bg-accent"
+                  className="hover:bg-primary/10 rounded-xl"
                 >
                   <ArrowRight className="w-4 h-4 ml-2" />
                   חזרה
                 </Button>
-                <h1 className="text-xl font-bold bg-gradient-to-l from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
                   צפייה בדוח
                 </h1>
               </div>
@@ -1176,14 +1183,14 @@ const ViewReport = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => navigate(`/reports/edit/${report.id}`)}
-                      className="shadow-sm hover:shadow-md transition-shadow"
+                      className="shadow-sm hover:shadow-md transition-all rounded-xl border-border/50"
                     >
                       <Edit className="w-4 h-4 ml-2" />
                       עריכה
                     </Button>
                     <Button 
                       onClick={handleCloseReport}
-                      className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-md hover:shadow-lg transition-all rounded-xl"
                     >
                       <CheckCircle className="w-4 h-4 ml-2" />
                       הפק דוח
@@ -1193,7 +1200,7 @@ const ViewReport = () => {
                 {report.status === 'pending_approval' && isManagerOfThisReport && (
                   <Button 
                     onClick={handleApproveReport}
-                    className="bg-green-600 hover:bg-green-700 shadow-sm hover:shadow-md transition-all"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-md hover:shadow-lg transition-all rounded-xl"
                   >
                     <CheckCircle className="w-4 h-4 ml-2" />
                     אשר דוח
@@ -1203,7 +1210,7 @@ const ViewReport = () => {
                   <Button 
                     variant="outline"
                     onClick={() => navigate(`/reports/edit/${report.id}`)}
-                    className="bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all"
+                    className="bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all rounded-xl"
                   >
                     <Edit className="w-4 h-4 ml-2" />
                     עריכה
@@ -1211,13 +1218,16 @@ const ViewReport = () => {
                 )}
                 <Button 
                   onClick={printPDF}
-                  className="shadow-sm hover:shadow-md transition-shadow"
+                  className="shadow-md hover:shadow-lg transition-all rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500"
                 >
                   <Printer className="w-4 h-4 ml-2" />
                   ייצא PDF
                 </Button>
                 {report.status === 'closed' && (
-                  <Button onClick={() => setShowEmailDialog(true)}>
+                  <Button 
+                    onClick={() => setShowEmailDialog(true)}
+                    className="rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400"
+                  >
                     <Mail className="w-4 h-4 ml-2" />
                     שלח במייל
                   </Button>
@@ -1228,86 +1238,109 @@ const ViewReport = () => {
         </header>
 
         {/* Screen View */}
-        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl no-print">
+        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl no-print relative">
           {/* Hero Section */}
-          <Card className="mb-6 shadow-xl border-none overflow-hidden bg-gradient-to-bl from-slate-600 via-slate-700 to-slate-800">
-            <CardContent className="p-6 sm:p-8 text-white">
+          <Card className="mb-6 shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 relative group">
+            {/* Decorative elements */}
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-500/20 to-transparent rounded-full blur-2xl" />
+            
+            <CardContent className="p-6 sm:p-8 text-white relative">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">דוח נסיעה עסקית</h2>
-                  <p className="text-slate-200 text-sm sm:text-base flex items-center gap-2">
-                    <span className="font-medium">{report.trip_destination}</span>
-                    <span>•</span>
-                    <span>{format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}</span>
-                  </p>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-white/20 to-white/5 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-bold">דוח נסיעה עסקית</h2>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-200 text-sm sm:text-base flex-wrap">
+                    <span className="font-semibold bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">{report.trip_destination}</span>
+                    <span className="text-white/50">•</span>
+                    <span className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
+                    </span>
+                  </div>
                 </div>
-                <StatusBadge status={report.status} />
+                <div className="flex flex-col items-end gap-2">
+                  <StatusBadge status={report.status} />
+                  <div className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg">
+                    ₪{report.total_amount_ils?.toFixed(2)}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
-
           {/* Trip Details */}
-          <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-t-slate-500">
-            <CardHeader className="pb-4 bg-gradient-to-l from-slate-50 to-transparent">
-              <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <div className="w-1 h-6 bg-slate-600 rounded-full"></div>
+          <Card className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden group">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+            <CardHeader className="pb-4 bg-gradient-to-l from-primary/5 to-transparent">
+              <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
                 פרטי הנסיעה
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-lg border border-indigo-100">
-                  <span className="text-xs text-indigo-600 font-semibold uppercase tracking-wide block mb-1">שם העובד</span>
-                  <span className="font-bold text-lg text-gray-900">{profile?.full_name || '-'}</span>
+                <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-card p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/50 hover:shadow-md transition-all">
+                  <span className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wide block mb-1">שם העובד</span>
+                  <span className="font-bold text-lg text-foreground">{profile?.full_name || '-'}</span>
                 </div>
-                <div className="bg-gradient-to-br from-purple-50 to-white p-4 rounded-lg border border-purple-100">
-                  <span className="text-xs text-purple-600 font-semibold uppercase tracking-wide block mb-1">חברה</span>
-                  <span className="font-bold text-lg text-gray-900">{profile?.department || '-'}</span>
+                <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-card p-4 rounded-xl border border-purple-100 dark:border-purple-900/50 hover:shadow-md transition-all">
+                  <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wide block mb-1">חברה</span>
+                  <span className="font-bold text-lg text-foreground">{profile?.department || '-'}</span>
                 </div>
-                <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-lg border border-emerald-100">
-                  <span className="text-xs text-emerald-600 font-semibold uppercase tracking-wide block mb-1">יעד</span>
-                  <span className="font-bold text-lg text-gray-900">{report.trip_destination}</span>
+                <div className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-card p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/50 hover:shadow-md transition-all">
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase tracking-wide block mb-1">יעד</span>
+                  <span className="font-bold text-lg text-foreground">{report.trip_destination}</span>
                 </div>
-                <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-lg border border-amber-100">
-                  <span className="text-xs text-amber-600 font-semibold uppercase tracking-wide block mb-1">תאריכי נסיעה</span>
-                  <span className="font-bold text-base text-gray-900">
+                <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-card p-4 rounded-xl border border-amber-100 dark:border-amber-900/50 hover:shadow-md transition-all">
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold uppercase tracking-wide block mb-1">תאריכי נסיעה</span>
+                  <span className="font-bold text-base text-foreground">
                     {format(new Date(report.trip_start_date), "dd/MM/yyyy")} - {format(new Date(report.trip_end_date), "dd/MM/yyyy")}
                   </span>
                 </div>
-                <div className="bg-gradient-to-br from-sky-50 to-white p-4 rounded-lg border border-sky-100">
-                  <span className="text-xs text-sky-600 font-semibold uppercase tracking-wide block mb-1">מספר ימים</span>
-                  <span className="font-bold text-lg text-gray-900">{calculateTripDuration()}</span>
+                <div className="bg-gradient-to-br from-sky-50 to-white dark:from-sky-950/30 dark:to-card p-4 rounded-xl border border-sky-100 dark:border-sky-900/50 hover:shadow-md transition-all">
+                  <span className="text-xs text-sky-600 dark:text-sky-400 font-semibold uppercase tracking-wide block mb-1">מספר ימים</span>
+                  <span className="font-bold text-lg text-foreground">{calculateTripDuration()}</span>
                 </div>
-                <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-lg border border-rose-100 sm:col-span-2">
-                  <span className="text-xs text-rose-600 font-semibold uppercase tracking-wide block mb-1">מטרת הנסיעה</span>
-                  <span className="font-bold text-lg text-gray-900">{report.trip_purpose}</span>
+                <div className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-card p-4 rounded-xl border border-rose-100 dark:border-rose-900/50 sm:col-span-2 hover:shadow-md transition-all">
+                  <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold uppercase tracking-wide block mb-1">מטרת הנסיעה</span>
+                  <span className="font-bold text-lg text-foreground">{report.trip_purpose}</span>
                 </div>
               </div>
               {report.notes && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-r-4 border-amber-400">
-                  <span className="text-sm text-amber-800 font-semibold block mb-2">הערות:</span>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{report.notes}</p>
+                <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/20 rounded-xl border-r-4 border-amber-400">
+                  <span className="text-sm text-amber-800 dark:text-amber-300 font-semibold block mb-2">הערות:</span>
+                  <p className="text-sm text-foreground/80 whitespace-pre-wrap">{report.notes}</p>
                 </div>
               )}
               {report.manager_general_comment && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-r-4 border-blue-400">
-                  <span className="text-sm text-blue-800 font-semibold block mb-2">הערת מנהל על הדוח:</span>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{report.manager_general_comment}</p>
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 rounded-xl border-r-4 border-blue-400">
+                  <span className="text-sm text-blue-800 dark:text-blue-300 font-semibold block mb-2">הערת מנהל על הדוח:</span>
+                  <p className="text-sm text-foreground/80 whitespace-pre-wrap">{report.manager_general_comment}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Expenses List */}
-          <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-t-purple-500">
-            <CardHeader className="pb-4 bg-gradient-to-l from-purple-50 to-transparent">
+          <Card className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500" />
+            <CardHeader className="pb-4 bg-gradient-to-l from-orange-500/5 to-transparent">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-bold text-purple-900 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Package className="w-5 h-5 text-white" />
+                  </div>
                   הוצאות
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                  <div className="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-300 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
                     {expenses.length} פריטים
                   </div>
                   {isAccountingUser && (
@@ -1317,35 +1350,38 @@ const ViewReport = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {expenses.map((expense, index) => {
                   const CategoryIcon = getCategoryIcon(expense.category);
                   const categoryColor = getCategoryColor(expense.category);
                   return (
-                    <div key={expense.id} className="group relative border-2 border-gray-100 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50 hover:from-slate-50 hover:to-indigo-50 hover:border-slate-200 transition-all duration-300 hover:shadow-md">
-                      <div className="absolute top-3 left-3 bg-gray-100 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold group-hover:bg-slate-600 group-hover:text-white transition-all">
+                    <div key={expense.id} className="group relative border border-border/50 rounded-2xl p-5 bg-gradient-to-br from-card to-muted/20 hover:from-primary/5 hover:to-indigo-500/5 hover:border-primary/30 transition-all duration-300 hover:shadow-lg overflow-hidden">
+                      {/* Decorative gradient line */}
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      <div className="absolute top-3 left-3 bg-gradient-to-br from-muted to-muted/50 text-muted-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold group-hover:from-primary group-hover:to-indigo-600 group-hover:text-white transition-all shadow-sm">
                         {index + 1}
                       </div>
                       <div className="flex items-start justify-between gap-4 mr-6">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-3 flex-wrap">
-                            <span className="font-bold text-lg text-gray-900">{expense.description}</span>
+                            <span className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{expense.description}</span>
                             <span className={`text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 ${categoryColor} shadow-sm`}>
                               <CategoryIcon className="w-4 h-4" />
                               {getCategoryLabel(expense.category)}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 flex items-center gap-2 font-medium">
-                            <Calendar className="w-4 h-4 text-slate-500" />
+                          <p className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
+                            <Calendar className="w-4 h-4 text-primary/60" />
                             {format(new Date(expense.expense_date), 'dd/MM/yyyy')}
                           </p>
                           {expense.notes && (
-                            <p className="text-sm text-gray-600 mt-3 italic bg-slate-50 p-3 rounded-lg border-r-2 border-slate-400">
+                            <p className="text-sm text-muted-foreground mt-3 italic bg-muted/50 p-3 rounded-xl border-r-2 border-primary/40">
                               {expense.notes}
                             </p>
                           )}
                           {expense.approval_status && expense.approval_status !== 'pending' && (
-                            <div className={`mt-3 p-3 rounded-lg border-2 ${
+                            <div className={`mt-3 p-3 rounded-xl border-2 ${
                               expense.approval_status === 'approved'
                                 ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
                                 : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
@@ -1378,7 +1414,7 @@ const ViewReport = () => {
                                       href={attachment.signed_url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className={`flex items-center gap-2 text-xs p-2 rounded border ${
+                                      className={`flex items-center gap-2 text-xs p-2 rounded-lg border ${
                                         expense.approval_status === 'approved'
                                           ? 'bg-green-100 border-green-300 hover:bg-green-200 text-green-800'
                                           : 'bg-red-100 border-red-300 hover:bg-red-200 text-red-800'
@@ -1399,10 +1435,10 @@ const ViewReport = () => {
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
-                          <div className="text-2xl font-black text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">
+                          <div className="text-2xl font-black bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent bg-gradient-to-br from-primary/10 to-indigo-500/10 px-4 py-2 rounded-xl border border-primary/20">
                             ₪{expense.amount_in_ils.toFixed(2)}
                           </div>
-                          <div className="text-sm bg-gray-100 px-3 py-1 rounded-full font-semibold text-gray-700">
+                          <div className="text-sm bg-muted/50 px-3 py-1 rounded-full font-semibold text-muted-foreground border border-border/50">
                             <span>{expense.currency}</span>
                             <span className="mx-1.5">•</span>
                             <span>{expense.amount.toFixed(2)}</span>
@@ -1422,7 +1458,7 @@ const ViewReport = () => {
                                     setPreviewReceipts(allReceipts);
                                     setPreviewIndex(idx);
                                   }}
-                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors font-medium border border-blue-200 cursor-pointer"
+                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 hover:from-blue-200 hover:to-indigo-200 transition-all font-medium border border-blue-200 dark:border-blue-800 cursor-pointer shadow-sm hover:shadow"
                                 >
                                   <FileText className="w-3.5 h-3.5" />
                                   {expense.receipts.length === 1 ? 'צפה בחשבונית' : `חשבונית ${idx + 1}`}
@@ -1507,10 +1543,13 @@ const ViewReport = () => {
           </Card>
 
           {/* Daily Allowance Section */}
-          <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-300 border-t-4 border-t-blue-500">
-            <CardHeader className="pb-4 bg-gradient-to-l from-blue-50 to-transparent">
-              <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+          <Card className="mb-6 shadow-xl hover:shadow-2xl transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
+            <CardHeader className="pb-4 bg-gradient-to-l from-blue-500/5 to-transparent">
+              <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
                 אש"ל יומי
               </CardTitle>
             </CardHeader>
