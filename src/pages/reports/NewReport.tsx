@@ -1292,26 +1292,26 @@ export default function NewReport() {
                             )}
                           </div>
                           <div className="space-y-3 mt-2">
-                            <div className="flex gap-2 justify-center">
+                            <div className="flex gap-4 justify-center">
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                className="h-12 w-12"
+                                className="h-16 w-16 border-primary/30 hover:border-primary hover:bg-primary/10"
                                 onClick={() => openCameraDialog(expense.id)}
                                 title="צלם קבלה"
                               >
-                                <Camera className="w-5 h-5" />
+                                <Camera className="w-7 h-7 text-primary" />
                               </Button>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                className="h-12 w-12"
+                                className="h-16 w-16 border-primary/30 hover:border-primary hover:bg-primary/10"
                                 onClick={() => openFileDialog(expense.id)}
                                 title="העלה מהמכשיר"
                               >
-                                <Upload className="w-5 h-5" />
+                                <Upload className="w-7 h-7 text-primary" />
                               </Button>
                             </div>
 
