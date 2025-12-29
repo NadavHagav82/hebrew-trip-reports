@@ -263,6 +263,7 @@ export default function NewReport() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shakingFields, setShakingFields] = useState<{[expenseId: string]: string[]}>({});
   const [savedExpenses, setSavedExpenses] = useState<Set<string>>(new Set());
+  const [duplicateWarning, setDuplicateWarning] = useState<{ expenseId: string; duplicates: Expense[]; reason: string } | null>(null);
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -409,7 +410,77 @@ export default function NewReport() {
     });
   };
 
-  const saveExpense = (expenseId: string) => {
+  // Check for duplicate expenses
+  const findDuplicates = (expense: Expense): { duplicates: Expense[]; reason: string } | null => {
+    const otherExpenses = expenses.filter(exp => exp.id !== expense.id && savedExpenses.has(exp.id));
+    const duplicates: Expense[] = [];
+    const reasons: string[] = [];
+
+    for (const other of otherExpenses) {
+      let isDuplicate = false;
+      const matchReasons: string[] = [];
+
+      // Check exact match: same date, amount, and currency
+      if (
+        expense.expense_date === other.expense_date &&
+        expense.amount === other.amount &&
+        expense.currency === other.currency
+      ) {
+        isDuplicate = true;
+        matchReasons.push('תאריך, סכום ומטבע זהים');
+      }
+
+      // Check same date and category with similar amount (within 5%)
+      if (
+        !isDuplicate &&
+        expense.expense_date === other.expense_date &&
+        expense.category === other.category &&
+        expense.amount > 0 &&
+        other.amount > 0 &&
+        Math.abs(expense.amount - other.amount) / Math.max(expense.amount, other.amount) < 0.05
+      ) {
+        isDuplicate = true;
+        matchReasons.push('תאריך וקטגוריה זהים עם סכום דומה');
+      }
+
+      // Check similar description (exact match) with same amount
+      if (
+        !isDuplicate &&
+        expense.description &&
+        other.description &&
+        expense.description.toLowerCase().trim() === other.description.toLowerCase().trim() &&
+        expense.amount === other.amount
+      ) {
+        isDuplicate = true;
+        matchReasons.push('תיאור וסכום זהים');
+      }
+
+      // Check same ILS amount on same date (different currencies)
+      if (
+        !isDuplicate &&
+        expense.expense_date === other.expense_date &&
+        expense.amount_in_ils > 0 &&
+        other.amount_in_ils > 0 &&
+        Math.abs(expense.amount_in_ils - other.amount_in_ils) < 1 &&
+        expense.currency !== other.currency
+      ) {
+        isDuplicate = true;
+        matchReasons.push('סכום בש"ח זהה באותו תאריך (מטבעות שונים)');
+      }
+
+      if (isDuplicate) {
+        duplicates.push(other);
+        reasons.push(...matchReasons);
+      }
+    }
+
+    if (duplicates.length > 0) {
+      return { duplicates, reason: [...new Set(reasons)].join(', ') };
+    }
+    return null;
+  };
+
+  const saveExpense = (expenseId: string, skipDuplicateCheck: boolean = false) => {
     const expense = expenses.find(exp => exp.id === expenseId);
     if (!expense) return;
 
@@ -457,9 +528,19 @@ export default function NewReport() {
       return;
     }
 
+    // Check for duplicates (unless skipped)
+    if (!skipDuplicateCheck) {
+      const duplicateResult = findDuplicates(expense);
+      if (duplicateResult) {
+        setDuplicateWarning({ expenseId, ...duplicateResult });
+        return;
+      }
+    }
+
     // Mark as saved
     setSavedExpenses(prev => new Set(prev).add(expenseId));
     setExpandedExpense(null);
+    setDuplicateWarning(null);
     
     toast({
       title: '✓ ההוצאה נשמרה',
@@ -1975,6 +2056,55 @@ export default function NewReport() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               מחק דוח
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Duplicate Warning Dialog */}
+      <AlertDialog open={duplicateWarning !== null} onOpenChange={(open) => !open && setDuplicateWarning(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <span className="text-2xl">⚠️</span>
+              זוהתה הוצאה כפולה אפשרית
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              <div className="space-y-3 mt-2">
+                <p className="font-medium text-foreground">
+                  {duplicateWarning?.reason}
+                </p>
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">הוצאות דומות קיימות:</p>
+                  {duplicateWarning?.duplicates.map((dup) => (
+                    <div key={dup.id} className="text-sm text-amber-700 dark:text-amber-300 flex flex-wrap items-center gap-2">
+                      <span className="bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded">
+                        {dup.expense_date ? format(new Date(dup.expense_date), 'dd/MM/yyyy') : 'ללא תאריך'}
+                      </span>
+                      <span className="font-medium">{dup.amount} {dup.currency}</span>
+                      <span className="truncate max-w-[150px]">{dup.description}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  האם בכל זאת לשמור את ההוצאה?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
+            <AlertDialogCancel onClick={() => setDuplicateWarning(null)}>
+              ביטול
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (duplicateWarning) {
+                  saveExpense(duplicateWarning.expenseId, true);
+                }
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              שמור בכל זאת
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
