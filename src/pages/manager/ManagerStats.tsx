@@ -44,21 +44,49 @@ const CATEGORY_COLORS: Record<string, string> = {
   miscellaneous: '#ef4444',
 };
 
+interface TeamMember {
+  id: string;
+  full_name: string;
+}
+
 const ManagerStats = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('current_month');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [stats, setStats] = useState<ExpenseStats | null>(null);
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
 
   useEffect(() => {
     if (user) {
+      loadTeamMembers();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && teamMembers.length >= 0) {
       loadStats();
     }
-  }, [user, timeRange]);
+  }, [user, timeRange, selectedEmployee, teamMembers]);
+
+  const loadTeamMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('manager_id', user?.id)
+        .order('full_name');
+
+      if (error) throw error;
+      setTeamMembers(data || []);
+    } catch (error) {
+      console.error('Error loading team members:', error);
+    }
+  };
 
   const getDateRange = () => {
     const now = new Date();
@@ -99,15 +127,13 @@ const ManagerStats = () => {
     try {
       const { startDate, endDate } = getDateRange();
 
-      // First get team member IDs
-      const { data: teamMembers, error: teamError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('manager_id', user.id);
-
-      if (teamError) throw teamError;
-
-      const teamUserIds = teamMembers?.map(m => m.id) || [];
+      // Determine which user IDs to filter by
+      let teamUserIds: string[];
+      if (selectedEmployee === 'all') {
+        teamUserIds = teamMembers.map(m => m.id);
+      } else {
+        teamUserIds = [selectedEmployee];
+      }
 
       if (teamUserIds.length === 0) {
         setStats({ approved: 0, rejected: 0, pending: 0, totalAmount: 0, approvedAmount: 0, rejectedAmount: 0 });
@@ -271,11 +297,24 @@ const ManagerStats = () => {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                <SelectTrigger className="w-[180px] h-10 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl">
+                  <SelectValue placeholder="בחר עובד" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg z-50">
+                  <SelectItem value="all">כל הצוות</SelectItem>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={timeRange} onValueChange={setTimeRange}>
                 <SelectTrigger className="w-[160px] h-10 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg z-50">
                   <SelectItem value="current_month">חודש נוכחי</SelectItem>
                   <SelectItem value="last_month">חודש שעבר</SelectItem>
                   <SelectItem value="last_3_months">3 חודשים אחרונים</SelectItem>
