@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PolicyAuditLog } from './PolicyAuditLog';
 import { 
   Building2, 
   Users, 
@@ -48,6 +49,7 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [policyActive, setPolicyActive] = useState(true);
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string | null>(null);
   const [employeeCount, setEmployeeCount] = useState(0);
@@ -305,10 +307,16 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
               <Edit className="w-4 h-4 ml-2" />
               צפה במדיניות
             </Button>
-            <Button variant="outline" size="sm" onClick={handleViewCompliance}>
+            <Button variant="outline" size="sm" onClick={() => setAuditLogOpen(true)}>
               <History className="w-4 h-4 ml-2" />
               יומן שינויים
             </Button>
+            
+            <PolicyAuditLog 
+              organizationId={organizationId}
+              isOpen={auditLogOpen}
+              onClose={() => setAuditLogOpen(false)}
+            />
           </div>
         </CardContent>
       </Card>

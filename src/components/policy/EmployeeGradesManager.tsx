@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { usePolicyAuditLog } from '@/hooks/usePolicyAuditLog';
 import {
   Dialog,
   DialogContent,
@@ -53,6 +54,7 @@ interface Props {
 export function EmployeeGradesManager({ organizationId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { logChange } = usePolicyAuditLog();
   const [loading, setLoading] = useState(true);
   const [grades, setGrades] = useState<EmployeeGrade[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -138,12 +140,33 @@ export function EmployeeGradesManager({ organizationId }: Props) {
 
         if (error) throw error;
 
+        // Log the change
+        await logChange({
+          organizationId,
+          action: 'update',
+          entityType: 'employee_grade',
+          entityId: editingGrade.id,
+          entityName: formData.name.trim(),
+          oldValues: {
+            name: editingGrade.name,
+            level: editingGrade.level,
+            description: editingGrade.description,
+            is_active: editingGrade.is_active,
+          },
+          newValues: {
+            name: formData.name.trim(),
+            level: formData.level,
+            description: formData.description.trim() || null,
+            is_active: formData.is_active,
+          },
+        });
+
         toast({
           title: 'הדרגה עודכנה',
           description: `דרגת "${formData.name}" עודכנה בהצלחה`,
         });
       } else {
-        const { error } = await supabase
+        const { data: newGrade, error } = await supabase
           .from('employee_grades')
           .insert({
             organization_id: organizationId,
@@ -152,9 +175,26 @@ export function EmployeeGradesManager({ organizationId }: Props) {
             description: formData.description.trim() || null,
             is_active: formData.is_active,
             created_by: user?.id,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Log the change
+        await logChange({
+          organizationId,
+          action: 'create',
+          entityType: 'employee_grade',
+          entityId: newGrade?.id,
+          entityName: formData.name.trim(),
+          newValues: {
+            name: formData.name.trim(),
+            level: formData.level,
+            description: formData.description.trim() || null,
+            is_active: formData.is_active,
+          },
+        });
 
         toast({
           title: 'הדרגה נוצרה',
@@ -188,6 +228,21 @@ export function EmployeeGradesManager({ organizationId }: Props) {
         .eq('id', grade.id);
 
       if (error) throw error;
+
+      // Log the change
+      await logChange({
+        organizationId,
+        action: 'delete',
+        entityType: 'employee_grade',
+        entityId: grade.id,
+        entityName: grade.name,
+        oldValues: {
+          name: grade.name,
+          level: grade.level,
+          description: grade.description,
+          is_active: grade.is_active,
+        },
+      });
 
       toast({
         title: 'הדרגה נמחקה',
