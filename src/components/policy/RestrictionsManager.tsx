@@ -80,6 +80,7 @@ export function RestrictionsManager({ organizationId }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRestriction, setEditingRestriction] = useState<Restriction | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -87,6 +88,15 @@ export function RestrictionsManager({ organizationId }: Props) {
     keywords: '',
     action_type: 'block',
     is_active: true,
+  });
+
+  const filteredRestrictions = restrictions.filter(restriction => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const name = restriction.name.toLowerCase();
+    const description = (restriction.description || '').toLowerCase();
+    const keywords = (restriction.keywords || []).join(' ').toLowerCase();
+    return name.includes(query) || description.includes(query) || keywords.includes(query);
   });
 
   useEffect(() => {
@@ -278,6 +288,16 @@ export function RestrictionsManager({ organizationId }: Props) {
             הוסף הגבלה
           </Button>
         </div>
+        {restrictions.length > 0 && (
+          <div className="mt-4">
+            <Input
+              placeholder="חיפוש לפי שם, תיאור או מילות מפתח..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {restrictions.length === 0 ? (
@@ -289,6 +309,13 @@ export function RestrictionsManager({ organizationId }: Props) {
               <span className="text-muted-foreground text-sm">
                 דוגמאות: ספא, אלכוהול, כביסה, שדרוג מחלקה
               </span>
+            </AlertDescription>
+          </Alert>
+        ) : filteredRestrictions.length === 0 ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              לא נמצאו הגבלות התואמות את החיפוש "{searchQuery}"
             </AlertDescription>
           </Alert>
         ) : (
@@ -305,7 +332,7 @@ export function RestrictionsManager({ organizationId }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {restrictions.map((restriction) => (
+              {filteredRestrictions.map((restriction) => (
                 <TableRow key={restriction.id}>
                   <TableCell className="font-medium">{restriction.name}</TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
