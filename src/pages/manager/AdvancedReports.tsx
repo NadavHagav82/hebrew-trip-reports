@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Save, AlertTriangle, TrendingUp, Calendar, DollarSign, PieChart as PieIcon, BarChart3, UserPlus, ArrowRight, FileBarChart, Loader2 } from "lucide-react";
+import { Download, Save, AlertTriangle, TrendingUp, Calendar, DollarSign, PieChart as PieIcon, BarChart3, UserPlus, ArrowRight, FileBarChart } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subMonths, subQuarters, startOfYear, endOfYear } from "date-fns";
 import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -527,10 +528,80 @@ const AdvancedReports = () => {
   // Show loading spinner while initial load is in progress
   if (loading || !initialLoadComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex justify-center items-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          <p className="text-lg text-muted-foreground">טוען נתונים...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" dir="rtl">
+        {/* Header Skeleton */}
+        <header className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 dark:from-indigo-950/50 dark:via-blue-950/50 dark:to-purple-950/50 border-b border-indigo-100 dark:border-indigo-900/30">
+          <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-500" />
+          <div className="container mx-auto px-4 py-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-14 h-14 rounded-2xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-7 w-40" />
+                  <Skeleton className="h-4 w-56" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-28" />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 py-6 space-y-6 animate-fade-in">
+          {/* Filter Section Skeleton */}
+          <Card className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="p-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-10 rounded-xl" />
+                </div>
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </Card>
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6 space-y-4">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-[300px] w-full rounded-xl" />
+            </Card>
+            <Card className="p-6 space-y-4">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-[300px] w-full rounded-xl" />
+            </Card>
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="p-6 space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex gap-4">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       </div>
     );
