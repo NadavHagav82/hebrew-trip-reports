@@ -21,7 +21,12 @@ import {
   PieChart,
   Clock,
   MapPin,
-  User
+  User,
+  Plane,
+  Hotel,
+  Utensils,
+  Car,
+  Package
 } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -37,7 +42,10 @@ import {
   Pie,
   Cell,
   LineChart,
-  Line
+  Line,
+  Legend,
+  Area,
+  AreaChart
 } from 'recharts';
 
 interface Report {
@@ -57,7 +65,23 @@ interface UserProfile {
   is_manager: boolean;
 }
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--accent))'];
+// Beautiful color palette for charts
+const CHART_COLORS = [
+  '#6366f1', // Indigo
+  '#22c55e', // Green
+  '#f59e0b', // Amber
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#8b5cf6', // Violet
+];
+
+const CATEGORY_COLORS: Record<string, { color: string; icon: any; bg: string }> = {
+  flights: { color: '#6366f1', icon: Plane, bg: 'bg-indigo-500/10' },
+  accommodation: { color: '#22c55e', icon: Hotel, bg: 'bg-green-500/10' },
+  food: { color: '#f59e0b', icon: Utensils, bg: 'bg-amber-500/10' },
+  transportation: { color: '#ec4899', icon: Car, bg: 'bg-pink-500/10' },
+  miscellaneous: { color: '#06b6d4', icon: Package, bg: 'bg-cyan-500/10' }
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   flights: 'טיסות',
@@ -90,7 +114,6 @@ export default function OrgAnalytics() {
   // Chart data
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
-  const [statusData, setStatusData] = useState<any[]>([]);
   const [departmentData, setDepartmentData] = useState<any[]>([]);
   const [topUsers, setTopUsers] = useState<any[]>([]);
   const [recentReports, setRecentReports] = useState<Report[]>([]);
@@ -230,18 +253,6 @@ export default function OrgAnalytics() {
         }))
       );
 
-      // Status distribution
-      const statusMap = new Map<string, number>();
-      reports.forEach(report => {
-        statusMap.set(report.status, (statusMap.get(report.status) || 0) + 1);
-      });
-      setStatusData(
-        Array.from(statusMap.entries()).map(([status, count]) => ({
-          name: STATUS_LABELS[status] || status,
-          value: count
-        }))
-      );
-
       // Load expenses for category data
       const reportIds = reports.map(r => r.id);
       if (reportIds.length > 0) {
@@ -255,9 +266,11 @@ export default function OrgAnalytics() {
           categoryMap.set(expense.category, (categoryMap.get(expense.category) || 0) + expense.amount_in_ils);
         });
         setCategoryData(
-          Array.from(categoryMap.entries()).map(([category, amount]) => ({
+          Array.from(categoryMap.entries()).map(([category, amount], index) => ({
             name: CATEGORY_LABELS[category] || category,
-            value: Math.round(amount)
+            category,
+            value: Math.round(amount),
+            color: CATEGORY_COLORS[category]?.color || CHART_COLORS[index % CHART_COLORS.length]
           }))
         );
       }
@@ -273,9 +286,10 @@ export default function OrgAnalytics() {
         Array.from(departmentMap.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 5)
-          .map(([dept, amount]) => ({
+          .map(([dept, amount], index) => ({
             name: dept,
-            amount: Math.round(amount)
+            amount: Math.round(amount),
+            fill: CHART_COLORS[index % CHART_COLORS.length]
           }))
       );
 
@@ -306,6 +320,32 @@ export default function OrgAnalytics() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-xl p-3">
+          <p className="font-medium text-foreground">{label}</p>
+          <p className="text-primary font-bold">₪{payload[0].value.toLocaleString()}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const PieCustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-xl p-3">
+          <p className="font-medium text-foreground">{payload[0].name}</p>
+          <p className="font-bold" style={{ color: payload[0].payload.color }}>
+            ₪{payload[0].value.toLocaleString()}
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading && !isOrgAdmin) {
@@ -371,67 +411,67 @@ export default function OrgAnalytics() {
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-500/10 via-background to-blue-500/5">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-blue-950/30 dark:via-background dark:to-blue-950/30">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-500/10">
-                  <Users className="h-4 w-4 text-blue-500" />
+                <div className="p-2 rounded-xl bg-blue-500/10">
+                  <Users className="h-5 w-5 text-blue-500" />
                 </div>
                 משתמשים
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{totalUsers}</div>
+              <div className="text-4xl font-bold text-foreground">{totalUsers}</div>
             </CardContent>
           </Card>
 
-          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-green-500/10 via-background to-green-500/5">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-emerald-950/30 dark:via-background dark:to-emerald-950/30">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-green-500/10">
-                  <FileText className="h-4 w-4 text-green-500" />
+                <div className="p-2 rounded-xl bg-emerald-500/10">
+                  <FileText className="h-5 w-5 text-emerald-500" />
                 </div>
                 דוחות
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{totalReports}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                <Clock className="inline h-3 w-3 ml-1" />
+              <div className="text-4xl font-bold text-foreground">{totalReports}</div>
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
                 {pendingReports} ממתינים לאישור
               </p>
             </CardContent>
           </Card>
 
-          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-primary/10 via-background to-primary/5">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-violet-50 via-white to-violet-50 dark:from-violet-950/30 dark:via-background dark:to-violet-950/30">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <DollarSign className="h-4 w-4 text-primary" />
+                <div className="p-2 rounded-xl bg-violet-500/10">
+                  <DollarSign className="h-5 w-5 text-violet-500" />
                 </div>
                 סה"כ הוצאות
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">₪{totalAmount.toLocaleString()}</div>
+              <div className="text-4xl font-bold text-foreground">₪{totalAmount.toLocaleString()}</div>
             </CardContent>
           </Card>
 
-          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-amber-500/10 via-background to-amber-500/5">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="group relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-amber-50 via-white to-amber-50 dark:from-amber-950/30 dark:via-background dark:to-amber-950/30">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-500/10">
-                  <TrendingUp className="h-4 w-4 text-amber-500" />
+                <div className="p-2 rounded-xl bg-amber-500/10">
+                  <TrendingUp className="h-5 w-5 text-amber-500" />
                 </div>
                 ממוצע לדוח
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
+              <div className="text-4xl font-bold text-foreground">
                 ₪{totalReports > 0 ? Math.round(totalAmount / totalReports).toLocaleString() : 0}
               </div>
             </CardContent>
@@ -441,113 +481,131 @@ export default function OrgAnalytics() {
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Trend */}
-          <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+                  <TrendingUp className="h-5 w-5 text-white" />
                 </div>
-                מגמת הוצאות חודשית
+                <span>מגמת הוצאות חודשית</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               {loading ? (
                 <div className="h-[300px] flex flex-col items-center justify-center gap-3">
                   <div className="relative">
-                    <div className="w-10 h-10 border-3 border-primary/30 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-indigo-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <span className="text-sm text-muted-foreground">טוען נתונים...</span>
                 </div>
               ) : monthlyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value) => [`₪${value.toLocaleString()}`, 'סכום']} 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                    <Line 
+                  <AreaChart data={monthlyData}>
+                    <defs>
+                      <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area 
                       type="monotone" 
                       dataKey="amount" 
-                      stroke="hsl(var(--primary))" 
+                      stroke="#6366f1" 
                       strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+                      fill="url(#colorAmount)"
+                      dot={{ fill: '#6366f1', strokeWidth: 2, r: 5 }}
+                      activeDot={{ r: 7, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground gap-3">
-                  <div className="p-4 rounded-full bg-muted/50">
-                    <TrendingUp className="h-8 w-8 text-muted-foreground/50" />
+                  <div className="p-5 rounded-full bg-gradient-to-br from-muted/50 to-muted/30">
+                    <TrendingUp className="h-10 w-10 text-muted-foreground/40" />
                   </div>
-                  <span>אין נתונים להצגה</span>
+                  <span className="text-lg">אין נתונים להצגה</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Category Distribution */}
-          <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <PieChart className="h-5 w-5 text-primary" />
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-pink-500/10 via-rose-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg">
+                  <PieChart className="h-5 w-5 text-white" />
                 </div>
-                התפלגות לפי קטגוריה
+                <span>התפלגות לפי קטגוריה</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               {loading ? (
                 <div className="h-[300px] flex flex-col items-center justify-center gap-3">
                   <div className="relative">
-                    <div className="w-10 h-10 border-3 border-primary/30 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-pink-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <span className="text-sm text-muted-foreground">טוען נתונים...</span>
                 </div>
               ) : categoryData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <RechartsPieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {categoryData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => [`₪${Number(value).toLocaleString()}`, 'סכום']} 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
+                <div className="flex flex-col lg:flex-row items-center gap-4">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <RechartsPieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color}
+                            stroke="transparent"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<PieCustomTooltip />} />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                  <div className="flex flex-wrap lg:flex-col gap-2 justify-center">
+                    {categoryData.map((item, index) => {
+                      const IconComponent = CATEGORY_COLORS[item.category]?.icon || Package;
+                      return (
+                        <div 
+                          key={index} 
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                        >
+                          <div 
+                            className="p-1.5 rounded-lg"
+                            style={{ backgroundColor: `${item.color}20` }}
+                          >
+                            <IconComponent className="h-4 w-4" style={{ color: item.color }} />
+                          </div>
+                          <span className="text-sm font-medium text-foreground">{item.name}</span>
+                          <span className="text-xs text-muted-foreground mr-auto">
+                            ₪{item.value.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground gap-3">
-                  <div className="p-4 rounded-full bg-muted/50">
-                    <PieChart className="h-8 w-8 text-muted-foreground/50" />
+                  <div className="p-5 rounded-full bg-gradient-to-br from-muted/50 to-muted/30">
+                    <PieChart className="h-10 w-10 text-muted-foreground/40" />
                   </div>
-                  <span>אין נתונים להצגה</span>
+                  <span className="text-lg">אין נתונים להצגה</span>
                 </div>
               )}
             </CardContent>
@@ -557,112 +615,124 @@ export default function OrgAnalytics() {
         {/* Charts Row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Department Breakdown */}
-          <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <BarChart3 className="h-5 w-5 text-primary" />
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
+                  <BarChart3 className="h-5 w-5 text-white" />
                 </div>
-                הוצאות לפי מחלקה
+                <span>הוצאות לפי מחלקה</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               {loading ? (
                 <div className="h-[300px] flex flex-col items-center justify-center gap-3">
                   <div className="relative">
-                    <div className="w-10 h-10 border-3 border-primary/30 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-emerald-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <span className="text-sm text-muted-foreground">טוען נתונים...</span>
                 </div>
               ) : departmentData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={departmentData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value) => [`₪${Number(value).toLocaleString()}`, 'סכום']} 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                    />
+                  <BarChart data={departmentData} layout="vertical" barGap={8}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar 
                       dataKey="amount" 
-                      fill="hsl(var(--primary))" 
-                      radius={[0, 4, 4, 0]}
-                    />
+                      radius={[0, 8, 8, 0]}
+                      barSize={32}
+                    >
+                      {departmentData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.fill}
+                        />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground gap-3">
-                  <div className="p-4 rounded-full bg-muted/50">
-                    <BarChart3 className="h-8 w-8 text-muted-foreground/50" />
+                  <div className="p-5 rounded-full bg-gradient-to-br from-muted/50 to-muted/30">
+                    <BarChart3 className="h-10 w-10 text-muted-foreground/40" />
                   </div>
-                  <span>אין נתונים להצגה</span>
+                  <span className="text-lg">אין נתונים להצגה</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Top Users */}
-          <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Users className="h-5 w-5 text-primary" />
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
-                עובדים מובילים בהוצאות
+                <span>עובדים מובילים בהוצאות</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               {loading ? (
                 <div className="h-[300px] flex flex-col items-center justify-center gap-3">
                   <div className="relative">
-                    <div className="w-10 h-10 border-3 border-primary/30 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-amber-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <span className="text-sm text-muted-foreground">טוען נתונים...</span>
                 </div>
               ) : topUsers.length > 0 ? (
                 <div className="space-y-3">
-                  {topUsers.map((userItem, index) => (
-                    <div 
-                      key={index} 
-                      className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-l from-muted/50 to-transparent border border-border/30 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
-                          index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-md' :
-                          index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white shadow-md' :
-                          index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          {index + 1}
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{userItem.name}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <FileText className="h-3 w-3" />
-                            {userItem.count} דוחות
-                          </p>
+                  {topUsers.map((userItem, index) => {
+                    const maxAmount = topUsers[0]?.amount || 1;
+                    const percentage = (userItem.amount / maxAmount) * 100;
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className="relative p-4 rounded-xl bg-gradient-to-l from-muted/30 to-transparent border border-border/30 hover:border-amber-500/30 hover:shadow-md transition-all duration-200 overflow-hidden group"
+                      >
+                        {/* Progress bar background */}
+                        <div 
+                          className="absolute inset-0 bg-gradient-to-l from-amber-500/10 to-transparent transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                        
+                        <div className="relative flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-md transition-transform group-hover:scale-105 ${
+                              index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
+                              index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white' :
+                              index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
+                              'bg-muted text-muted-foreground'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{userItem.name}</p>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <FileText className="h-3.5 w-3.5" />
+                                {userItem.count} דוחות
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xl font-bold text-foreground">₪{Math.round(userItem.amount).toLocaleString()}</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-left">
-                        <p className="font-bold text-foreground">₪{Math.round(userItem.amount).toLocaleString()}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground gap-3">
-                  <div className="p-4 rounded-full bg-muted/50">
-                    <Users className="h-8 w-8 text-muted-foreground/50" />
+                  <div className="p-5 rounded-full bg-gradient-to-br from-muted/50 to-muted/30">
+                    <Users className="h-10 w-10 text-muted-foreground/40" />
                   </div>
-                  <span>אין נתונים להצגה</span>
+                  <span className="text-lg">אין נתונים להצגה</span>
                 </div>
               )}
             </CardContent>
@@ -670,39 +740,40 @@ export default function OrgAnalytics() {
         </div>
 
         {/* Recent Reports */}
-        <Card className="border-0 shadow-md hover:shadow-lg transition-all duration-300">
-          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent rounded-t-lg">
-            <CardTitle className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FileText className="h-5 w-5 text-primary" />
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-transparent">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg">
+                <FileText className="h-5 w-5 text-white" />
               </div>
-              דוחות אחרונים
+              <span>דוחות אחרונים</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-muted-foreground mt-1">
               10 הדוחות האחרונים בארגון
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             {recentReports.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
-                <div className="p-4 rounded-full bg-muted/50">
-                  <FileText className="h-8 w-8 text-muted-foreground/50" />
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-4">
+                <div className="p-6 rounded-full bg-gradient-to-br from-muted/50 to-muted/30">
+                  <FileText className="h-12 w-12 text-muted-foreground/40" />
                 </div>
-                <span>אין דוחות להצגה</span>
+                <span className="text-lg">אין דוחות להצגה</span>
               </div>
             ) : (
               <>
                 {/* Mobile View */}
                 <div className="space-y-3 md:hidden">
-                  {recentReports.map((report) => (
+                  {recentReports.map((report, index) => (
                     <div
                       key={report.id}
-                      className="p-4 rounded-xl bg-gradient-to-l from-muted/30 to-transparent border border-border/30 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
+                      className="p-4 rounded-xl bg-gradient-to-l from-muted/20 to-transparent border border-border/30 hover:border-cyan-500/30 hover:shadow-md transition-all duration-200 animate-fade-in"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <User className="h-4 w-4 text-primary" />
+                          <div className="p-2 rounded-xl bg-cyan-500/10">
+                            <User className="h-4 w-4 text-cyan-500" />
                           </div>
                           <span className="font-medium text-foreground">
                             {report.user?.full_name || '-'}
@@ -712,7 +783,7 @@ export default function OrgAnalytics() {
                           report.status === 'closed' ? 'default' :
                           report.status === 'pending_approval' ? 'secondary' :
                           'outline'
-                        }>
+                        } className="rounded-full">
                           {STATUS_LABELS[report.status] || report.status}
                         </Badge>
                       </div>
@@ -721,9 +792,9 @@ export default function OrgAnalytics() {
                           <MapPin className="h-3.5 w-3.5" />
                           <span>{report.trip_destination}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <DollarSign className="h-3.5 w-3.5" />
-                          <span className="font-medium text-foreground">₪{(report.total_amount_ils || 0).toLocaleString()}</span>
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                          <span className="font-semibold text-foreground">₪{(report.total_amount_ils || 0).toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
                           <Calendar className="h-3.5 w-3.5" />
@@ -735,10 +806,10 @@ export default function OrgAnalytics() {
                 </div>
 
                 {/* Desktop View */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-border/50">
                   <Table>
                     <TableHeader>
-                      <TableRow className="hover:bg-transparent border-b border-border/50">
+                      <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/50">
                         <TableHead className="font-semibold text-foreground">עובד</TableHead>
                         <TableHead className="font-semibold text-foreground">יעד</TableHead>
                         <TableHead className="font-semibold text-foreground">סכום</TableHead>
@@ -747,15 +818,16 @@ export default function OrgAnalytics() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recentReports.map((report) => (
+                      {recentReports.map((report, index) => (
                         <TableRow 
                           key={report.id}
-                          className="hover:bg-muted/50 transition-colors border-b border-border/30"
+                          className="hover:bg-muted/30 transition-colors border-b border-border/30 animate-fade-in"
+                          style={{ animationDelay: `${index * 30}ms` }}
                         >
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <div className="p-1.5 rounded-lg bg-primary/10">
-                                <User className="h-3.5 w-3.5 text-primary" />
+                              <div className="p-1.5 rounded-lg bg-cyan-500/10">
+                                <User className="h-4 w-4 text-cyan-500" />
                               </div>
                               <span className="font-medium text-foreground">
                                 {report.user?.full_name || '-'}
@@ -768,15 +840,17 @@ export default function OrgAnalytics() {
                               {report.trip_destination}
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium text-foreground">
-                            ₪{(report.total_amount_ils || 0).toLocaleString()}
+                          <TableCell>
+                            <span className="font-semibold text-foreground">
+                              ₪{(report.total_amount_ils || 0).toLocaleString()}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <Badge variant={
                               report.status === 'closed' ? 'default' :
                               report.status === 'pending_approval' ? 'secondary' :
                               'outline'
-                            }>
+                            } className="rounded-full">
                               {STATUS_LABELS[report.status] || report.status}
                             </Badge>
                           </TableCell>
