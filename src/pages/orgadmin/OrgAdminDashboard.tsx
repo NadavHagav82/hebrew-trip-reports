@@ -265,37 +265,36 @@ export default function OrgAdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5" dir="rtl">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-8 text-white shadow-xl">
-          <div className="absolute inset-0 bg-black/10" />
-          <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
-          <div className="absolute bottom-0 right-0 w-48 h-48 bg-white/10 rounded-full translate-x-1/2 translate-y-1/2 blur-2xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 via-slate-50 to-primary/10 dark:from-slate-800 dark:via-slate-900 dark:to-primary/20 p-8 shadow-lg border border-border/50">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-primary/5 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
           
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg border border-white/30">
-                <Building2 className="w-8 h-8 text-white" />
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center shadow-md">
+                <Building2 className="w-7 h-7 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                   ניהול ארגון - {organization.name}
                 </h1>
-                <p className="text-white/80 mt-1">
+                <p className="text-muted-foreground mt-1">
                   {organization.description || 'ניהול ומעקב אחר הארגון שלך'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant="secondary"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm"
+                variant="outline"
+                className="border-border hover:bg-muted"
                 onClick={() => setEditDialogOpen(true)}
               >
                 <Edit className="w-4 h-4 ml-2" />
                 ערוך ארגון
               </Button>
               <Button 
-                variant="secondary" 
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm"
+                variant="outline" 
+                className="border-border hover:bg-muted"
                 onClick={() => navigate('/')}
               >
                 <Home className="w-4 h-4 ml-2" />
