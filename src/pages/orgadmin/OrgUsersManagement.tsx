@@ -480,7 +480,7 @@ export default function OrgUsersManagement() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
             <CardHeader className="pb-2">
@@ -517,6 +517,19 @@ export default function OrgUsersManagement() {
             <CardContent>
               <p className="text-sm text-muted-foreground">ללא מנהל משויך</p>
               <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{usersWithoutManager}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/20 dark:to-background">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+            <CardHeader className="pb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-md">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">ללא דרגה משויכת</p>
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-1">{usersWithoutGrade}</div>
             </CardContent>
           </Card>
         </div>
