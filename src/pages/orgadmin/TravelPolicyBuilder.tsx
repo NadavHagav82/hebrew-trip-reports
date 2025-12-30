@@ -123,82 +123,120 @@ export default function TravelPolicyBuilder() {
   }
 
   return (
-    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" dir="rtl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2">
-            <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-            <span className="hidden sm:inline">מדיניות נסיעות - {organizationName}</span>
-            <span className="sm:hidden">מדיניות נסיעות</span>
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            הגדר את כללי מדיניות הנסיעות של הארגון שלך
-          </p>
+      <header className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 border-b border-blue-100 dark:border-blue-900/30 sticky top-0 z-10 relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1.5 bg-gradient-to-r from-blue-500 via-primary to-indigo-600" />
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-500/10 to-transparent rounded-full blur-2xl" />
+        
+        <div className="container mx-auto px-4 py-5 relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Shield className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">מדיניות נסיעות - {organizationName}</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">הגדר את כללי מדיניות הנסיעות של הארגון שלך</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/orgadmin')}
+              className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+            >
+              <span className="hidden sm:inline">חזרה לדשבורד</span>
+              <span className="sm:hidden">חזרה</span>
+              <ArrowRight className="w-4 h-4 mr-1.5" />
+            </Button>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => navigate('/orgadmin')} className="w-full sm:w-auto">
-          <ArrowRight className="w-4 h-4 ml-2" />
-          חזרה לדשבורד
-        </Button>
-      </div>
+      </header>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-6 h-auto p-1">
-          <TabsTrigger value="dashboard" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
-            <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-sm leading-tight text-center">דשבורד</span>
-          </TabsTrigger>
-          <TabsTrigger value="grades" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-sm leading-tight text-center">דרגות</span>
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
-            <Plane className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-sm leading-tight text-center">קטגוריות</span>
-          </TabsTrigger>
-          <TabsTrigger value="restrictions" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
-            <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-sm leading-tight text-center">הגבלות</span>
-          </TabsTrigger>
-          <TabsTrigger value="custom" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-sm leading-tight text-center">מותאם</span>
-          </TabsTrigger>
-          <TabsTrigger value="preview" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
-            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-sm leading-tight text-center">תצוגה</span>
-          </TabsTrigger>
-        </TabsList>
+      <main className="container mx-auto px-4 py-6">
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 dark:border-slate-700/50 p-2 shadow-sm">
+            <TabsList className="grid w-full grid-cols-6 h-auto bg-transparent gap-1">
+              <TabsTrigger 
+                value="dashboard" 
+                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                <span className="text-[10px] sm:text-xs font-medium">דשבורד</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="grades" 
+                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <Users className="w-5 h-5" />
+                <span className="text-[10px] sm:text-xs font-medium">דרגות</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="categories" 
+                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <Plane className="w-5 h-5" />
+                <span className="text-[10px] sm:text-xs font-medium">קטגוריות</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="restrictions" 
+                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <Ban className="w-5 h-5" />
+                <span className="text-[10px] sm:text-xs font-medium">הגבלות</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="custom" 
+                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span className="text-[10px] sm:text-xs font-medium">מותאם</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="preview" 
+                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <Eye className="w-5 h-5" />
+                <span className="text-[10px] sm:text-xs font-medium">תצוגה</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="dashboard">
-          <PolicyDashboard 
-            organizationId={organizationId} 
-            organizationName={organizationName}
-            onNavigateToTab={setActiveTab}
-          />
-        </TabsContent>
+          <TabsContent value="dashboard">
+            <PolicyDashboard 
+              organizationId={organizationId} 
+              organizationName={organizationName}
+              onNavigateToTab={setActiveTab}
+            />
+          </TabsContent>
 
-        <TabsContent value="grades">
-          <EmployeeGradesManager organizationId={organizationId} />
-        </TabsContent>
+          <TabsContent value="grades">
+            <EmployeeGradesManager organizationId={organizationId} />
+          </TabsContent>
 
-        <TabsContent value="categories">
-          <CategoryRulesManager organizationId={organizationId} />
-        </TabsContent>
+          <TabsContent value="categories">
+            <CategoryRulesManager organizationId={organizationId} />
+          </TabsContent>
 
-        <TabsContent value="restrictions">
-          <RestrictionsManager organizationId={organizationId} />
-        </TabsContent>
+          <TabsContent value="restrictions">
+            <RestrictionsManager organizationId={organizationId} />
+          </TabsContent>
 
-        <TabsContent value="custom">
-          <CustomRulesManager organizationId={organizationId} />
-        </TabsContent>
+          <TabsContent value="custom">
+            <CustomRulesManager organizationId={organizationId} />
+          </TabsContent>
 
-        <TabsContent value="preview">
-          <PolicyPreview organizationId={organizationId} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="preview">
+            <PolicyPreview organizationId={organizationId} />
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 }
