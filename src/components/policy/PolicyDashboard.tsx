@@ -473,46 +473,60 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div>
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 bg-secondary/10 rounded-lg">
-            <Sparkles className="w-5 h-5 text-secondary" />
+      {/* Quick Actions - Modern subtle design */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-800/50 p-6 border border-slate-200/60 dark:border-slate-700/50">
+        {/* Subtle background decoration */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100/40 to-blue-100/40 dark:from-violet-900/20 dark:to-blue-900/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2.5 bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/50 dark:to-indigo-900/50 rounded-xl border border-violet-200/50 dark:border-violet-700/50 shadow-sm">
+              <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">פעולות מהירות</h2>
           </div>
-          <h2 className="text-xl font-bold">פעולות מהירות</h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Button 
-            onClick={() => onNavigateToTab('categories')} 
-            className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="text-sm">הוסף חוק חדש</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleExportPdf} 
-            className="h-auto py-4 flex-col gap-2 hover:bg-muted/50"
-          >
-            <FileDown className="w-5 h-5" />
-            <span className="text-sm">ייצא ל-PDF</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleDuplicatePolicy} 
-            className="h-auto py-4 flex-col gap-2 hover:bg-muted/50"
-          >
-            <Copy className="w-5 h-5" />
-            <span className="text-sm">שכפל מדיניות</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleViewCompliance} 
-            className="h-auto py-4 flex-col gap-2 hover:bg-muted/50"
-          >
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-sm">דוח ציות</span>
-          </Button>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button 
+              onClick={() => onNavigateToTab('categories')} 
+              className="group relative h-auto py-5 px-4 flex flex-col items-center gap-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="p-2 bg-white/20 rounded-lg group-hover:scale-110 transition-transform">
+                <Plus className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium">הוסף חוק חדש</span>
+            </button>
+            
+            <button 
+              onClick={handleExportPdf} 
+              className="group relative h-auto py-5 px-4 flex flex-col items-center gap-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg group-hover:bg-slate-200 dark:group-hover:bg-slate-600 group-hover:scale-110 transition-all">
+                <FileDown className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+              </div>
+              <span className="text-sm font-medium">ייצא ל-PDF</span>
+            </button>
+            
+            <button 
+              onClick={handleDuplicatePolicy} 
+              className="group relative h-auto py-5 px-4 flex flex-col items-center gap-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg group-hover:bg-slate-200 dark:group-hover:bg-slate-600 group-hover:scale-110 transition-all">
+                <Copy className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+              </div>
+              <span className="text-sm font-medium">שכפל מדיניות</span>
+            </button>
+            
+            <button 
+              onClick={handleViewCompliance} 
+              className="group relative h-auto py-5 px-4 flex flex-col items-center gap-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg group-hover:bg-slate-200 dark:group-hover:bg-slate-600 group-hover:scale-110 transition-all">
+                <BarChart3 className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+              </div>
+              <span className="text-sm font-medium">דוח ציות</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
