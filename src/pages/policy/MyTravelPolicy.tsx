@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, 
@@ -23,7 +25,10 @@ import {
   AlertTriangle,
   User,
   Shield,
-  FileText
+  FileText,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 
 interface PolicyRule {
@@ -85,10 +90,59 @@ export default function MyTravelPolicy() {
   const [policyRules, setPolicyRules] = useState<PolicyRule[]>([]);
   const [restrictions, setRestrictions] = useState<Restriction[]>([]);
   const [allGrades, setAllGrades] = useState<EmployeeGrade[]>([]);
+  
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [destinationFilter, setDestinationFilter] = useState<string>('all');
 
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Filtered policy rules
+  const filteredPolicyRules = useMemo(() => {
+    return policyRules.filter(rule => {
+      // Search filter
+      const matchesSearch = searchQuery === '' || 
+        CATEGORY_CONFIG[rule.category]?.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rule.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        DESTINATION_LABELS[rule.destination_type]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        PER_TYPE_LABELS[rule.per_type]?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || rule.category === categoryFilter;
+      
+      // Destination filter
+      const matchesDestination = destinationFilter === 'all' || rule.destination_type === destinationFilter;
+      
+      return matchesSearch && matchesCategory && matchesDestination;
+    });
+  }, [policyRules, searchQuery, categoryFilter, destinationFilter]);
+  
+  // Filtered restrictions
+  const filteredRestrictions = useMemo(() => {
+    return restrictions.filter(restriction => {
+      // Search filter
+      const matchesSearch = searchQuery === '' || 
+        restriction.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        restriction.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (restriction.category && CATEGORY_CONFIG[restriction.category]?.label.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || restriction.category === categoryFilter;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [restrictions, searchQuery, categoryFilter]);
+  
+  const hasActiveFilters = searchQuery !== '' || categoryFilter !== 'all' || destinationFilter !== 'all';
+  
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setDestinationFilter('all');
+  };
 
   useEffect(() => {
     if (user) {
@@ -217,7 +271,7 @@ export default function MyTravelPolicy() {
   };
 
   const getRulesByCategory = (category: string) => {
-    return policyRules.filter(rule => rule.category === category);
+    return filteredPolicyRules.filter(rule => rule.category === category);
   };
 
   const formatAmount = (amount: number | null, currency: string) => {
@@ -382,7 +436,97 @@ export default function MyTravelPolicy() {
                   </div>
                 </div>
               </CardContent>
-        </Card>
+            </Card>
+
+            {/* Search and Filter Section */}
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Search Input */}
+                  <div className="relative flex-1">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="חיפוש במדיניות..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pr-10"
+                    />
+                  </div>
+                  
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-3">
+                    {/* Category Filter */}
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="w-[160px]">
+                        <Filter className="h-4 w-4 ml-2" />
+                        <SelectValue placeholder="קטגוריה" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">כל הקטגוריות</SelectItem>
+                        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
+                          <SelectItem key={key} value={key}>
+                            {config.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Destination Filter */}
+                    <Select value={destinationFilter} onValueChange={setDestinationFilter}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="יעד" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">כל היעדים</SelectItem>
+                        {Object.entries(DESTINATION_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Clear Filters Button */}
+                    {hasActiveFilters && (
+                      <Button variant="ghost" size="icon" onClick={clearFilters} title="נקה סינון">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Active Filters Display */}
+                {hasActiveFilters && (
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/30">
+                    <span className="text-sm text-muted-foreground">מסננים פעילים:</span>
+                    {searchQuery && (
+                      <Badge variant="secondary" className="rounded-full">
+                        חיפוש: {searchQuery}
+                        <button onClick={() => setSearchQuery('')} className="mr-1 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    {categoryFilter !== 'all' && (
+                      <Badge variant="secondary" className="rounded-full">
+                        קטגוריה: {CATEGORY_CONFIG[categoryFilter]?.label}
+                        <button onClick={() => setCategoryFilter('all')} className="mr-1 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    {destinationFilter !== 'all' && (
+                      <Badge variant="secondary" className="rounded-full">
+                        יעד: {DESTINATION_LABELS[destinationFilter]}
+                        <button onClick={() => setDestinationFilter('all')} className="mr-1 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
         {/* Policy Categories */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -452,7 +596,7 @@ export default function MyTravelPolicy() {
         </div>
 
         {/* Restrictions Section */}
-        {restrictions.length > 0 && (
+        {filteredRestrictions.length > 0 && (
           <Card className="border-0 shadow-lg overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border-b border-border/30">
               <CardTitle className="flex items-center gap-3">
@@ -460,11 +604,12 @@ export default function MyTravelPolicy() {
                   <Ban className="h-6 w-6 text-red-500" />
                 </div>
                 <span className="text-xl">מה אסור?</span>
+                <Badge variant="secondary" className="mr-auto">{filteredRestrictions.length}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {restrictions.map((restriction) => {
+                {filteredRestrictions.map((restriction) => {
                   const categoryConfig = restriction.category ? CATEGORY_CONFIG[restriction.category] : null;
                   
                   return (
@@ -496,6 +641,21 @@ export default function MyTravelPolicy() {
                   );
                 })}
               </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* No Results Message */}
+        {hasActiveFilters && filteredPolicyRules.length === 0 && filteredRestrictions.length === 0 && (
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-8 text-center">
+              <Search className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">לא נמצאו תוצאות</h3>
+              <p className="text-muted-foreground mb-4">נסה לשנות את מילות החיפוש או הסינון</p>
+              <Button variant="outline" onClick={clearFilters}>
+                <X className="h-4 w-4 ml-2" />
+                נקה סינון
+              </Button>
             </CardContent>
           </Card>
         )}
