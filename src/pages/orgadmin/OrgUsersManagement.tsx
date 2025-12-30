@@ -863,14 +863,14 @@ export default function OrgUsersManagement() {
               <div className="grid gap-2">
                 <Label htmlFor="grade_id">דרגה</Label>
                 <Select 
-                  value={editForm.grade_id} 
-                  onValueChange={(value) => setEditForm({ ...editForm, grade_id: value })}
+                  value={editForm.grade_id || "none"} 
+                  onValueChange={(value) => setEditForm({ ...editForm, grade_id: value === "none" ? "" : value })}
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="בחר דרגה" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg">
-                    <SelectItem value="">ללא דרגה</SelectItem>
+                    <SelectItem value="none">ללא דרגה</SelectItem>
                     {grades.map((g) => (
                       <SelectItem key={g.id} value={g.id}>
                         <span className="flex items-center gap-2">
@@ -934,12 +934,12 @@ export default function OrgUsersManagement() {
               )}
               <div className="grid gap-2">
                 <Label htmlFor="new_manager">מנהל חדש</Label>
-                <Select value={newManagerId} onValueChange={setNewManagerId}>
+                <Select value={newManagerId || "none"} onValueChange={(value) => setNewManagerId(value === "none" ? "" : value)}>
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="בחר מנהל חדש" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg">
-                    <SelectItem value="">ללא מנהל</SelectItem>
+                    <SelectItem value="none">ללא מנהל</SelectItem>
                     {managers
                       .filter(m => m.id !== selectedUser?.id)
                       .map((m) => (
