@@ -42,10 +42,17 @@ import {
   Calendar,
   Hash,
   Shield,
-  AlertCircle
+  AlertCircle,
+  GraduationCap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+
+interface EmployeeGrade {
+  id: string;
+  name: string;
+  level: number;
+}
 
 interface UserProfile {
   id: string;
@@ -55,9 +62,11 @@ interface UserProfile {
   employee_id: string | null;
   is_manager: boolean;
   manager_id: string | null;
+  grade_id: string | null;
   created_at: string;
   role: string | null;
   manager?: { full_name: string; email: string } | null;
+  grade?: EmployeeGrade | null;
 }
 
 interface Manager {
@@ -69,6 +78,7 @@ interface Manager {
 export default function OrgUsersManagement() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [grades, setGrades] = useState<EmployeeGrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -76,6 +86,7 @@ export default function OrgUsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterManager, setFilterManager] = useState<string>('all');
+  const [filterGrade, setFilterGrade] = useState<string>('all');
   
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -84,6 +95,7 @@ export default function OrgUsersManagement() {
     full_name: '',
     department: '',
     employee_id: '',
+    grade_id: '',
   });
   const [submitting, setSubmitting] = useState(false);
   
@@ -150,6 +162,7 @@ export default function OrgUsersManagement() {
 
       loadUsers(profile.organization_id);
       loadManagers(profile.organization_id);
+      loadGrades(profile.organization_id);
     } catch (error) {
       console.error('Error checking org admin status:', error);
       navigate('/');
@@ -166,6 +179,14 @@ export default function OrgUsersManagement() {
 
       if (error) throw error;
 
+      // Load grades for all users
+      const { data: gradesData } = await supabase
+        .from('employee_grades')
+        .select('*')
+        .eq('organization_id', orgId);
+
+      const gradesMap = new Map((gradesData || []).map(g => [g.id, g]));
+
       const usersWithManagers = await Promise.all(
         (data || []).map(async (userProfile) => {
           let manager = null;
@@ -177,7 +198,8 @@ export default function OrgUsersManagement() {
               .single();
             manager = m;
           }
-          return { ...userProfile, manager };
+          const grade = userProfile.grade_id ? gradesMap.get(userProfile.grade_id) : null;
+          return { ...userProfile, manager, grade };
         })
       );
 
@@ -210,12 +232,29 @@ export default function OrgUsersManagement() {
     }
   };
 
+  const loadGrades = async (orgId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('employee_grades')
+        .select('id, name, level')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .order('level');
+
+      if (error) throw error;
+      setGrades(data || []);
+    } catch (error) {
+      console.error('Error loading grades:', error);
+    }
+  };
+
   const openEditDialog = (userProfile: UserProfile) => {
     setSelectedUser(userProfile);
     setEditForm({
       full_name: userProfile.full_name,
       department: userProfile.department,
       employee_id: userProfile.employee_id || '',
+      grade_id: userProfile.grade_id || '',
     });
     setEditDialogOpen(true);
   };
@@ -237,6 +276,7 @@ export default function OrgUsersManagement() {
           full_name: editForm.full_name,
           department: editForm.department,
           employee_id: editForm.employee_id || null,
+          grade_id: editForm.grade_id || null,
         })
         .eq('id', selectedUser.id);
 
@@ -351,7 +391,12 @@ export default function OrgUsersManagement() {
       (filterManager === 'none' && !u.manager_id) ||
       u.manager_id === filterManager;
 
-    return matchesSearch && matchesRole && matchesManager;
+    const matchesGrade = 
+      filterGrade === 'all' ||
+      (filterGrade === 'none' && !u.grade_id) ||
+      u.grade_id === filterGrade;
+
+    return matchesSearch && matchesRole && matchesManager && matchesGrade;
   });
 
   if (loading) {
@@ -506,6 +551,21 @@ export default function OrgUsersManagement() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={filterGrade} onValueChange={setFilterGrade}>
+                <SelectTrigger className="w-[150px] h-11">
+                  <GraduationCap className="h-4 w-4 ml-2" />
+                  <SelectValue placeholder="דרגה" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg">
+                  <SelectItem value="all">כל הדרגות</SelectItem>
+                  <SelectItem value="none">ללא דרגה</SelectItem>
+                  {grades.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {filteredUsers.length === 0 ? (
@@ -560,6 +620,12 @@ export default function OrgUsersManagement() {
                                 מנהל: {userProfile.manager.full_name}
                               </p>
                             )}
+                            {userProfile.grade && (
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-800/30 text-emerald-700 dark:text-emerald-300">
+                                <GraduationCap className="w-3 h-3" />
+                                {userProfile.grade.name}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <DropdownMenu>
@@ -607,9 +673,9 @@ export default function OrgUsersManagement() {
                         <TableHead className="font-semibold">שם מלא</TableHead>
                         <TableHead className="font-semibold">מייל</TableHead>
                         <TableHead className="font-semibold">מחלקה</TableHead>
+                        <TableHead className="font-semibold">דרגה</TableHead>
                         <TableHead className="font-semibold">תפקיד</TableHead>
                         <TableHead className="font-semibold">מנהל ישיר</TableHead>
-                        <TableHead className="font-semibold">תאריך הצטרפות</TableHead>
                         <TableHead className="font-semibold text-left">פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -642,14 +708,18 @@ export default function OrgUsersManagement() {
                               {userProfile.department}
                             </span>
                           </TableCell>
+                          <TableCell>
+                            {userProfile.grade ? (
+                              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-800/30 text-emerald-700 dark:text-emerald-300">
+                                <GraduationCap className="w-3 h-3" />
+                                {userProfile.grade.name}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </TableCell>
                           <TableCell>{getRoleBadge(userProfile)}</TableCell>
                           <TableCell className="text-muted-foreground">{userProfile.manager?.full_name || '-'}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5" />
-                              {format(new Date(userProfile.created_at), 'dd/MM/yyyy', { locale: he })}
-                            </div>
-                          </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -737,6 +807,28 @@ export default function OrgUsersManagement() {
                   onChange={(e) => setEditForm({ ...editForm, employee_id: e.target.value })}
                   className="h-11"
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="grade_id">דרגה</Label>
+                <Select 
+                  value={editForm.grade_id} 
+                  onValueChange={(value) => setEditForm({ ...editForm, grade_id: value })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="בחר דרגה" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg">
+                    <SelectItem value="">ללא דרגה</SelectItem>
+                    {grades.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        <span className="flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4 text-emerald-500" />
+                          {g.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
