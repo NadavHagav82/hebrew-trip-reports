@@ -301,17 +301,17 @@ export function RestrictionsManager({ organizationId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Ban className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
               הגבלות
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               הגדר פריטים או שירותים שאסורים או דורשים אישור מיוחד
             </CardDescription>
           </div>
-          <Button onClick={openCreateDialog}>
+          <Button onClick={openCreateDialog} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 ml-2" />
             הוסף הגבלה
           </Button>
@@ -369,10 +369,10 @@ export function RestrictionsManager({ organizationId }: Props) {
         {restrictions.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               עדיין לא הוגדרו הגבלות. הוסף הגבלות לפריטים אסורים.
               <br />
-              <span className="text-muted-foreground text-sm">
+              <span className="text-muted-foreground text-xs">
                 דוגמאות: ספא, אלכוהול, כביסה, שדרוג מחלקה
               </span>
             </AlertDescription>
@@ -380,78 +380,135 @@ export function RestrictionsManager({ organizationId }: Props) {
         ) : filteredRestrictions.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               לא נמצאו הגבלות התואמות את החיפוש "{searchQuery}"
             </AlertDescription>
           </Alert>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>שם</TableHead>
-                <TableHead>תיאור</TableHead>
-                <TableHead>קטגוריה</TableHead>
-                <TableHead>מילות מפתח</TableHead>
-                <TableHead>פעולה</TableHead>
-                <TableHead className="w-24">סטטוס</TableHead>
-                <TableHead className="w-24">פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
               {filteredRestrictions.map((restriction) => (
-                <TableRow key={restriction.id}>
-                  <TableCell className="font-medium">{restriction.name}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                    {restriction.description || '-'}
-                  </TableCell>
-                  <TableCell>{getCategoryLabel(restriction.category)}</TableCell>
-                  <TableCell>
-                    {restriction.keywords?.length ? (
-                      <div className="flex flex-wrap gap-1">
-                        {restriction.keywords.slice(0, 3).map((kw, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {kw}
-                          </Badge>
-                        ))}
-                        {restriction.keywords.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{restriction.keywords.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getActionColor(restriction.action_type)}>
-                      {getActionLabel(restriction.action_type)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={restriction.is_active ? 'default' : 'secondary'}>
+                <div key={restriction.id} className="border rounded-lg p-3 bg-card shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-sm">{restriction.name}</span>
+                    <Badge variant={restriction.is_active ? 'default' : 'secondary'} className="text-xs">
                       {restriction.is_active ? 'פעיל' : 'לא פעיל'}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(restriction)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(restriction)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  </div>
+                  {restriction.description && (
+                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{restriction.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <Badge variant={getActionColor(restriction.action_type)} className="text-xs">
+                      {getActionLabel(restriction.action_type)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {getCategoryLabel(restriction.category)}
+                    </Badge>
+                  </div>
+                  {restriction.keywords?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {restriction.keywords.slice(0, 3).map((kw, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px]">
+                          {kw}
+                        </Badge>
+                      ))}
+                      {restriction.keywords.length > 3 && (
+                        <Badge variant="outline" className="text-[10px]">
+                          +{restriction.keywords.length - 3}
+                        </Badge>
+                      )}
                     </div>
-                  </TableCell>
-                </TableRow>
+                  )}
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(restriction)} className="flex-1">
+                      <Edit className="w-3 h-3 ml-1" />
+                      עריכה
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(restriction)}
+                      className="flex-1 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3 ml-1" />
+                      מחיקה
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+            
+            {/* Desktop Table View */}
+            <Table className="hidden sm:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>שם</TableHead>
+                  <TableHead>תיאור</TableHead>
+                  <TableHead>קטגוריה</TableHead>
+                  <TableHead>מילות מפתח</TableHead>
+                  <TableHead>פעולה</TableHead>
+                  <TableHead className="w-24">סטטוס</TableHead>
+                  <TableHead className="w-24">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRestrictions.map((restriction) => (
+                  <TableRow key={restriction.id}>
+                    <TableCell className="font-medium">{restriction.name}</TableCell>
+                    <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                      {restriction.description || '-'}
+                    </TableCell>
+                    <TableCell>{getCategoryLabel(restriction.category)}</TableCell>
+                    <TableCell>
+                      {restriction.keywords?.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {restriction.keywords.slice(0, 3).map((kw, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {kw}
+                            </Badge>
+                          ))}
+                          {restriction.keywords.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{restriction.keywords.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getActionColor(restriction.action_type)}>
+                        {getActionLabel(restriction.action_type)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={restriction.is_active ? 'default' : 'secondary'}>
+                        {restriction.is_active ? 'פעיל' : 'לא פעיל'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(restriction)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(restriction)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
