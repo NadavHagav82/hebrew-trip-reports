@@ -104,8 +104,10 @@ const AdvancedReports = () => {
   useEffect(() => {
     if (initialLoadComplete && teamMembers.length > 0) {
       loadData();
+    } else if (initialLoadComplete && teamMembers.length === 0) {
+      setLoading(false);
     }
-  }, [periodType, periodOffset, selectedEmployee, selectedCategory, selectedStatus, selectedCurrency]);
+  }, [periodType, periodOffset, selectedEmployee, selectedCategory, selectedStatus, selectedCurrency, initialLoadComplete, teamMembers]);
 
   const checkManagerAndLoadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -147,15 +149,10 @@ const AdvancedReports = () => {
       return;
     }
 
+    // Set team members first, then mark initial load complete
+    // The useEffect will handle calling loadData or setting loading to false
     setTeamMembers(data || []);
     setInitialLoadComplete(true);
-    
-    // If team members exist, load data; otherwise stop loading
-    if (data && data.length > 0) {
-      // loadData will be called by the effect
-    } else {
-      setLoading(false);
-    }
   };
 
   const getPeriodDates = () => {
