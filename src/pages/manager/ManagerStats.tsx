@@ -99,7 +99,25 @@ const ManagerStats = () => {
     try {
       const { startDate, endDate } = getDateRange();
 
-      // Get all expenses in the date range with their reports
+      // First get team member IDs
+      const { data: teamMembers, error: teamError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('manager_id', user.id);
+
+      if (teamError) throw teamError;
+
+      const teamUserIds = teamMembers?.map(m => m.id) || [];
+
+      if (teamUserIds.length === 0) {
+        setStats({ approved: 0, rejected: 0, pending: 0, totalAmount: 0, approvedAmount: 0, rejectedAmount: 0 });
+        setCategoryStats([]);
+        setMonthlyStats([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get all expenses for team members in the date range
       const { data: expenses, error } = await supabase
         .from('expenses')
         .select(`
@@ -107,11 +125,13 @@ const ManagerStats = () => {
           reports!inner(
             status,
             submitted_at,
-            manager_approval_requested_at
+            manager_approval_requested_at,
+            user_id
           )
         `)
         .gte('expense_date', format(startDate, 'yyyy-MM-dd'))
         .lte('expense_date', format(endDate, 'yyyy-MM-dd'))
+        .in('reports.user_id', teamUserIds)
         .in('reports.status', ['pending_approval', 'closed', 'open']);
 
       if (error) throw error;
