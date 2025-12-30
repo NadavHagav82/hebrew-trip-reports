@@ -253,38 +253,38 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-secondary p-6 sm:p-8 text-primary-foreground">
-        {/* Background decorations */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-x-1/4 translate-y-1/4" />
+      {/* Hero Section - Subtle gradient */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/30 dark:from-slate-900 dark:via-blue-950/30 dark:to-indigo-950/20 p-6 sm:p-8 border border-slate-200/60 dark:border-slate-700/50">
+        {/* Background decorations - subtle */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-blue-100/30 dark:bg-blue-900/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-48 h-48 bg-indigo-100/40 dark:bg-indigo-900/20 rounded-full blur-2xl translate-x-1/4 translate-y-1/4" />
         
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
-                <Shield className="w-8 h-8" />
+              <div className="p-3 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 rounded-2xl border border-blue-200/50 dark:border-blue-700/50 shadow-sm">
+                <Shield className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
                   מדיניות נסיעות
                 </h1>
-                <p className="text-white/70 mt-1 flex items-center gap-2">
+                <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
                   {organizationName}
                 </p>
               </div>
             </div>
             <Badge 
-              className={`text-sm px-4 py-2 font-medium backdrop-blur-sm ${
+              className={`text-sm px-4 py-2 font-medium ${
                 policyActive 
-                  ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-100' 
-                  : 'bg-white/10 border border-white/20'
+                  ? 'bg-emerald-100 border border-emerald-300 text-emerald-700 dark:bg-emerald-900/40 dark:border-emerald-700 dark:text-emerald-300' 
+                  : 'bg-slate-100 border border-slate-300 text-slate-600 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400'
               }`}
             >
               {policyActive ? (
                 <>
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full ml-2 animate-pulse" />
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full ml-2 animate-pulse" />
                   פעיל
                 </>
               ) : (
@@ -296,16 +296,16 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
             </Badge>
           </div>
           
-          {/* Stats Row */}
+          {/* Stats Row - Soft cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <div className="bg-white/70 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/50 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <Clock className="w-5 h-5" />
+                <div className="p-2 bg-blue-100/80 dark:bg-blue-900/40 rounded-lg">
+                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-white/60 text-xs">עדכון אחרון</p>
-                  <p className="font-medium text-sm">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">עדכון אחרון</p>
+                  <p className="font-medium text-sm text-slate-900 dark:text-slate-100">
                     {lastUpdate 
                       ? format(new Date(lastUpdate), 'd בMMMM yyyy', { locale: he })
                       : 'לא עודכן עדיין'
@@ -314,47 +314,47 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
                 </div>
               </div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <div className="bg-white/70 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/50 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <Users className="w-5 h-5" />
+                <div className="p-2 bg-violet-100/80 dark:bg-violet-900/40 rounded-lg">
+                  <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-white/60 text-xs">חל על</p>
-                  <p className="font-medium text-sm">{employeeCount} עובדים</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">חל על</p>
+                  <p className="font-medium text-sm text-slate-900 dark:text-slate-100">{employeeCount} עובדים</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <div className="bg-white/70 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/50 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <TrendingUp className="w-5 h-5" />
+                <div className="p-2 bg-teal-100/80 dark:bg-teal-900/40 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div>
-                  <p className="text-white/60 text-xs">השלמת הגדרות</p>
-                  <p className="font-medium text-sm">{completionPercentage}%</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">השלמת הגדרות</p>
+                  <p className="font-medium text-sm text-slate-900 dark:text-slate-100">{completionPercentage}%</p>
                 </div>
               </div>
-              <Progress value={completionPercentage} className="h-1.5 bg-white/20" />
+              <Progress value={completionPercentage} className="h-1.5 bg-slate-200 dark:bg-slate-700" />
             </div>
           </div>
           
-          {/* Action Buttons */}
+          {/* Action Buttons - Subtle style */}
           <div className="flex flex-wrap gap-3">
             <Button 
-              variant="secondary" 
+              variant="outline" 
               size="sm" 
               onClick={() => onNavigateToTab('preview')}
-              className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+              className="bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
             >
               <Eye className="w-4 h-4 ml-2" />
               צפה במדיניות
             </Button>
             <Button 
-              variant="secondary" 
+              variant="outline" 
               size="sm" 
               onClick={() => setAuditLogOpen(true)}
-              className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+              className="bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
             >
               <History className="w-4 h-4 ml-2" />
               יומן שינויים
