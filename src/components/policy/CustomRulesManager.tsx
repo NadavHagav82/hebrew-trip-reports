@@ -113,6 +113,8 @@ export function CustomRulesManager({ organizationId }: Props) {
   const [editingRule, setEditingRule] = useState<CustomRule | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterAction, setFilterAction] = useState<string>('all');
   const [formData, setFormData] = useState({
     rule_name: '',
     description: '',
@@ -124,7 +126,40 @@ export function CustomRulesManager({ organizationId }: Props) {
     is_active: true,
   });
 
+  const getActionLabel = (actionType: string) => {
+    return ACTION_TYPES.find(a => a.value === actionType)?.label || actionType;
+  };
+
+  const getActionColor = (actionType: string) => {
+    return ACTION_TYPES.find(a => a.value === actionType)?.color || 'secondary';
+  };
+
+  const getConditionSummary = (condition: any) => {
+    if (!condition || Object.keys(condition).length === 0) return 'ללא תנאים';
+    
+    switch (condition.type) {
+      case 'max_trip_duration':
+        return `מקסימום ${condition.max_days} ימים`;
+      case 'max_total_budget':
+        return `תקציב: ${condition.max_amount?.toLocaleString()} ${condition.currency}`;
+      case 'weekend_travel':
+        return 'נסיעה בסוף שבוע';
+      case 'advance_booking':
+        return `הזמנה ${condition.min_days} ימים מראש`;
+      default:
+        return 'חוק מותאם';
+    }
+  };
+
   const filteredRules = rules.filter(rule => {
+    // Filter by status
+    if (filterStatus === 'active' && !rule.is_active) return false;
+    if (filterStatus === 'inactive' && rule.is_active) return false;
+    
+    // Filter by action type
+    if (filterAction !== 'all' && rule.action_type !== filterAction) return false;
+    
+    // Text search
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     const name = rule.rule_name.toLowerCase();
@@ -132,6 +167,14 @@ export function CustomRulesManager({ organizationId }: Props) {
     const conditionSummary = getConditionSummary(rule.condition_json).toLowerCase();
     return name.includes(query) || description.includes(query) || conditionSummary.includes(query);
   });
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterStatus('all');
+    setFilterAction('all');
+  };
+
+  const hasActiveFilters = searchQuery || filterStatus !== 'all' || filterAction !== 'all';
 
   useEffect(() => {
     loadData();
@@ -170,30 +213,6 @@ export function CustomRulesManager({ organizationId }: Props) {
     }
   };
 
-  const getActionLabel = (actionType: string) => {
-    return ACTION_TYPES.find(a => a.value === actionType)?.label || actionType;
-  };
-
-  const getActionColor = (actionType: string) => {
-    return ACTION_TYPES.find(a => a.value === actionType)?.color || 'secondary';
-  };
-
-  const getConditionSummary = (condition: any) => {
-    if (!condition || Object.keys(condition).length === 0) return 'ללא תנאים';
-    
-    switch (condition.type) {
-      case 'max_trip_duration':
-        return `מקסימום ${condition.max_days} ימים`;
-      case 'max_total_budget':
-        return `תקציב: ${condition.max_amount?.toLocaleString()} ${condition.currency}`;
-      case 'weekend_travel':
-        return 'נסיעה בסוף שבוע';
-      case 'advance_booking':
-        return `הזמנה ${condition.min_days} ימים מראש`;
-      default:
-        return 'חוק מותאם';
-    }
-  };
 
   const openCreateDialog = () => {
     setEditingRule(null);
@@ -380,13 +399,39 @@ export function CustomRulesManager({ organizationId }: Props) {
           </Button>
         </div>
         {rules.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3 items-center">
             <Input
-              placeholder="חיפוש לפי שם חוק, תיאור או תנאי..."
+              placeholder="חיפוש חופשי..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-sm"
+              className="max-w-[200px]"
             />
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'active' | 'inactive')}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="סטטוס" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הסטטוסים</SelectItem>
+                <SelectItem value="active">פעיל</SelectItem>
+                <SelectItem value="inactive">לא פעיל</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterAction} onValueChange={setFilterAction}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="פעולה" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הפעולות</SelectItem>
+                {ACTION_TYPES.map((action) => (
+                  <SelectItem key={action.value} value={action.value}>{action.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                נקה סינון
+              </Button>
+            )}
           </div>
         )}
       </CardHeader>
