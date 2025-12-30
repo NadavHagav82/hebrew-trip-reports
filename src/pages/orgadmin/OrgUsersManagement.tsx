@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { 
   Users, 
-  Loader2, 
   ArrowRight, 
   Search,
   MoreHorizontal,
@@ -35,7 +34,15 @@ import {
   UserCheck,
   ArrowRightLeft,
   Building2,
-  Filter
+  Filter,
+  Sparkles,
+  UserCircle,
+  Mail,
+  Briefcase,
+  Calendar,
+  Hash,
+  Shield,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -159,7 +166,6 @@ export default function OrgUsersManagement() {
 
       if (error) throw error;
 
-      // Load manager details for each user
       const usersWithManagers = await Promise.all(
         (data || []).map(async (userProfile) => {
           let manager = null;
@@ -320,12 +326,12 @@ export default function OrgUsersManagement() {
 
   const getRoleBadge = (userProfile: UserProfile) => {
     if (userProfile.role === 'org_admin') {
-      return <Badge variant="default">מנהל ארגון</Badge>;
+      return <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0">מנהל ארגון</Badge>;
     }
     if (userProfile.is_manager) {
-      return <Badge variant="secondary">מנהל</Badge>;
+      return <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">מנהל</Badge>;
     }
-    return <Badge variant="outline">עובד</Badge>;
+    return <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800">עובד</Badge>;
   };
 
   // Filter users
@@ -350,8 +356,18 @@ export default function OrgUsersManagement() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 flex items-center justify-center shadow-lg animate-pulse">
+              <Users className="w-8 h-8 text-white" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-md">
+              <Sparkles className="w-3 h-3 text-white animate-spin" />
+            </div>
+          </div>
+          <p className="text-muted-foreground font-medium">טוען משתמשים...</p>
+        </div>
       </div>
     );
   }
@@ -365,292 +381,458 @@ export default function OrgUsersManagement() {
   const usersWithoutManager = users.filter(u => !u.manager_id && !u.is_manager).length;
 
   return (
-    <div className="container mx-auto py-8 space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            ניהול משתמשים
-          </h1>
-          <p className="text-muted-foreground mt-2 flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            {organizationName}
-          </p>
-        </div>
-        <Button onClick={() => navigate('/orgadmin')}>
-          <ArrowRight className="ml-2 h-4 w-4" />
-          חזרה לדשבורד
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">סה"כ משתמשים</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalUsers}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">מנהלים</CardTitle>
-            <UserCog className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalManagers}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ללא מנהל משויך</CardTitle>
-            <UserX className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{usersWithoutManager}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>רשימת משתמשים</CardTitle>
-          <CardDescription>ניהול כל המשתמשים בארגון</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="חיפוש לפי שם, מייל או מחלקה..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
-                />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5" dir="rtl">
+      <div className="container mx-auto py-8 px-4 space-y-6">
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/50 dark:from-slate-800 dark:via-slate-900 dark:to-blue-950/30 p-8 shadow-lg border border-border/50">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-cyan-500/5 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">ניהול משתמשים</h1>
+                <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  {organizationName}
+                </p>
               </div>
             </div>
-            <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-[150px]">
-                <Filter className="h-4 w-4 ml-2" />
-                <SelectValue placeholder="תפקיד" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל התפקידים</SelectItem>
-                <SelectItem value="manager">מנהלים</SelectItem>
-                <SelectItem value="employee">עובדים</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterManager} onValueChange={setFilterManager}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="מנהל" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל המנהלים</SelectItem>
-                <SelectItem value="none">ללא מנהל</SelectItem>
-                {managers.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>לא נמצאו משתמשים</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>שם מלא</TableHead>
-                  <TableHead>מייל</TableHead>
-                  <TableHead>מחלקה</TableHead>
-                  <TableHead>תפקיד</TableHead>
-                  <TableHead>מנהל ישיר</TableHead>
-                  <TableHead>תאריך הצטרפות</TableHead>
-                  <TableHead className="text-left">פעולות</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((userProfile) => (
-                  <TableRow key={userProfile.id}>
-                    <TableCell className="font-medium">{userProfile.full_name}</TableCell>
-                    <TableCell dir="ltr" className="text-right">{userProfile.email}</TableCell>
-                    <TableCell>{userProfile.department}</TableCell>
-                    <TableCell>{getRoleBadge(userProfile)}</TableCell>
-                    <TableCell>{userProfile.manager?.full_name || '-'}</TableCell>
-                    <TableCell>
-                      {format(new Date(userProfile.created_at), 'dd/MM/yyyy', { locale: he })}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(userProfile)}>
-                            <UserCog className="ml-2 h-4 w-4" />
-                            עריכת פרטים
-                          </DropdownMenuItem>
-                          {!userProfile.is_manager && (
-                            <DropdownMenuItem onClick={() => openTransferDialog(userProfile)}>
-                              <ArrowRightLeft className="ml-2 h-4 w-4" />
-                              העברה למנהל אחר
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => toggleManagerStatus(userProfile)}>
-                            {userProfile.is_manager ? (
-                              <>
-                                <UserX className="ml-2 h-4 w-4" />
-                                הסרת סטטוס מנהל
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="ml-2 h-4 w-4" />
-                                הגדרה כמנהל
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>עריכת פרטי משתמש</DialogTitle>
-            <DialogDescription>
-              עדכון פרטי המשתמש {selectedUser?.full_name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="full_name">שם מלא</Label>
-              <Input
-                id="full_name"
-                value={editForm.full_name}
-                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="department">מחלקה</Label>
-              <Input
-                id="department"
-                value={editForm.department}
-                onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="employee_id">מספר עובד</Label>
-              <Input
-                id="employee_id"
-                value={editForm.employee_id}
-                onChange={(e) => setEditForm({ ...editForm, employee_id: e.target.value })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditDialogOpen(false)}
-              disabled={submitting}
+            <Button 
+              variant="outline" 
+              className="border-border hover:bg-muted"
+              onClick={() => navigate('/orgadmin')}
             >
-              ביטול
+              <ArrowRight className="ml-2 h-4 w-4" />
+              חזרה לדשבורד
             </Button>
-            <Button onClick={handleEditUser} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  שומר...
-                </>
-              ) : (
-                'שמור שינויים'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
 
-      {/* Transfer Dialog */}
-      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5" />
-              העברת משתמש למנהל אחר
-            </DialogTitle>
-            <DialogDescription>
-              העברת {selectedUser?.full_name} למנהל חדש
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {selectedUser?.manager && (
-              <div className="bg-muted p-3 rounded-md">
-                <p className="text-sm text-muted-foreground">מנהל נוכחי:</p>
-                <p className="font-medium">{selectedUser.manager.full_name}</p>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+            <CardHeader className="pb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+                <Users className="w-5 h-5 text-white" />
               </div>
-            )}
-            <div className="grid gap-2">
-              <Label htmlFor="new_manager">מנהל חדש</Label>
-              <Select value={newManagerId} onValueChange={setNewManagerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="בחר מנהל חדש" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">סה"כ משתמשים</p>
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{totalUsers}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-background">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+            <CardHeader className="pb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">מנהלים</p>
+              <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{totalManagers}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-background">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+            <CardHeader className="pb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-md">
+                <AlertCircle className="w-5 h-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">ללא מנהל משויך</p>
+              <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{usersWithoutManager}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Users Table */}
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-900/50 dark:to-background border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">רשימת משתמשים</CardTitle>
+                <CardDescription>ניהול כל המשתמשים בארגון</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div className="flex-1 min-w-[200px]">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="חיפוש לפי שם, מייל או מחלקה..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-10 h-11"
+                  />
+                </div>
+              </div>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="w-[150px] h-11">
+                  <Filter className="h-4 w-4 ml-2" />
+                  <SelectValue placeholder="תפקיד" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">ללא מנהל</SelectItem>
-                  {managers
-                    .filter(m => m.id !== selectedUser?.id)
-                    .map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.full_name} ({m.email})
-                      </SelectItem>
-                    ))}
+                <SelectContent className="bg-background border shadow-lg">
+                  <SelectItem value="all">כל התפקידים</SelectItem>
+                  <SelectItem value="manager">מנהלים</SelectItem>
+                  <SelectItem value="employee">עובדים</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterManager} onValueChange={setFilterManager}>
+                <SelectTrigger className="w-[180px] h-11">
+                  <SelectValue placeholder="מנהל" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg">
+                  <SelectItem value="all">כל המנהלים</SelectItem>
+                  <SelectItem value="none">ללא מנהל</SelectItem>
+                  {managers.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.full_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setTransferDialogOpen(false)}
-              disabled={submitting}
-            >
-              ביטול
-            </Button>
-            <Button onClick={handleTransferUser} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  מעביר...
-                </>
-              ) : (
-                'העבר משתמש'
+
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-800/30 flex items-center justify-center mb-4">
+                  <Users className="w-10 h-10 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">לא נמצאו משתמשים</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto">
+                  נסה לשנות את מסנני החיפוש
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y">
+                  {filteredUsers.map((userProfile) => (
+                    <div key={userProfile.id} className="p-4 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            userProfile.role === 'org_admin' 
+                              ? 'bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-800/30' 
+                              : userProfile.is_manager
+                              ? 'bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-800/30'
+                              : 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800/50 dark:to-slate-700/50'
+                          }`}>
+                            <UserCircle className={`w-5 h-5 ${
+                              userProfile.role === 'org_admin' 
+                                ? 'text-purple-500' 
+                                : userProfile.is_manager
+                                ? 'text-blue-500'
+                                : 'text-slate-500'
+                            }`} />
+                          </div>
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <p className="font-semibold text-foreground">{userProfile.full_name}</p>
+                            {getRoleBadge(userProfile)}
+                            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                              <Mail className="w-3.5 h-3.5" />
+                              <span className="truncate">{userProfile.email || '-'}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1.5">
+                                <Briefcase className="w-3.5 h-3.5" />
+                                {userProfile.department}
+                              </span>
+                            </div>
+                            {userProfile.manager && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Shield className="w-3.5 h-3.5" />
+                                מנהל: {userProfile.manager.full_name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-background border shadow-lg">
+                            <DropdownMenuItem onClick={() => openEditDialog(userProfile)}>
+                              <UserCog className="ml-2 h-4 w-4" />
+                              עריכת פרטים
+                            </DropdownMenuItem>
+                            {!userProfile.is_manager && (
+                              <DropdownMenuItem onClick={() => openTransferDialog(userProfile)}>
+                                <ArrowRightLeft className="ml-2 h-4 w-4" />
+                                העברה למנהל אחר
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => toggleManagerStatus(userProfile)}>
+                              {userProfile.is_manager ? (
+                                <>
+                                  <UserX className="ml-2 h-4 w-4" />
+                                  הסרת סטטוס מנהל
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="ml-2 h-4 w-4" />
+                                  הגדרה כמנהל
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableHead className="font-semibold">שם מלא</TableHead>
+                        <TableHead className="font-semibold">מייל</TableHead>
+                        <TableHead className="font-semibold">מחלקה</TableHead>
+                        <TableHead className="font-semibold">תפקיד</TableHead>
+                        <TableHead className="font-semibold">מנהל ישיר</TableHead>
+                        <TableHead className="font-semibold">תאריך הצטרפות</TableHead>
+                        <TableHead className="font-semibold text-left">פעולות</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((userProfile) => (
+                        <TableRow key={userProfile.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                userProfile.role === 'org_admin' 
+                                  ? 'bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-800/30' 
+                                  : userProfile.is_manager
+                                  ? 'bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-800/30'
+                                  : 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800/50 dark:to-slate-700/50'
+                              }`}>
+                                <UserCircle className={`w-4 h-4 ${
+                                  userProfile.role === 'org_admin' 
+                                    ? 'text-purple-500' 
+                                    : userProfile.is_manager
+                                    ? 'text-blue-500'
+                                    : 'text-slate-500'
+                                }`} />
+                              </div>
+                              <span className="font-medium">{userProfile.full_name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell dir="ltr" className="text-right text-muted-foreground">{userProfile.email}</TableCell>
+                          <TableCell>
+                            <span className="text-sm px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                              {userProfile.department}
+                            </span>
+                          </TableCell>
+                          <TableCell>{getRoleBadge(userProfile)}</TableCell>
+                          <TableCell className="text-muted-foreground">{userProfile.manager?.full_name || '-'}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {format(new Date(userProfile.created_at), 'dd/MM/yyyy', { locale: he })}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-background border shadow-lg">
+                                <DropdownMenuItem onClick={() => openEditDialog(userProfile)}>
+                                  <UserCog className="ml-2 h-4 w-4" />
+                                  עריכת פרטים
+                                </DropdownMenuItem>
+                                {!userProfile.is_manager && (
+                                  <DropdownMenuItem onClick={() => openTransferDialog(userProfile)}>
+                                    <ArrowRightLeft className="ml-2 h-4 w-4" />
+                                    העברה למנהל אחר
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => toggleManagerStatus(userProfile)}>
+                                  {userProfile.is_manager ? (
+                                    <>
+                                      <UserX className="ml-2 h-4 w-4" />
+                                      הסרת סטטוס מנהל
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="ml-2 h-4 w-4" />
+                                      הגדרה כמנהל
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md">
+                  <UserCog className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <DialogTitle>עריכת פרטי משתמש</DialogTitle>
+                  <DialogDescription>
+                    עדכון פרטי המשתמש {selectedUser?.full_name}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="full_name">שם מלא</Label>
+                <Input
+                  id="full_name"
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="department">מחלקה</Label>
+                <Input
+                  id="department"
+                  value={editForm.department}
+                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="employee_id">מספר עובד</Label>
+                <Input
+                  id="employee_id"
+                  value={editForm.employee_id}
+                  onChange={(e) => setEditForm({ ...editForm, employee_id: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={submitting}
+              >
+                ביטול
+              </Button>
+              <Button 
+                onClick={handleEditUser} 
+                disabled={submitting}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+              >
+                {submitting ? (
+                  <>
+                    <Sparkles className="ml-2 h-4 w-4 animate-spin" />
+                    שומר...
+                  </>
+                ) : (
+                  'שמור שינויים'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Transfer Dialog */}
+        <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md">
+                  <ArrowRightLeft className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <DialogTitle>העברת משתמש למנהל אחר</DialogTitle>
+                  <DialogDescription>
+                    העברת {selectedUser?.full_name} למנהל חדש
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {selectedUser?.manager && (
+                <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-muted-foreground">מנהל נוכחי:</p>
+                  <p className="font-medium text-foreground">{selectedUser.manager.full_name}</p>
+                </div>
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <div className="grid gap-2">
+                <Label htmlFor="new_manager">מנהל חדש</Label>
+                <Select value={newManagerId} onValueChange={setNewManagerId}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="בחר מנהל חדש" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg">
+                    <SelectItem value="">ללא מנהל</SelectItem>
+                    {managers
+                      .filter(m => m.id !== selectedUser?.id)
+                      .map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.full_name} ({m.email})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setTransferDialogOpen(false)}
+                disabled={submitting}
+              >
+                ביטול
+              </Button>
+              <Button 
+                onClick={handleTransferUser} 
+                disabled={submitting}
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+              >
+                {submitting ? (
+                  <>
+                    <Sparkles className="ml-2 h-4 w-4 animate-spin" />
+                    מעביר...
+                  </>
+                ) : (
+                  'העבר משתמש'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
