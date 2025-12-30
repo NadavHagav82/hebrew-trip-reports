@@ -98,12 +98,12 @@ export default function MyTravelPolicy() {
     
     setLoading(true);
     try {
-      // Get user profile
+      // Get user profile with grade_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError || !profile) {
         toast({
@@ -132,7 +132,7 @@ export default function MyTravelPolicy() {
         .from('organizations')
         .select('name')
         .eq('id', profile.organization_id)
-        .single();
+        .maybeSingle();
 
       setOrganizationName(orgData?.name || '');
 
@@ -146,10 +146,20 @@ export default function MyTravelPolicy() {
 
       setAllGrades(grades || []);
 
-      // For now, assume user is at the lowest grade level if not specified
-      // In a real implementation, the profile would have a grade_id field
-      const lowestGrade = grades?.[0] || null;
-      setUserGrade(lowestGrade);
+      // Get user's actual grade from profile
+      let currentUserGrade: EmployeeGrade | null = null;
+      
+      if (profile.grade_id) {
+        // User has a grade assigned - find it
+        currentUserGrade = grades?.find(g => g.id === profile.grade_id) || null;
+      }
+      
+      // If no grade assigned, use the lowest grade as default
+      if (!currentUserGrade && grades && grades.length > 0) {
+        currentUserGrade = grades[0];
+      }
+      
+      setUserGrade(currentUserGrade);
 
       // Get policy rules - filter by user's grade or rules without specific grade
       const { data: rules } = await supabase
@@ -163,7 +173,7 @@ export default function MyTravelPolicy() {
         // If rule has no grade specified, it applies to everyone
         if (!rule.grade_id) return true;
         // If user has a grade, check if it matches
-        if (lowestGrade && rule.grade_id === lowestGrade.id) return true;
+        if (currentUserGrade && rule.grade_id === currentUserGrade.id) return true;
         return false;
       });
 
