@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, TrendingUp, TrendingDown, CheckCircle, XCircle, DollarSign, BarChart3, Shield, Calculator, UserCog, ArrowRight, Clock, User } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Clock, BarChart3, User, ArrowRight, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -44,7 +44,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   miscellaneous: '#ef4444',
 };
 
-const ManagerStats = () => {
+const ManagerPersonalStats = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -99,25 +99,7 @@ const ManagerStats = () => {
     try {
       const { startDate, endDate } = getDateRange();
 
-      // First get team member IDs
-      const { data: teamMembers, error: teamError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('manager_id', user.id);
-
-      if (teamError) throw teamError;
-
-      const teamUserIds = teamMembers?.map(m => m.id) || [];
-
-      if (teamUserIds.length === 0) {
-        setStats({ approved: 0, rejected: 0, pending: 0, totalAmount: 0, approvedAmount: 0, rejectedAmount: 0 });
-        setCategoryStats([]);
-        setMonthlyStats([]);
-        setLoading(false);
-        return;
-      }
-
-      // Get all expenses for team members in the date range
+      // Get personal expenses (where the logged-in user is the report owner)
       const { data: expenses, error } = await supabase
         .from('expenses')
         .select(`
@@ -125,14 +107,12 @@ const ManagerStats = () => {
           reports!inner(
             status,
             submitted_at,
-            manager_approval_requested_at,
             user_id
           )
         `)
+        .eq('reports.user_id', user?.id)
         .gte('expense_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('expense_date', format(endDate, 'yyyy-MM-dd'))
-        .in('reports.user_id', teamUserIds)
-        .in('reports.status', ['pending_approval', 'closed', 'open']);
+        .lte('expense_date', format(endDate, 'yyyy-MM-dd'));
 
       if (error) throw error;
 
@@ -249,25 +229,25 @@ const ManagerStats = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 dark:from-indigo-950/50 dark:via-purple-950/50 dark:to-blue-950/50 border-b border-indigo-100 dark:border-indigo-900/30 sticky top-0 z-10 relative overflow-hidden">
+      <header className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-blue-950/50 dark:via-cyan-950/50 dark:to-teal-950/50 border-b border-blue-100 dark:border-blue-900/30 sticky top-0 z-10 relative overflow-hidden">
         {/* Top accent bar */}
-        <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500" />
+        <div className="h-1.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500" />
         
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-2xl" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/10 to-transparent rounded-full blur-2xl" />
         
         <div className="container mx-auto px-4 py-5 relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <User className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">דשבורד סטטיסטיקות</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">ניתוח הוצאות ואישורים</p>
+                <h1 className="text-2xl font-bold text-foreground">סטטיסטיקות אישיות</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">ההוצאות והדוחות שלי</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -285,19 +265,11 @@ const ManagerStats = () => {
               </Select>
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/manager/personal-stats')}
-                className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all"
-              >
-                <User className="w-4 h-4 ml-1.5" />
-                סטטיסטיקות אישיות
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/manager/dashboard')}
+                onClick={() => navigate('/manager/stats')}
                 className="h-10 px-4 border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-xl hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 transition-all"
               >
-                <Shield className="w-4 h-4 ml-1.5" />
-                דשבורד מנהל
+                <BarChart3 className="w-4 h-4 ml-1.5" />
+                סטטיסטיקות צוות
               </Button>
               <Button 
                 variant="outline" 
@@ -347,10 +319,7 @@ const ManagerStats = () => {
             </CardContent>
           </Card>
 
-          <Card 
-            className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm cursor-pointer"
-            onClick={() => navigate('/manager/dashboard')}
-          >
+          <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
             <div className="h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
             <CardContent className="pt-5">
               <div className="flex items-center justify-between">
@@ -360,7 +329,6 @@ const ManagerStats = () => {
                     ממתינות לאישור
                   </p>
                   <p className="text-3xl font-bold text-amber-600 mt-1">{stats?.pending || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">לחץ לצפייה בדוחות</p>
                 </div>
               </div>
             </CardContent>
@@ -372,7 +340,7 @@ const ManagerStats = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                    <BarChart3 className="w-4 h-4 text-blue-600" />
                     אחוז אישור
                   </p>
                   <p className="text-3xl font-bold text-blue-600 mt-1">{approvalRate}%</p>
@@ -383,185 +351,165 @@ const ManagerStats = () => {
           </Card>
         </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Pie Chart - Status Distribution */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>התפלגות סטטוס הוצאות</CardTitle>
-            <CardDescription>חלוקה לפי מצב אישור</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Category Bar Chart */}
+          <Card className="border-0 shadow-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-blue-400 to-cyan-500" />
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-right mb-4">הוצאות לפי קטגוריה</h3>
+              <p className="text-sm text-muted-foreground text-right mb-4">מאושר מול נדחה</p>
+              {categoryStats.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={categoryStats} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis type="number" />
+                    <YAxis 
+                      type="category" 
+                      dataKey="category" 
+                      tickFormatter={getCategoryLabel}
+                      width={80}
+                    />
+                    <Tooltip 
+                      labelFormatter={getCategoryLabel}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        borderRadius: '8px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="approved" fill="#10b981" name="מאושר" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="rejected" fill="#ef4444" name="נדחה" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <p>אין נתונים להצגה</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Bar Chart - Category Stats */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>הוצאות לפי קטגוריה</CardTitle>
-            <CardDescription>מאושר מול נדחה</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={categoryStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="category" 
-                  tickFormatter={getCategoryLabel}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis />
-                <Tooltip 
-                  labelFormatter={getCategoryLabel}
-                  formatter={(value: number) => [value, '']}
-                />
-                <Legend />
-                <Bar dataKey="approved" fill="#10b981" name="מאושר" />
-                <Bar dataKey="rejected" fill="#ef4444" name="נדחה" />
-                <Bar dataKey="pending" fill="#f59e0b" name="ממתין" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Status Pie Chart */}
+          <Card className="border-0 shadow-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-cyan-400 to-teal-500" />
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-right mb-4">התפלגות סטטוס הוצאות</h3>
+              <p className="text-sm text-muted-foreground text-right mb-4">חלוקה לפי מצב אישור</p>
+              {pieData.some(d => d.value > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        borderRadius: '8px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <p>אין נתונים להצגה</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Line Chart - Monthly Trend */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>מגמה חודשית</CardTitle>
-            <CardDescription>הוצאות לאורך זמן</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={2} name="מאושר" />
-                <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={2} name="נדחה" />
-                <Line type="monotone" dataKey="pending" stroke="#f59e0b" strokeWidth={2} name="ממתין" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Monthly Trend */}
+        {monthlyStats.length > 0 && (
+          <Card className="border-0 shadow-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-teal-400 to-emerald-500" />
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-right mb-4">מגמה חודשית</h3>
+              <p className="text-sm text-muted-foreground text-right mb-4">מספר הוצאות לפי חודש</p>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyStats}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={3} name="מאושר" dot={{ fill: '#10b981', r: 4 }} />
+                  <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={3} name="נדחה" dot={{ fill: '#ef4444', r: 4 }} />
+                  <Line type="monotone" dataKey="pending" stroke="#f59e0b" strokeWidth={3} name="ממתין" dot={{ fill: '#f59e0b', r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Bar Chart - Amount by Category */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>סכומים לפי קטגוריה</CardTitle>
-            <CardDescription>סה"כ בשקלים</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={categoryStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="category" 
-                  tickFormatter={getCategoryLabel}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis />
-                <Tooltip 
-                  labelFormatter={getCategoryLabel}
-                  formatter={(value: number) => [`₪${value.toFixed(2)}`, 'סכום']}
-                />
-                <Bar dataKey="amount" fill="#3b82f6" name="סכום כולל">
-                  {categoryStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.category] || '#3b82f6'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Detailed Table */}
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle>פירוט לפי קטגוריה</CardTitle>
-          <CardDescription>נתונים מפורטים</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-right p-3 font-semibold">קטגוריה</th>
-                  <th className="text-center p-3 font-semibold">סה"כ</th>
-                  <th className="text-center p-3 font-semibold text-green-600">מאושר</th>
-                  <th className="text-center p-3 font-semibold text-red-600">נדחה</th>
-                  <th className="text-center p-3 font-semibold text-amber-600">ממתין</th>
-                  <th className="text-right p-3 font-semibold">סכום כולל</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryStats.map((cat) => (
-                  <tr key={cat.category} className="border-b hover:bg-muted/50 transition-colors">
-                    <td className="p-3 font-medium">{getCategoryLabel(cat.category)}</td>
-                    <td className="text-center p-3">{cat.total}</td>
-                    <td className="text-center p-3 text-green-600">{cat.approved}</td>
-                    <td className="text-center p-3 text-red-600">{cat.rejected}</td>
-                    <td className="text-center p-3 text-amber-600">{cat.pending}</td>
-                    <td className="text-right p-3 font-semibold">₪{cat.amount.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 bg-muted/30 font-bold">
-                  <td className="p-3">סה"כ</td>
-                  <td className="text-center p-3">
-                    {categoryStats.reduce((sum, cat) => sum + cat.total, 0)}
-                  </td>
-                  <td className="text-center p-3 text-green-600">
-                    {categoryStats.reduce((sum, cat) => sum + cat.approved, 0)}
-                  </td>
-                  <td className="text-center p-3 text-red-600">
-                    {categoryStats.reduce((sum, cat) => sum + cat.rejected, 0)}
-                  </td>
-                  <td className="text-center p-3 text-amber-600">
-                    {categoryStats.reduce((sum, cat) => sum + cat.pending, 0)}
-                  </td>
-                  <td className="text-right p-3">
-                    ₪{categoryStats.reduce((sum, cat) => sum + cat.amount, 0).toFixed(2)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Category Details Table */}
+        {categoryStats.length > 0 && (
+          <Card className="border-0 shadow-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="h-1 bg-gradient-to-r from-emerald-400 to-green-500" />
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-right mb-4">פירוט לפי קטגוריה</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">קטגוריה</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">סה"כ</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">מאושר</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">נדחה</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">ממתין</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">סכום</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoryStats.map((cat) => (
+                      <tr key={cat.category} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: CATEGORY_COLORS[cat.category] || '#6b7280' }}
+                            />
+                            <span className="font-medium">{getCategoryLabel(cat.category)}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">{cat.total}</td>
+                        <td className="py-3 px-4 text-right text-green-600 font-medium">{cat.approved}</td>
+                        <td className="py-3 px-4 text-right text-red-600 font-medium">{cat.rejected}</td>
+                        <td className="py-3 px-4 text-right text-amber-600 font-medium">{cat.pending}</td>
+                        <td className="py-3 px-4 text-right font-medium">₪{cat.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
 };
 
-export default ManagerStats;
+export default ManagerPersonalStats;
