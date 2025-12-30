@@ -588,7 +588,9 @@ export default function MyTravelPolicy() {
 
         {/* Policy Categories */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Object.entries(CATEGORY_CONFIG).map(([category, config]) => {
+          {Object.entries(CATEGORY_CONFIG)
+            .filter(([category]) => categoryFilter === 'all' || category === categoryFilter)
+            .map(([category, config]) => {
             const rules = getRulesByCategory(category);
             const IconComponent = config.icon;
             
