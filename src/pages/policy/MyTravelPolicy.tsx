@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnimatedCard } from '@/components/ui/animated-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -665,67 +666,69 @@ export default function MyTravelPolicy() {
         <div id="policy-categories" className="grid grid-cols-1 lg:grid-cols-2 gap-6 scroll-mt-24">
           {Object.entries(CATEGORY_CONFIG)
             .filter(([category]) => categoryFilter === 'all' || category === categoryFilter)
-            .map(([category, config]) => {
+            .map(([category, config], index) => {
             const rules = getRulesByCategory(category);
             const IconComponent = config.icon;
             
             return (
-              <Card key={category} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-                <CardHeader className={`${config.bgColor} border-b border-border/30`}>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl bg-white/80 dark:bg-background/80 shadow-sm`}>
-                      <IconComponent className={`h-6 w-6 ${config.color}`} />
-                    </div>
-                    <span className="text-xl">{config.label}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {rules.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p>אין הגבלות מיוחדות בקטגוריה זו</p>
-                      <p className="text-sm mt-1">בכל מקרה, פעל בהתאם לשיקול דעת סביר</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {rules.map((rule, index) => (
-                        <div 
-                          key={rule.id}
-                          className="p-4 rounded-xl bg-muted/30 border border-border/30 hover:border-primary/30 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline" className="rounded-full text-xs">
-                                  {DESTINATION_LABELS[rule.destination_type] || rule.destination_type}
-                                </Badge>
-                                <Badge variant="secondary" className="rounded-full text-xs">
-                                  {PER_TYPE_LABELS[rule.per_type] || rule.per_type}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-2xl font-bold text-foreground">
-                                  {formatAmount(rule.max_amount, rule.currency)}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {PER_TYPE_LABELS[rule.per_type] || ''}
-                                </span>
-                              </div>
-                              {rule.notes && (
-                                <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-                                  <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                                  <span>{rule.notes}</span>
+              <AnimatedCard key={category} delay={index * 100} animation="fade-up">
+                <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full">
+                  <CardHeader className={`${config.bgColor} border-b border-border/30`}>
+                    <CardTitle className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl bg-white/80 dark:bg-background/80 shadow-sm`}>
+                        <IconComponent className={`h-6 w-6 ${config.color}`} />
+                      </div>
+                      <span className="text-xl">{config.label}</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {rules.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p>אין הגבלות מיוחדות בקטגוריה זו</p>
+                        <p className="text-sm mt-1">בכל מקרה, פעל בהתאם לשיקול דעת סביר</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {rules.map((rule, ruleIndex) => (
+                          <div 
+                            key={rule.id}
+                            className="p-4 rounded-xl bg-muted/30 border border-border/30 hover:border-primary/30 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline" className="rounded-full text-xs">
+                                    {DESTINATION_LABELS[rule.destination_type] || rule.destination_type}
+                                  </Badge>
+                                  <Badge variant="secondary" className="rounded-full text-xs">
+                                    {PER_TYPE_LABELS[rule.per_type] || rule.per_type}
+                                  </Badge>
                                 </div>
-                              )}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl font-bold text-foreground">
+                                    {formatAmount(rule.max_amount, rule.currency)}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {PER_TYPE_LABELS[rule.per_type] || ''}
+                                  </span>
+                                </div>
+                                {rule.notes && (
+                                  <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                                    <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                    <span>{rule.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <CheckCircle2 className="h-6 w-6 text-emerald-500 flex-shrink-0" />
                             </div>
-                            <CheckCircle2 className="h-6 w-6 text-emerald-500 flex-shrink-0" />
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
             );
           })}
         </div>
@@ -733,52 +736,55 @@ export default function MyTravelPolicy() {
         {/* Restrictions Section */}
         <div id="restrictions-section" className="scroll-mt-24">
         {filteredRestrictions.length > 0 && (
-          <Card className="border-0 shadow-lg overflow-hidden animate-fade-in">
-            <CardHeader className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border-b border-border/30">
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-red-500/10">
-                  <Ban className="h-6 w-6 text-red-500" />
-                </div>
-                <span className="text-xl">מה אסור?</span>
-                <Badge variant="secondary" className="mr-auto">{filteredRestrictions.length}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredRestrictions.map((restriction) => {
-                  const categoryConfig = restriction.category ? CATEGORY_CONFIG[restriction.category] : null;
-                  
-                  return (
-                    <div 
-                      key={restriction.id}
-                      className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:border-red-500/40 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${restriction.action_type === 'block' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
-                          {restriction.action_type === 'block' ? (
-                            <XCircle className="h-5 w-5 text-red-500" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground">{restriction.name}</h4>
-                          {restriction.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{restriction.description}</p>
-                          )}
-                          {categoryConfig && (
-                            <Badge variant="outline" className="mt-2 text-xs">
-                              {categoryConfig.label}
-                            </Badge>
-                          )}
+          <AnimatedCard animation="fade-up" delay={200}>
+            <Card className="border-0 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border-b border-border/30">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-red-500/10">
+                    <Ban className="h-6 w-6 text-red-500" />
+                  </div>
+                  <span className="text-xl">מה אסור?</span>
+                  <Badge variant="secondary" className="mr-auto">{filteredRestrictions.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredRestrictions.map((restriction, index) => {
+                    const categoryConfig = restriction.category ? CATEGORY_CONFIG[restriction.category] : null;
+                    
+                    return (
+                      <div 
+                        key={restriction.id}
+                        className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:border-red-500/40 transition-all duration-300 hover:scale-[1.02]"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${restriction.action_type === 'block' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
+                            {restriction.action_type === 'block' ? (
+                              <XCircle className="h-5 w-5 text-red-500" />
+                            ) : (
+                              <AlertTriangle className="h-5 w-5 text-amber-500" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-foreground">{restriction.name}</h4>
+                            {restriction.description && (
+                              <p className="text-sm text-muted-foreground mt-1">{restriction.description}</p>
+                            )}
+                            {categoryConfig && (
+                              <Badge variant="outline" className="mt-2 text-xs">
+                                {categoryConfig.label}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </AnimatedCard>
         )}
         </div>
         
@@ -798,56 +804,58 @@ export default function MyTravelPolicy() {
         )}
 
         {/* Tips Section */}
-        <Card id="tips-section" className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-amber-500/5 via-background to-amber-500/10 scroll-mt-24">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/10">
-                <Lightbulb className="h-6 w-6 text-amber-500" />
-              </div>
-              <span className="text-xl">טיפים חשובים</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-foreground">שמור קבלות</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    יש לשמור את כל הקבלות והחשבוניות עבור כל הוצאה
-                  </p>
+        <AnimatedCard animation="fade-up" delay={300}>
+          <Card id="tips-section" className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-amber-500/5 via-background to-amber-500/10 scroll-mt-24">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/10">
+                  <Lightbulb className="h-6 w-6 text-amber-500" />
+                </div>
+                <span className="text-xl">טיפים חשובים</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30 hover:scale-[1.02] transition-transform duration-300">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-foreground">שמור קבלות</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      יש לשמור את כל הקבלות והחשבוניות עבור כל הוצאה
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30 hover:scale-[1.02] transition-transform duration-300">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-foreground">דווח בזמן</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      יש להגיש דוח הוצאות תוך 14 יום מתום הנסיעה
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30 hover:scale-[1.02] transition-transform duration-300">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-foreground">אישור מראש</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      הוצאות חריגות דורשות אישור מנהל מראש
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30 hover:scale-[1.02] transition-transform duration-300">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-foreground">שאלות?</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      בכל שאלה פנה למנהל הישיר או למחלקת הכספים
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-foreground">דווח בזמן</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    יש להגיש דוח הוצאות תוך 14 יום מתום הנסיעה
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-foreground">אישור מראש</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    הוצאות חריגות דורשות אישור מנהל מראש
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/30">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-foreground">שאלות?</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    בכל שאלה פנה למנהל הישיר או למחלקת הכספים
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
 
         {/* Footer Note */}
         <div className="text-center text-sm text-muted-foreground py-4">
