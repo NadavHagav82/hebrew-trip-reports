@@ -384,17 +384,17 @@ export function CustomRulesManager({ organizationId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               חוקים מותאמים אישית
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               צור חוקים מורכבים ומותאמים לצרכי הארגון
             </CardDescription>
           </div>
-          <Button onClick={openCreateDialog}>
+          <Button onClick={openCreateDialog} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 ml-2" />
             הוסף חוק
           </Button>
@@ -440,10 +440,10 @@ export function CustomRulesManager({ organizationId }: Props) {
         {rules.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               עדיין לא הוגדרו חוקים מותאמים. הוסף חוקים לבקרה מתקדמת.
               <br />
-              <span className="text-muted-foreground text-sm">
+              <span className="text-muted-foreground text-xs">
                 דוגמאות: מגבלת ימי נסיעה, הזמנה מראש, תקציב כולל
               </span>
             </AlertDescription>
@@ -451,53 +451,118 @@ export function CustomRulesManager({ organizationId }: Props) {
         ) : filteredRules.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               לא נמצאו חוקים התואמים את החיפוש "{searchQuery}"
             </AlertDescription>
           </Alert>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>שם החוק</TableHead>
-                <TableHead>תיאור</TableHead>
-                <TableHead>תנאי</TableHead>
-                <TableHead>פעולה</TableHead>
-                <TableHead>עדיפות</TableHead>
-                <TableHead className="w-24">סטטוס</TableHead>
-                <TableHead className="w-24">פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
               {filteredRules.map((rule) => (
-                <TableRow key={rule.id}>
-                  <TableCell className="font-medium">{rule.rule_name}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                    {rule.description || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-normal">
-                      <Code className="w-3 h-3 ml-1" />
-                      {getConditionSummary(rule.condition_json)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getActionColor(rule.action_type)}>
-                      {getActionLabel(rule.action_type)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-mono">
-                      {rule.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={rule.is_active ? 'default' : 'secondary'}>
+                <div key={rule.id} className="border rounded-lg p-3 bg-card shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-sm">{rule.rule_name}</span>
+                    <Badge variant={rule.is_active ? 'default' : 'secondary'} className="text-xs">
                       {rule.is_active ? 'פעיל' : 'לא פעיל'}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
+                  </div>
+                  {rule.description && (
+                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{rule.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <Badge variant={getActionColor(rule.action_type)} className="text-xs">
+                      {getActionLabel(rule.action_type)}
+                    </Badge>
+                    <Badge variant="outline" className="font-normal text-xs">
+                      <Code className="w-2.5 h-2.5 ml-1" />
+                      {getConditionSummary(rule.condition_json)}
+                    </Badge>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      עדיפות: {rule.priority}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(rule)} className="flex-1">
+                      <Edit className="w-3 h-3 ml-1" />
+                      עריכה
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(rule)}
+                      className="flex-1 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3 ml-1" />
+                      מחיקה
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Desktop Table View */}
+            <Table className="hidden sm:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>שם החוק</TableHead>
+                  <TableHead>תיאור</TableHead>
+                  <TableHead>תנאי</TableHead>
+                  <TableHead>פעולה</TableHead>
+                  <TableHead>עדיפות</TableHead>
+                  <TableHead className="w-24">סטטוס</TableHead>
+                  <TableHead className="w-24">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRules.map((rule) => (
+                  <TableRow key={rule.id}>
+                    <TableCell className="font-medium">{rule.rule_name}</TableCell>
+                    <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                      {rule.description || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-normal">
+                        <Code className="w-3 h-3 ml-1" />
+                        {getConditionSummary(rule.condition_json)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getActionColor(rule.action_type)}>
+                        {getActionLabel(rule.action_type)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono">
+                        {rule.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={rule.is_active ? 'default' : 'secondary'}>
+                        {rule.is_active ? 'פעיל' : 'לא פעיל'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(rule)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(rule)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        )}
                       <Button variant="ghost" size="icon" onClick={() => openEditDialog(rule)}>
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -515,6 +580,7 @@ export function CustomRulesManager({ organizationId }: Props) {
               ))}
             </TableBody>
           </Table>
+          </>
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

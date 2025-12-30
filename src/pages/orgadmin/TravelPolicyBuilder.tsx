@@ -121,19 +121,20 @@ export default function TravelPolicyBuilder() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
+    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="w-8 h-8 text-primary" />
-            מדיניות נסיעות - {organizationName}
+          <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2">
+            <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            <span className="hidden sm:inline">מדיניות נסיעות - {organizationName}</span>
+            <span className="sm:hidden">מדיניות נסיעות</span>
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             הגדר את כללי מדיניות הנסיעות של הארגון שלך
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/orgadmin')}>
+        <Button variant="outline" onClick={() => navigate('/orgadmin')} className="w-full sm:w-auto">
           <ArrowRight className="w-4 h-4 ml-2" />
           חזרה לדשבורד
         </Button>
@@ -141,12 +142,12 @@ export default function TravelPolicyBuilder() {
 
       {/* Info Banner */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="py-4">
+        <CardContent className="py-3 sm:py-4">
           <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+            <Sparkles className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
             <div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100">מערכת מדיניות חכמה</h3>
-              <p className="text-sm text-blue-700 dark:text-blue-200">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 text-sm sm:text-base">מערכת מדיניות חכמה</h3>
+              <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-200">
                 הגדר את החוקים והמגבלות לנסיעות עסקיות. המערכת תבדוק אוטומטית כל הוצאה ותתריע על חריגות.
               </p>
             </div>
@@ -155,27 +156,27 @@ export default function TravelPolicyBuilder() {
       </Card>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 h-auto">
-          <TabsTrigger value="grades" className="flex flex-col sm:flex-row items-center gap-1 py-3">
-            <Users className="w-4 h-4" />
-            <span className="text-xs sm:text-sm">דרגות עובדים</span>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsTrigger value="grades" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-sm leading-tight text-center">דרגות</span>
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex flex-col sm:flex-row items-center gap-1 py-3">
-            <Plane className="w-4 h-4" />
-            <span className="text-xs sm:text-sm">חוקי קטגוריות</span>
+          <TabsTrigger value="categories" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
+            <Plane className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-sm leading-tight text-center">קטגוריות</span>
           </TabsTrigger>
-          <TabsTrigger value="restrictions" className="flex flex-col sm:flex-row items-center gap-1 py-3">
-            <Ban className="w-4 h-4" />
-            <span className="text-xs sm:text-sm">הגבלות</span>
+          <TabsTrigger value="restrictions" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
+            <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-sm leading-tight text-center">הגבלות</span>
           </TabsTrigger>
-          <TabsTrigger value="custom" className="flex flex-col sm:flex-row items-center gap-1 py-3">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-xs sm:text-sm">חוקים מותאמים</span>
+          <TabsTrigger value="custom" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-sm leading-tight text-center">מותאם</span>
           </TabsTrigger>
-          <TabsTrigger value="preview" className="flex flex-col sm:flex-row items-center gap-1 py-3">
-            <Eye className="w-4 h-4" />
-            <span className="text-xs sm:text-sm">תצוגה מקדימה</span>
+          <TabsTrigger value="preview" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-sm leading-tight text-center">תצוגה</span>
           </TabsTrigger>
         </TabsList>
 

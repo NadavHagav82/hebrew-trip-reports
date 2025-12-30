@@ -218,17 +218,17 @@ export function EmployeeGradesManager({ organizationId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               דרגות עובדים
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               הגדר את דרגות העובדים בארגון לצורך הפעלת חוקי מדיניות שונים
             </CardDescription>
           </div>
-          <Button onClick={openCreateDialog}>
+          <Button onClick={openCreateDialog} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 ml-2" />
             הוסף דרגה
           </Button>
@@ -238,65 +238,105 @@ export function EmployeeGradesManager({ organizationId }: Props) {
         {grades.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               עדיין לא הוגדרו דרגות עובדים. הוסף דרגות כדי להפעיל חוקי מדיניות מותאמים.
               <br />
-              <span className="text-muted-foreground text-sm">
+              <span className="text-muted-foreground text-xs">
                 דוגמאות: עובד, מנהל צוות, מנהל בכיר, מנהל אזורי
               </span>
             </AlertDescription>
           </Alert>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">רמה</TableHead>
-                <TableHead>שם הדרגה</TableHead>
-                <TableHead>תיאור</TableHead>
-                <TableHead className="w-24">סטטוס</TableHead>
-                <TableHead className="w-24">פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
               {grades.map((grade) => (
-                <TableRow key={grade.id}>
-                  <TableCell>
-                    <Badge variant="outline" className="font-mono">
-                      {grade.level}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{grade.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {grade.description || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={grade.is_active ? 'default' : 'secondary'}>
+                <div key={grade.id} className="border rounded-lg p-3 bg-card shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-xs">
+                        רמה {grade.level}
+                      </Badge>
+                      <span className="font-medium text-sm">{grade.name}</span>
+                    </div>
+                    <Badge variant={grade.is_active ? 'default' : 'secondary'} className="text-xs">
                       {grade.is_active ? 'פעיל' : 'לא פעיל'}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(grade)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(grade)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                  </div>
+                  {grade.description && (
+                    <p className="text-xs text-muted-foreground mb-2">{grade.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(grade)} className="flex-1">
+                      <Edit className="w-3 h-3 ml-1" />
+                      עריכה
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(grade)}
+                      className="flex-1 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3 ml-1" />
+                      מחיקה
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+            
+            {/* Desktop Table View */}
+            <Table className="hidden sm:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">רמה</TableHead>
+                  <TableHead>שם הדרגה</TableHead>
+                  <TableHead>תיאור</TableHead>
+                  <TableHead className="w-24">סטטוס</TableHead>
+                  <TableHead className="w-24">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {grades.map((grade) => (
+                  <TableRow key={grade.id}>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono">
+                        {grade.level}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{grade.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {grade.description || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={grade.is_active ? 'default' : 'secondary'}>
+                        {grade.is_active ? 'פעיל' : 'לא פעיל'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(grade)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(grade)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

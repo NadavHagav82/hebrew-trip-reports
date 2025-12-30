@@ -339,17 +339,17 @@ export function CategoryRulesManager({ organizationId }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Plane className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Plane className="w-4 h-4 sm:w-5 sm:h-5" />
               חוקי קטגוריות
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               הגדר מגבלות תקציב לפי קטגוריית הוצאה ודרגת עובד
             </CardDescription>
           </div>
-          <Button onClick={openCreateDialog}>
+          <Button onClick={openCreateDialog} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 ml-2" />
             הוסף חוק
           </Button>
@@ -407,78 +407,136 @@ export function CategoryRulesManager({ organizationId }: Props) {
         {rules.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               עדיין לא הוגדרו חוקי קטגוריות. הוסף חוקים כדי להגביל הוצאות לפי קטגוריה.
             </AlertDescription>
           </Alert>
         ) : filteredRules.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               לא נמצאו חוקים התואמים את החיפוש "{searchQuery}"
             </AlertDescription>
           </Alert>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>קטגוריה</TableHead>
-                <TableHead>דרגה</TableHead>
-                <TableHead>תקרה</TableHead>
-                <TableHead>יעד</TableHead>
-                <TableHead>לכל</TableHead>
-                <TableHead className="w-24">סטטוס</TableHead>
-                <TableHead className="w-24">פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
               {filteredRules.map((rule) => {
                 const Icon = getCategoryIcon(rule.category);
                 return (
-                  <TableRow key={rule.id}>
-                    <TableCell>
+                  <div key={rule.id} className="border rounded-lg p-3 bg-card shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Icon className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{getCategoryLabel(rule.category)}</span>
+                        <span className="font-medium text-sm">{getCategoryLabel(rule.category)}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>{getGradeName(rule.grade_id)}</TableCell>
-                    <TableCell>
-                      {rule.max_amount ? (
-                        <span className="font-mono">
-                          {rule.max_amount.toLocaleString()} {rule.currency}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">ללא הגבלה</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{getDestinationLabel(rule.destination_type)}</TableCell>
-                    <TableCell>{getPerTypeLabel(rule.per_type)}</TableCell>
-                    <TableCell>
-                      <Badge variant={rule.is_active ? 'default' : 'secondary'}>
+                      <Badge variant={rule.is_active ? 'default' : 'secondary'} className="text-xs">
                         {rule.is_active ? 'פעיל' : 'לא פעיל'}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(rule)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(rule)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                      <div>
+                        <span className="text-muted-foreground">דרגה: </span>
+                        <span>{getGradeName(rule.grade_id)}</span>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                      <div>
+                        <span className="text-muted-foreground">יעד: </span>
+                        <span>{getDestinationLabel(rule.destination_type)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">תקרה: </span>
+                        <span className="font-mono">
+                          {rule.max_amount ? `${rule.max_amount.toLocaleString()} ${rule.currency}` : 'ללא הגבלה'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">לכל: </span>
+                        <span>{getPerTypeLabel(rule.per_type)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Button variant="ghost" size="sm" onClick={() => openEditDialog(rule)} className="flex-1">
+                        <Edit className="w-3 h-3 ml-1" />
+                        עריכה
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(rule)}
+                        className="flex-1 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3 ml-1" />
+                        מחיקה
+                      </Button>
+                    </div>
+                  </div>
                 );
               })}
-            </TableBody>
-          </Table>
+            </div>
+            
+            {/* Desktop Table View */}
+            <Table className="hidden sm:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>קטגוריה</TableHead>
+                  <TableHead>דרגה</TableHead>
+                  <TableHead>תקרה</TableHead>
+                  <TableHead>יעד</TableHead>
+                  <TableHead>לכל</TableHead>
+                  <TableHead className="w-24">סטטוס</TableHead>
+                  <TableHead className="w-24">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRules.map((rule) => {
+                  const Icon = getCategoryIcon(rule.category);
+                  return (
+                    <TableRow key={rule.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{getCategoryLabel(rule.category)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getGradeName(rule.grade_id)}</TableCell>
+                      <TableCell>
+                        {rule.max_amount ? (
+                          <span className="font-mono">
+                            {rule.max_amount.toLocaleString()} {rule.currency}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">ללא הגבלה</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{getDestinationLabel(rule.destination_type)}</TableCell>
+                      <TableCell>{getPerTypeLabel(rule.per_type)}</TableCell>
+                      <TableCell>
+                        <Badge variant={rule.is_active ? 'default' : 'secondary'}>
+                          {rule.is_active ? 'פעיל' : 'לא פעיל'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(rule)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(rule)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </>
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
