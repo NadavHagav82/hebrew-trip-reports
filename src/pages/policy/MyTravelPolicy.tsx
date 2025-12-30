@@ -392,7 +392,58 @@ export default function MyTravelPolicy() {
         {/* Regular Policy View - Only show if has organization and has policy */}
         {hasOrganization && hasPolicy && (
           <>
-            {/* Quick Navigation Dashboard */}
+            {/* Welcome Card */}
+            <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-foreground">
+                      שלום {userProfile?.full_name || 'משתמש'},
+                    </h2>
+                    <div className="flex items-center gap-3 mt-2">
+                      <Badge variant="secondary" className="rounded-full px-4 py-1">
+                        <Shield className="h-3.5 w-3.5 ml-1.5" />
+                        {userGrade?.name || 'עובד'}
+                      </Badge>
+                      {userGrade?.description && (
+                        <span className="text-sm text-muted-foreground">{userGrade.description}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {isDefaultGrade && (
+                  <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">לא הוגדרה דרגה לחשבון שלך</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          מוצגת מדיניות ברירת מחדל (דרגה בסיסית). פנה למנהל הארגון לעדכון הדרגה שלך.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className={`mt-6 p-4 rounded-xl bg-muted/30 border border-border/30 ${isDefaultGrade ? 'mt-4' : ''}`}>
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-foreground">להלן התקציבים והחוקים שחלים עליך</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        המידע המוצג כאן הוא בהתאם לדרגה שלך בארגון. במידה ויש שאלות, פנה למנהל הישיר שלך.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Navigation Dashboard - Now above search */}
             <div className="bg-gradient-to-r from-primary/5 via-background to-primary/5 rounded-2xl p-4 shadow-sm border border-border/30 sticky top-4 z-10 backdrop-blur-md">
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <span className="text-sm text-muted-foreground font-medium hidden sm:block">קיצורי דרך:</span>
@@ -466,57 +517,6 @@ export default function MyTravelPolicy() {
                 )}
               </div>
             </div>
-
-            {/* Welcome Card */}
-            <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <User className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-foreground">
-                      שלום {userProfile?.full_name || 'משתמש'},
-                    </h2>
-                    <div className="flex items-center gap-3 mt-2">
-                      <Badge variant="secondary" className="rounded-full px-4 py-1">
-                        <Shield className="h-3.5 w-3.5 ml-1.5" />
-                        {userGrade?.name || 'עובד'}
-                      </Badge>
-                      {userGrade?.description && (
-                        <span className="text-sm text-muted-foreground">{userGrade.description}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {isDefaultGrade && (
-                  <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium text-foreground">לא הוגדרה דרגה לחשבון שלך</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          מוצגת מדיניות ברירת מחדל (דרגה בסיסית). פנה למנהל הארגון לעדכון הדרגה שלך.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className={`mt-6 p-4 rounded-xl bg-muted/30 border border-border/30 ${isDefaultGrade ? 'mt-4' : ''}`}>
-                  <div className="flex items-start gap-3">
-                    <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">להלן התקציבים והחוקים שחלים עליך</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        המידע המוצג כאן הוא בהתאם לדרגה שלך בארגון. במידה ויש שאלות, פנה למנהל הישיר שלך.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Search and Filter Section - Modern Design */}
             <div className="bg-gradient-to-r from-muted/50 via-background to-muted/50 rounded-2xl p-6 shadow-sm border border-border/30">
