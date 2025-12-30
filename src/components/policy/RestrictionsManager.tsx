@@ -81,6 +81,9 @@ export function RestrictionsManager({ organizationId }: Props) {
   const [editingRestriction, setEditingRestriction] = useState<Restriction | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterAction, setFilterAction] = useState<string>('all');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -90,7 +93,34 @@ export function RestrictionsManager({ organizationId }: Props) {
     is_active: true,
   });
 
+  const getCategoryLabel = (category: string | null) => {
+    if (!category) return 'כל הקטגוריות';
+    return CATEGORIES.find(c => c.value === category)?.label || category;
+  };
+
+  const getActionLabel = (actionType: string) => {
+    return ACTION_TYPES.find(a => a.value === actionType)?.label || actionType;
+  };
+
+  const getActionColor = (actionType: string) => {
+    return ACTION_TYPES.find(a => a.value === actionType)?.color || 'secondary';
+  };
+
   const filteredRestrictions = restrictions.filter(restriction => {
+    // Filter by status
+    if (filterStatus === 'active' && !restriction.is_active) return false;
+    if (filterStatus === 'inactive' && restriction.is_active) return false;
+    
+    // Filter by category
+    if (filterCategory !== 'all') {
+      if (filterCategory === 'none' && restriction.category !== null) return false;
+      if (filterCategory !== 'none' && restriction.category !== filterCategory) return false;
+    }
+    
+    // Filter by action type
+    if (filterAction !== 'all' && restriction.action_type !== filterAction) return false;
+    
+    // Text search
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     const name = restriction.name.toLowerCase();
@@ -98,6 +128,15 @@ export function RestrictionsManager({ organizationId }: Props) {
     const keywords = (restriction.keywords || []).join(' ').toLowerCase();
     return name.includes(query) || description.includes(query) || keywords.includes(query);
   });
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterStatus('all');
+    setFilterCategory('all');
+    setFilterAction('all');
+  };
+
+  const hasActiveFilters = searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterAction !== 'all';
 
   useEffect(() => {
     loadRestrictions();
@@ -125,18 +164,6 @@ export function RestrictionsManager({ organizationId }: Props) {
     }
   };
 
-  const getCategoryLabel = (category: string | null) => {
-    if (!category) return 'כל הקטגוריות';
-    return CATEGORIES.find(c => c.value === category)?.label || category;
-  };
-
-  const getActionLabel = (actionType: string) => {
-    return ACTION_TYPES.find(a => a.value === actionType)?.label || actionType;
-  };
-
-  const getActionColor = (actionType: string) => {
-    return ACTION_TYPES.find(a => a.value === actionType)?.color || 'secondary';
-  };
 
   const openCreateDialog = () => {
     setEditingRestriction(null);
@@ -289,13 +316,51 @@ export function RestrictionsManager({ organizationId }: Props) {
           </Button>
         </div>
         {restrictions.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3 items-center">
             <Input
-              placeholder="חיפוש לפי שם, תיאור או מילות מפתח..."
+              placeholder="חיפוש חופשי..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-sm"
+              className="max-w-[200px]"
             />
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'active' | 'inactive')}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="סטטוס" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הסטטוסים</SelectItem>
+                <SelectItem value="active">פעיל</SelectItem>
+                <SelectItem value="inactive">לא פעיל</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="קטגוריה" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הקטגוריות</SelectItem>
+                <SelectItem value="none">ללא קטגוריה</SelectItem>
+                {CATEGORIES.filter(c => c.value !== 'all').map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterAction} onValueChange={setFilterAction}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="פעולה" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הפעולות</SelectItem>
+                {ACTION_TYPES.map((action) => (
+                  <SelectItem key={action.value} value={action.value}>{action.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                נקה סינון
+              </Button>
+            )}
           </div>
         )}
       </CardHeader>

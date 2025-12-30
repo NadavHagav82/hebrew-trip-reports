@@ -106,6 +106,9 @@ export function CategoryRulesManager({ organizationId }: Props) {
   const [editingRule, setEditingRule] = useState<TravelPolicyRule | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterGrade, setFilterGrade] = useState<string>('all');
   const [formData, setFormData] = useState({
     category: 'flights' as string,
     grade_id: '' as string,
@@ -140,6 +143,20 @@ export function CategoryRulesManager({ organizationId }: Props) {
   };
 
   const filteredRules = rules.filter(rule => {
+    // Filter by status
+    if (filterStatus === 'active' && !rule.is_active) return false;
+    if (filterStatus === 'inactive' && rule.is_active) return false;
+    
+    // Filter by category
+    if (filterCategory !== 'all' && rule.category !== filterCategory) return false;
+    
+    // Filter by grade
+    if (filterGrade !== 'all') {
+      if (filterGrade === 'none' && rule.grade_id !== null) return false;
+      if (filterGrade !== 'none' && rule.grade_id !== filterGrade) return false;
+    }
+    
+    // Text search
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     const categoryLabel = getCategoryLabel(rule.category).toLowerCase();
@@ -147,6 +164,15 @@ export function CategoryRulesManager({ organizationId }: Props) {
     const notes = (rule.notes || '').toLowerCase();
     return categoryLabel.includes(query) || gradeName.includes(query) || notes.includes(query);
   });
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterStatus('all');
+    setFilterCategory('all');
+    setFilterGrade('all');
+  };
+
+  const hasActiveFilters = searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterGrade !== 'all';
 
   useEffect(() => {
     loadData();
@@ -328,13 +354,51 @@ export function CategoryRulesManager({ organizationId }: Props) {
           </Button>
         </div>
         {rules.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3 items-center">
             <Input
-              placeholder="חיפוש לפי קטגוריה, דרגה או הערות..."
+              placeholder="חיפוש חופשי..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-sm"
+              className="max-w-[200px]"
             />
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'active' | 'inactive')}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="סטטוס" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הסטטוסים</SelectItem>
+                <SelectItem value="active">פעיל</SelectItem>
+                <SelectItem value="inactive">לא פעיל</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="קטגוריה" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הקטגוריות</SelectItem>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterGrade} onValueChange={setFilterGrade}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="דרגה" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הדרגות</SelectItem>
+                <SelectItem value="none">ללא דרגה</SelectItem>
+                {grades.map((grade) => (
+                  <SelectItem key={grade.id} value={grade.id}>{grade.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                נקה סינון
+              </Button>
+            )}
           </div>
         )}
       </CardHeader>
