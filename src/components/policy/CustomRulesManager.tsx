@@ -112,6 +112,7 @@ export function CustomRulesManager({ organizationId }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<CustomRule | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     rule_name: '',
     description: '',
@@ -121,6 +122,15 @@ export function CustomRulesManager({ organizationId }: Props) {
     applies_to_grades: [] as string[],
     priority: 0,
     is_active: true,
+  });
+
+  const filteredRules = rules.filter(rule => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const name = rule.rule_name.toLowerCase();
+    const description = (rule.description || '').toLowerCase();
+    const conditionSummary = getConditionSummary(rule.condition_json).toLowerCase();
+    return name.includes(query) || description.includes(query) || conditionSummary.includes(query);
   });
 
   useEffect(() => {
@@ -369,6 +379,16 @@ export function CustomRulesManager({ organizationId }: Props) {
             הוסף חוק
           </Button>
         </div>
+        {rules.length > 0 && (
+          <div className="mt-4">
+            <Input
+              placeholder="חיפוש לפי שם חוק, תיאור או תנאי..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {rules.length === 0 ? (
@@ -380,6 +400,13 @@ export function CustomRulesManager({ organizationId }: Props) {
               <span className="text-muted-foreground text-sm">
                 דוגמאות: מגבלת ימי נסיעה, הזמנה מראש, תקציב כולל
               </span>
+            </AlertDescription>
+          </Alert>
+        ) : filteredRules.length === 0 ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              לא נמצאו חוקים התואמים את החיפוש "{searchQuery}"
             </AlertDescription>
           </Alert>
         ) : (
@@ -396,7 +423,7 @@ export function CustomRulesManager({ organizationId }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rules.map((rule) => (
+              {filteredRules.map((rule) => (
                 <TableRow key={rule.id}>
                   <TableCell className="font-medium">{rule.rule_name}</TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">

@@ -105,6 +105,7 @@ export function CategoryRulesManager({ organizationId }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<TravelPolicyRule | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     category: 'flights' as string,
     grade_id: '' as string,
@@ -114,6 +115,15 @@ export function CategoryRulesManager({ organizationId }: Props) {
     per_type: 'per_trip',
     notes: '',
     is_active: true,
+  });
+
+  const filteredRules = rules.filter(rule => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const categoryLabel = getCategoryLabel(rule.category).toLowerCase();
+    const gradeName = getGradeName(rule.grade_id).toLowerCase();
+    const notes = (rule.notes || '').toLowerCase();
+    return categoryLabel.includes(query) || gradeName.includes(query) || notes.includes(query);
   });
 
   useEffect(() => {
@@ -317,6 +327,16 @@ export function CategoryRulesManager({ organizationId }: Props) {
             הוסף חוק
           </Button>
         </div>
+        {rules.length > 0 && (
+          <div className="mt-4">
+            <Input
+              placeholder="חיפוש לפי קטגוריה, דרגה או הערות..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {rules.length === 0 ? (
@@ -324,6 +344,13 @@ export function CategoryRulesManager({ organizationId }: Props) {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               עדיין לא הוגדרו חוקי קטגוריות. הוסף חוקים כדי להגביל הוצאות לפי קטגוריה.
+            </AlertDescription>
+          </Alert>
+        ) : filteredRules.length === 0 ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              לא נמצאו חוקים התואמים את החיפוש "{searchQuery}"
             </AlertDescription>
           </Alert>
         ) : (
@@ -340,7 +367,7 @@ export function CategoryRulesManager({ organizationId }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rules.map((rule) => {
+              {filteredRules.map((rule) => {
                 const Icon = getCategoryIcon(rule.category);
                 return (
                   <TableRow key={rule.id}>
