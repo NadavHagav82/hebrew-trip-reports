@@ -218,6 +218,20 @@ export default function ManagerDashboard() {
 
       if (updateError) throw updateError;
 
+      // Also approve all expenses in this report
+      const { error: expensesError } = await supabase
+        .from('expenses')
+        .update({
+          approval_status: 'approved',
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('report_id', reportId);
+
+      if (expensesError) {
+        console.error('Error approving expenses:', expensesError);
+      }
+
       // Get user profile for email
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
