@@ -14,13 +14,15 @@ import {
   Plane,
   Ban,
   Sparkles,
-  Eye
+  Eye,
+  LayoutDashboard
 } from 'lucide-react';
 import { EmployeeGradesManager } from '@/components/policy/EmployeeGradesManager';
 import { CategoryRulesManager } from '@/components/policy/CategoryRulesManager';
 import { RestrictionsManager } from '@/components/policy/RestrictionsManager';
 import { CustomRulesManager } from '@/components/policy/CustomRulesManager';
 import { PolicyPreview } from '@/components/policy/PolicyPreview';
+import { PolicyDashboard } from '@/components/policy/PolicyDashboard';
 
 export default function TravelPolicyBuilder() {
   const { user } = useAuth();
@@ -30,7 +32,7 @@ export default function TravelPolicyBuilder() {
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState('');
-  const [activeTab, setActiveTab] = useState('grades');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     checkOrgAdminStatus();
@@ -140,24 +142,13 @@ export default function TravelPolicyBuilder() {
         </Button>
       </div>
 
-      {/* Info Banner */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="py-3 sm:py-4">
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-            <div>
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 text-sm sm:text-base">מערכת מדיניות חכמה</h3>
-              <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-200">
-                הגדר את החוקים והמגבלות לנסיעות עסקיות. המערכת תבדוק אוטומטית כל הוצאה ותתריע על חריגות.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+          <TabsTrigger value="dashboard" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
+            <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-sm leading-tight text-center">דשבורד</span>
+          </TabsTrigger>
           <TabsTrigger value="grades" className="flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-3 px-1 sm:px-3">
             <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="text-[10px] sm:text-sm leading-tight text-center">דרגות</span>
@@ -179,6 +170,14 @@ export default function TravelPolicyBuilder() {
             <span className="text-[10px] sm:text-sm leading-tight text-center">תצוגה</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <PolicyDashboard 
+            organizationId={organizationId} 
+            organizationName={organizationName}
+            onNavigateToTab={setActiveTab}
+          />
+        </TabsContent>
 
         <TabsContent value="grades">
           <EmployeeGradesManager organizationId={organizationId} />
