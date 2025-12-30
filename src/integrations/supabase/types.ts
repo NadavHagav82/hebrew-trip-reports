@@ -698,6 +698,7 @@ export type Database = {
           email: string | null
           employee_id: string | null
           full_name: string
+          grade_id: string | null
           id: string
           is_manager: boolean
           manager_id: string | null
@@ -712,6 +713,7 @@ export type Database = {
           email?: string | null
           employee_id?: string | null
           full_name: string
+          grade_id?: string | null
           id: string
           is_manager?: boolean
           manager_id?: string | null
@@ -726,6 +728,7 @@ export type Database = {
           email?: string | null
           employee_id?: string | null
           full_name?: string
+          grade_id?: string | null
           id?: string
           is_manager?: boolean
           manager_id?: string | null
@@ -734,6 +737,13 @@ export type Database = {
           username?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "employee_grades"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
