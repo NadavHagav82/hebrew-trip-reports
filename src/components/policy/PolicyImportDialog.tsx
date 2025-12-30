@@ -37,9 +37,14 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Download
+  Download,
+  FileImage,
+  Scan
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import mammoth from 'mammoth';
+import { convertPdfToImages } from '@/utils/pdfToImage';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ParsedRule {
   category?: string;
@@ -117,6 +122,7 @@ export function PolicyImportDialog({ open, onOpenChange, onImport, type }: Polic
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [fileName, setFileName] = useState('');
   const [parsedRules, setParsedRules] = useState<ParsedRule[]>([]);
@@ -127,6 +133,7 @@ export function PolicyImportDialog({ open, onOpenChange, onImport, type }: Polic
     setParsedRules([]);
     setStep('upload');
     setLoading(false);
+    setOcrProcessing(false);
     setImporting(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -147,10 +154,14 @@ export function PolicyImportDialog({ open, onOpenChange, onImport, type }: Polic
         await parseExcelFile(file);
       } else if (fileExtension === 'csv') {
         await parseCSVFile(file);
+      } else if (fileExtension === 'pdf') {
+        await parsePdfFile(file);
+      } else if (fileExtension === 'docx' || fileExtension === 'doc') {
+        await parseWordFile(file);
       } else {
         toast({
           title: 'סוג קובץ לא נתמך',
-          description: 'אנא העלה קובץ Excel (.xlsx, .xls) או CSV',
+          description: 'אנא העלה קובץ Excel, CSV, PDF או Word',
           variant: 'destructive',
         });
         resetDialog();
@@ -226,6 +237,215 @@ export function PolicyImportDialog({ open, onOpenChange, onImport, type }: Polic
     }
 
     setParsedRules(rules);
+  };
+
+  const parsePdfFile = async (file: File) => {
+    setOcrProcessing(true);
+    try {
+      toast({
+        title: 'ממיר PDF לתמונות...',
+        description: 'זה עשוי לקחת מספר שניות',
+      });
+
+      const images = await convertPdfToImages(file);
+      
+      if (images.length === 0) {
+        throw new Error('לא ניתן להמיר את ה-PDF לתמונות');
+      }
+
+      toast({
+        title: 'מחלץ טקסט באמצעות OCR...',
+        description: `מעבד ${images.length} עמודים`,
+      });
+
+      const allRules: ParsedRule[] = [];
+      
+      // Process first page (usually contains policy table)
+      const firstImage = images[0];
+      const rules = await extractRulesFromImage(firstImage);
+      allRules.push(...rules);
+
+      // If no rules found in first page, try second page
+      if (allRules.length === 0 && images.length > 1) {
+        const secondRules = await extractRulesFromImage(images[1]);
+        allRules.push(...secondRules);
+      }
+
+      if (allRules.length === 0) {
+        throw new Error('לא נמצאו חוקי מדיניות בקובץ');
+      }
+
+      setParsedRules(allRules);
+    } finally {
+      setOcrProcessing(false);
+    }
+  };
+
+  const parseWordFile = async (file: File) => {
+    setOcrProcessing(true);
+    try {
+      toast({
+        title: 'קורא קובץ Word...',
+        description: 'מחלץ טקסט ומחפש חוקי מדיניות',
+      });
+
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const text = result.value;
+
+      // Try to extract structured data from text
+      const rules = extractRulesFromText(text);
+      
+      if (rules.length === 0) {
+        // If text parsing didn't work, try OCR approach
+        toast({
+          title: 'לא נמצאו חוקים בטקסט',
+          description: 'מנסה חילוץ באמצעות OCR...',
+        });
+        
+        // Convert Word text to image for OCR
+        const imageRules = await extractRulesViaOCR(text);
+        if (imageRules.length > 0) {
+          setParsedRules(imageRules);
+          return;
+        }
+        
+        throw new Error('לא נמצאו חוקי מדיניות בקובץ');
+      }
+
+      setParsedRules(rules);
+    } finally {
+      setOcrProcessing(false);
+    }
+  };
+
+  const extractRulesFromImage = async (imageFile: File): Promise<ParsedRule[]> => {
+    const base64 = await fileToBase64(imageFile);
+    
+    const { data, error } = await supabase.functions.invoke('extract-policy-text', {
+      body: { imageBase64: base64, fileType: 'pdf' }
+    });
+
+    if (error) {
+      console.error('OCR error:', error);
+      throw new Error('שגיאה בחילוץ טקסט מהמסמך');
+    }
+
+    const extractedRules = data?.rules || [];
+    return extractedRules.map((rule: any) => validateAndFormatRule(rule));
+  };
+
+  const extractRulesViaOCR = async (text: string): Promise<ParsedRule[]> => {
+    // Create a simple text-based prompt for the AI
+    const { data, error } = await supabase.functions.invoke('extract-policy-text', {
+      body: { 
+        imageBase64: btoa(unescape(encodeURIComponent(text))), 
+        fileType: 'text' 
+      }
+    });
+
+    if (error) {
+      console.error('Text extraction error:', error);
+      return [];
+    }
+
+    const extractedRules = data?.rules || [];
+    return extractedRules.map((rule: any) => validateAndFormatRule(rule));
+  };
+
+  const extractRulesFromText = (text: string): ParsedRule[] => {
+    const rules: ParsedRule[] = [];
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    // Look for patterns like "טיסות: 5000 ש"ח" or "לינה - 800$ ליום"
+    const amountPattern = /(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:₪|ש"ח|ILS|\$|USD|€|EUR)/gi;
+    const categoryPatterns = {
+      flights: /טיסות?|flights?/i,
+      accommodation: /לינה|מלון|hotel|accommodation/i,
+      food: /אוכל|מזון|food/i,
+      transportation: /תחבורה|הסעות|transportation/i,
+      miscellaneous: /אחר|שונות|misc/i,
+    };
+
+    for (const line of lines) {
+      const amountMatch = line.match(amountPattern);
+      if (!amountMatch) continue;
+
+      for (const [category, pattern] of Object.entries(categoryPatterns)) {
+        if (pattern.test(line)) {
+          const amountStr = amountMatch[0].replace(/[^\d.]/g, '');
+          const amount = parseFloat(amountStr);
+          
+          let currency = 'ILS';
+          if (/\$|USD/i.test(line)) currency = 'USD';
+          if (/€|EUR/i.test(line)) currency = 'EUR';
+
+          let per_type = 'per_trip';
+          if (/ליום|per day|יומי/i.test(line)) per_type = 'per_day';
+          if (/לפריט|per item/i.test(line)) per_type = 'per_item';
+
+          let destination_type = 'all';
+          if (/בינלאומי|international|חו"ל/i.test(line)) destination_type = 'international';
+          if (/מקומי|domestic|ארץ/i.test(line)) destination_type = 'domestic';
+
+          rules.push({
+            category,
+            max_amount: amount,
+            currency,
+            per_type,
+            destination_type,
+            isValid: true,
+            errors: [],
+          });
+          break;
+        }
+      }
+    }
+
+    return rules;
+  };
+
+  const validateAndFormatRule = (rule: any): ParsedRule => {
+    const errors: string[] = [];
+    
+    const category = CATEGORY_MAP[rule.category?.toLowerCase()] || rule.category;
+    if (!category || !['flights', 'accommodation', 'food', 'transportation', 'miscellaneous'].includes(category)) {
+      errors.push('קטגוריה לא תקינה');
+    }
+
+    const destination_type = DESTINATION_MAP[rule.destination_type?.toLowerCase()] || rule.destination_type || 'all';
+    if (!['all', 'domestic', 'international'].includes(destination_type)) {
+      errors.push('סוג יעד לא תקין');
+    }
+
+    const per_type = PER_TYPE_MAP[rule.per_type?.toLowerCase()] || rule.per_type || 'per_trip';
+    if (!['per_trip', 'per_day', 'per_item'].includes(per_type)) {
+      errors.push('סוג תקרה לא תקין');
+    }
+
+    return {
+      category,
+      grade: rule.grade || undefined,
+      max_amount: typeof rule.max_amount === 'number' ? rule.max_amount : parseFloat(rule.max_amount) || undefined,
+      currency: CURRENCY_MAP[rule.currency?.toLowerCase()] || rule.currency?.toUpperCase() || 'ILS',
+      destination_type,
+      per_type,
+      notes: rule.notes || undefined,
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const parseRow = (row: any[], headers: string[]): ParsedRule => {
@@ -368,25 +588,37 @@ export function PolicyImportDialog({ open, onOpenChange, onImport, type }: Polic
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".xlsx,.xls,.csv,.pdf,.docx,.doc"
                 onChange={handleFileChange}
                 className="hidden"
               />
-              {loading ? (
+              {loading || ocrProcessing ? (
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                  <p className="text-sm text-muted-foreground">קורא את הקובץ...</p>
+                  <p className="text-sm text-muted-foreground">
+                    {ocrProcessing ? 'מחלץ חוקי מדיניות באמצעות AI...' : 'קורא את הקובץ...'}
+                  </p>
+                  {ocrProcessing && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Scan className="w-4 h-4" />
+                      OCR + AI Processing
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
                   <div className="flex justify-center gap-4 mb-4">
                     <FileSpreadsheet className="w-10 h-10 text-green-600" />
                     <FileText className="w-10 h-10 text-blue-600" />
-                    <File className="w-10 h-10 text-orange-600" />
+                    <File className="w-10 h-10 text-red-600" />
+                    <FileImage className="w-10 h-10 text-orange-600" />
                   </div>
                   <p className="font-medium mb-1">לחץ להעלאת קובץ</p>
                   <p className="text-sm text-muted-foreground">
-                    Excel (.xlsx, .xls) או CSV
+                    Excel, CSV, PDF או Word
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    קבצי PDF ו-Word יעובדו באמצעות OCR + AI
                   </p>
                 </>
               )}
