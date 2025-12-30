@@ -990,6 +990,10 @@ export type Database = {
         Args: { _profile_id: string; _viewer_id: string }
         Returns: boolean
       }
+      can_view_manager_limited_info: {
+        Args: { _profile_id: string; _viewer_id: string }
+        Returns: boolean
+      }
       get_org_id_for_policy: { Args: { _user_id: string }; Returns: string }
       get_team_user_ids: { Args: { _manager_id: string }; Returns: string[] }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
