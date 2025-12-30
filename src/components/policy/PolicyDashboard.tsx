@@ -86,10 +86,10 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
 
       if (rulesError) throw rulesError;
 
-      // Load restrictions
+      // Load restrictions (uses created_at since no updated_at column)
       const { data: restrictions, error: restrictionsError } = await supabase
         .from('travel_policy_restrictions')
-        .select('id, updated_at')
+        .select('id, created_at')
         .eq('organization_id', organizationId)
         .eq('is_active', true);
 
@@ -111,9 +111,9 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
       const transportRules = rules?.filter(r => r.category === 'transportation') || [];
       const miscRules = rules?.filter(r => r.category === 'miscellaneous') || [];
 
-      const getLatestDate = (items: any[]) => {
+      const getLatestDate = (items: any[], dateField = 'updated_at') => {
         if (!items || items.length === 0) return null;
-        const dates = items.map(i => new Date(i.updated_at).getTime());
+        const dates = items.map(i => new Date(i[dateField] || i.created_at || i.updated_at).getTime());
         return new Date(Math.max(...dates)).toISOString();
       };
 
@@ -169,7 +169,7 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
           icon: <Ban className="w-6 h-6" />,
           count: restrictions?.length || 0,
           isConfigured: (restrictions?.length || 0) > 0,
-          lastUpdated: getLatestDate(restrictions || []),
+          lastUpdated: getLatestDate(restrictions || [], 'created_at'),
           tab: 'restrictions'
         },
         {
