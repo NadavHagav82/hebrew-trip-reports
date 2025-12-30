@@ -45,6 +45,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FilterBar } from './FilterBar';
 
 interface EmployeeGrade {
   id: string;
@@ -172,7 +173,7 @@ export function CategoryRulesManager({ organizationId }: Props) {
     setFilterGrade('all');
   };
 
-  const hasActiveFilters = searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterGrade !== 'all';
+  const hasActiveFilters = !!searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterGrade !== 'all';
 
   useEffect(() => {
     loadData();
@@ -354,52 +355,52 @@ export function CategoryRulesManager({ organizationId }: Props) {
           </Button>
         </div>
         {rules.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-3 items-center">
-            <Input
-              placeholder="חיפוש חופשי..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-[200px]"
-            />
-            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'active' | 'inactive')}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="סטטוס" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הסטטוסים</SelectItem>
-                <SelectItem value="active">פעיל</SelectItem>
-                <SelectItem value="inactive">לא פעיל</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="קטגוריה" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הקטגוריות</SelectItem>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterGrade} onValueChange={setFilterGrade}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="דרגה" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הדרגות</SelectItem>
-                <SelectItem value="none">ללא דרגה</SelectItem>
-                {grades.map((grade) => (
-                  <SelectItem key={grade.id} value={grade.id}>{grade.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                נקה סינון
-              </Button>
-            )}
-          </div>
+          <FilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="חיפוש לפי קטגוריה, דרגה או הערות..."
+            filters={[
+              {
+                key: 'status',
+                label: 'סטטוס',
+                placeholder: 'סטטוס',
+                value: filterStatus,
+                onChange: (v) => setFilterStatus(v as 'all' | 'active' | 'inactive'),
+                options: [
+                  { value: 'all', label: 'כל הסטטוסים' },
+                  { value: 'active', label: 'פעיל' },
+                  { value: 'inactive', label: 'לא פעיל' },
+                ],
+              },
+              {
+                key: 'category',
+                label: 'קטגוריה',
+                placeholder: 'קטגוריה',
+                value: filterCategory,
+                onChange: setFilterCategory,
+                options: [
+                  { value: 'all', label: 'כל הקטגוריות' },
+                  ...CATEGORIES.map((cat) => ({ value: cat.value, label: cat.label })),
+                ],
+              },
+              {
+                key: 'grade',
+                label: 'דרגה',
+                placeholder: 'דרגה',
+                value: filterGrade,
+                onChange: setFilterGrade,
+                options: [
+                  { value: 'all', label: 'כל הדרגות' },
+                  { value: 'none', label: 'ללא דרגה' },
+                  ...grades.map((grade) => ({ value: grade.id, label: grade.name })),
+                ],
+              },
+            ]}
+            onClearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            totalCount={rules.length}
+            filteredCount={filteredRules.length}
+          />
         )}
       </CardHeader>
       <CardContent>

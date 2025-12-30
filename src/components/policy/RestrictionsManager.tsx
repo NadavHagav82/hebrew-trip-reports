@@ -41,6 +41,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FilterBar } from './FilterBar';
 
 interface Restriction {
   id: string;
@@ -136,7 +137,7 @@ export function RestrictionsManager({ organizationId }: Props) {
     setFilterAction('all');
   };
 
-  const hasActiveFilters = searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterAction !== 'all';
+  const hasActiveFilters = !!searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterAction !== 'all';
 
   useEffect(() => {
     loadRestrictions();
@@ -316,52 +317,52 @@ export function RestrictionsManager({ organizationId }: Props) {
           </Button>
         </div>
         {restrictions.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-3 items-center">
-            <Input
-              placeholder="חיפוש חופשי..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-[200px]"
-            />
-            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as 'all' | 'active' | 'inactive')}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="סטטוס" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הסטטוסים</SelectItem>
-                <SelectItem value="active">פעיל</SelectItem>
-                <SelectItem value="inactive">לא פעיל</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="קטגוריה" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הקטגוריות</SelectItem>
-                <SelectItem value="none">ללא קטגוריה</SelectItem>
-                {CATEGORIES.filter(c => c.value !== 'all').map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterAction} onValueChange={setFilterAction}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="פעולה" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הפעולות</SelectItem>
-                {ACTION_TYPES.map((action) => (
-                  <SelectItem key={action.value} value={action.value}>{action.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                נקה סינון
-              </Button>
-            )}
-          </div>
+          <FilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="חיפוש לפי שם, תיאור או מילות מפתח..."
+            filters={[
+              {
+                key: 'status',
+                label: 'סטטוס',
+                placeholder: 'סטטוס',
+                value: filterStatus,
+                onChange: (v) => setFilterStatus(v as 'all' | 'active' | 'inactive'),
+                options: [
+                  { value: 'all', label: 'כל הסטטוסים' },
+                  { value: 'active', label: 'פעיל' },
+                  { value: 'inactive', label: 'לא פעיל' },
+                ],
+              },
+              {
+                key: 'category',
+                label: 'קטגוריה',
+                placeholder: 'קטגוריה',
+                value: filterCategory,
+                onChange: setFilterCategory,
+                options: [
+                  { value: 'all', label: 'כל הקטגוריות' },
+                  { value: 'none', label: 'ללא קטגוריה' },
+                  ...CATEGORIES.filter(c => c.value !== 'all').map((cat) => ({ value: cat.value, label: cat.label })),
+                ],
+              },
+              {
+                key: 'action',
+                label: 'פעולה',
+                placeholder: 'פעולה',
+                value: filterAction,
+                onChange: setFilterAction,
+                options: [
+                  { value: 'all', label: 'כל הפעולות' },
+                  ...ACTION_TYPES.map((action) => ({ value: action.value, label: action.label })),
+                ],
+              },
+            ]}
+            onClearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            totalCount={restrictions.length}
+            filteredCount={filteredRestrictions.length}
+          />
         )}
       </CardHeader>
       <CardContent>
