@@ -326,7 +326,7 @@ export default function MyTravelPolicy() {
             </div>
             <Button 
               variant="outline" 
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/')}
               className="bg-background/80 backdrop-blur-sm border-border/50 hover:bg-muted/80"
             >
               <ArrowRight className="ml-2 h-4 w-4" />
