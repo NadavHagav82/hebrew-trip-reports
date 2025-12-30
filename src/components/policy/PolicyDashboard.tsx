@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PolicyAuditLog } from './PolicyAuditLog';
@@ -17,14 +18,17 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Edit,
+  Eye,
   History,
   Plus,
   FileDown,
   Copy,
   BarChart3,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpLeft,
+  TrendingUp,
+  Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -231,8 +235,14 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
+            <div className="absolute inset-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+          <p className="text-muted-foreground text-sm">טוען נתוני מדיניות...</p>
+        </div>
       </div>
     );
   }
@@ -242,176 +252,266 @@ export function PolicyDashboard({ organizationId, organizationName, onNavigateTo
   const completionPercentage = Math.round((configuredCount / totalCategories) * 100);
 
   return (
-    <div className="space-y-6">
-      {/* Part 1: General Policy Info */}
-      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/10 rounded-xl">
-                <Building2 className="w-8 h-8 text-primary" />
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-secondary p-6 sm:p-8 text-primary-foreground">
+        {/* Background decorations */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-x-1/4 translate-y-1/4" />
+        
+        <div className="relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
+                <Shield className="w-8 h-8" />
               </div>
               <div>
-                <CardTitle className="text-xl sm:text-2xl">
-                  מדיניות נסיעות עסקיות - {organizationName}
-                </CardTitle>
-                <p className="text-muted-foreground text-sm mt-1">
-                  ניהול כללי מדיניות הנסיעות של הארגון
+                <h1 className="text-2xl sm:text-3xl font-bold">
+                  מדיניות נסיעות
+                </h1>
+                <p className="text-white/70 mt-1 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  {organizationName}
                 </p>
               </div>
             </div>
             <Badge 
-              variant={policyActive ? "default" : "secondary"}
-              className={`text-sm px-3 py-1 ${policyActive ? 'bg-green-500 hover:bg-green-600' : ''}`}
+              className={`text-sm px-4 py-2 font-medium backdrop-blur-sm ${
+                policyActive 
+                  ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-100' 
+                  : 'bg-white/10 border border-white/20'
+              }`}
             >
               {policyActive ? (
                 <>
-                  <CheckCircle className="w-4 h-4 mr-1" />
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full ml-2 animate-pulse" />
                   פעיל
                 </>
               ) : (
                 <>
-                  <XCircle className="w-4 h-4 mr-1" />
+                  <XCircle className="w-4 h-4 ml-2" />
                   לא פעיל
                 </>
               )}
             </Badge>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">עדכון אחרון:</span>
-              <span className="font-medium">
-                {lastUpdate 
-                  ? format(new Date(lastUpdate), 'd בMMMM yyyy, HH:mm', { locale: he })
-                  : 'לא עודכן עדיין'
-                }
-              </span>
+          
+          {/* Stats Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs">עדכון אחרון</p>
+                  <p className="font-medium text-sm">
+                    {lastUpdate 
+                      ? format(new Date(lastUpdate), 'd בMMMM yyyy', { locale: he })
+                      : 'לא עודכן עדיין'
+                    }
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">חל על:</span>
-              <span className="font-medium">{employeeCount} עובדים</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs">חל על</p>
+                  <p className="font-medium text-sm">{employeeCount} עובדים</p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <BarChart3 className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">השלמת הגדרות:</span>
-              <span className="font-medium">{completionPercentage}%</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs">השלמת הגדרות</p>
+                  <p className="font-medium text-sm">{completionPercentage}%</p>
+                </div>
+              </div>
+              <Progress value={completionPercentage} className="h-1.5 bg-white/20" />
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => onNavigateToTab('preview')}>
-              <Edit className="w-4 h-4 ml-2" />
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => onNavigateToTab('preview')}
+              className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+            >
+              <Eye className="w-4 h-4 ml-2" />
               צפה במדיניות
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setAuditLogOpen(true)}>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => setAuditLogOpen(true)}
+              className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+            >
               <History className="w-4 h-4 ml-2" />
               יומן שינויים
             </Button>
-            
-            <PolicyAuditLog 
-              organizationId={organizationId}
-              isOpen={auditLogOpen}
-              onClose={() => setAuditLogOpen(false)}
-            />
           </div>
-        </CardContent>
-      </Card>
+          
+          <PolicyAuditLog 
+            organizationId={organizationId}
+            isOpen={auditLogOpen}
+            onClose={() => setAuditLogOpen(false)}
+          />
+        </div>
+      </div>
 
       {/* Completion Warning */}
       {completionPercentage < 100 && (
-        <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
-          <CardContent className="py-3">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                  המדיניות לא הושלמה
-                </p>
-                <p className="text-xs text-amber-700 dark:text-amber-200">
-                  {totalCategories - configuredCount} קטגוריות עדיין לא הוגדרו. לחץ על הקטגוריות האדומות כדי להשלים את ההגדרות.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/50 dark:border-amber-800/50">
+          <div className="p-3 bg-amber-100 dark:bg-amber-900/50 rounded-xl shrink-0">
+            <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-amber-900 dark:text-amber-100">
+              המדיניות לא הושלמה ({completionPercentage}%)
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-200">
+              {totalCategories - configuredCount} קטגוריות עדיין לא הוגדרו. לחץ על הקטגוריות למטה כדי להשלים את ההגדרות.
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+            onClick={() => onNavigateToTab('categories')}
+          >
+            השלם עכשיו
+            <ArrowUpLeft className="w-4 h-4 mr-1" />
+          </Button>
+        </div>
       )}
 
-      {/* Part 2: Quick Summary Cards */}
+      {/* Category Cards Grid */}
       <div>
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          סיכום מהיר
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {categories.map((category) => (
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-primary" />
+          </div>
+          <h2 className="text-xl font-bold">סיכום קטגוריות</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {categories.map((category, index) => (
             <Card 
               key={category.id}
-              className={`cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 ${
+              className={`group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-2 overflow-hidden ${
                 category.isConfigured 
-                  ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20' 
-                  : 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20'
+                  ? 'border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30' 
+                  : 'border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/30'
               }`}
               onClick={() => onNavigateToTab(category.tab)}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`p-2 rounded-lg ${
-                    category.isConfigured 
-                      ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                      : 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
-                  }`}>
-                    {category.icon}
+              <CardContent className="p-5 relative">
+                {/* Background decoration */}
+                <div className={`absolute -left-8 -bottom-8 w-24 h-24 rounded-full opacity-10 group-hover:opacity-20 transition-opacity ${
+                  category.isConfigured ? 'bg-emerald-500' : 'bg-rose-500'
+                }`} />
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 rounded-xl shadow-sm transition-transform group-hover:scale-110 ${
+                      category.isConfigured 
+                        ? 'bg-gradient-to-br from-emerald-400 to-green-500 text-white'
+                        : 'bg-gradient-to-br from-rose-400 to-red-500 text-white'
+                    }`}>
+                      {category.icon}
+                    </div>
+                    <div className={`p-1.5 rounded-full ${
+                      category.isConfigured 
+                        ? 'bg-emerald-100 dark:bg-emerald-900/50'
+                        : 'bg-rose-100 dark:bg-rose-900/50'
+                    }`}>
+                      {category.isConfigured ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                      )}
+                    </div>
                   </div>
-                  {category.isConfigured ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  
+                  <h3 className="font-bold text-sm mb-1">{category.name}</h3>
+                  <p className={`text-xs font-medium mb-3 ${
+                    category.isConfigured 
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-rose-700 dark:text-rose-300'
+                  }`}>
+                    {category.count > 0 
+                      ? `${category.count} ${category.id === 'grades' ? 'דרגות' : 'חוקים'} פעילים`
+                      : 'לא הוגדר עדיין'
+                    }
+                  </p>
+                  
+                  {category.lastUpdated ? (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      {format(new Date(category.lastUpdated), 'd/M/yyyy', { locale: he })}
+                    </div>
                   ) : (
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowUpLeft className="w-3 h-3" />
+                      לחץ להגדרה
+                    </div>
                   )}
                 </div>
-                <h3 className="font-semibold text-sm mb-1">{category.name}</h3>
-                <p className="text-xs text-muted-foreground mb-2">
-                  {category.count > 0 
-                    ? `${category.count} ${category.id === 'grades' ? 'דרגות' : 'חוקים'} פעילים`
-                    : 'לא הוגדר עדיין'
-                  }
-                </p>
-                {category.lastUpdated && (
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(category.lastUpdated), 'd/M/yyyy', { locale: he })}
-                  </p>
-                )}
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Part 3: Quick Actions */}
+      {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          פעולות מהירות
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => onNavigateToTab('categories')} className="gap-2">
-            <Plus className="w-4 h-4" />
-            הוסף חוק חדש
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2 bg-secondary/10 rounded-lg">
+            <Sparkles className="w-5 h-5 text-secondary" />
+          </div>
+          <h2 className="text-xl font-bold">פעולות מהירות</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Button 
+            onClick={() => onNavigateToTab('categories')} 
+            className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="text-sm">הוסף חוק חדש</span>
           </Button>
-          <Button variant="outline" onClick={handleExportPdf} className="gap-2">
-            <FileDown className="w-4 h-4" />
-            ייצא מדיניות ל-PDF
+          <Button 
+            variant="outline" 
+            onClick={handleExportPdf} 
+            className="h-auto py-4 flex-col gap-2 hover:bg-muted/50"
+          >
+            <FileDown className="w-5 h-5" />
+            <span className="text-sm">ייצא ל-PDF</span>
           </Button>
-          <Button variant="outline" onClick={handleDuplicatePolicy} className="gap-2">
-            <Copy className="w-4 h-4" />
-            שכפל מדיניות לארגון אחר
+          <Button 
+            variant="outline" 
+            onClick={handleDuplicatePolicy} 
+            className="h-auto py-4 flex-col gap-2 hover:bg-muted/50"
+          >
+            <Copy className="w-5 h-5" />
+            <span className="text-sm">שכפל מדיניות</span>
           </Button>
-          <Button variant="outline" onClick={handleViewCompliance} className="gap-2">
-            <BarChart3 className="w-4 h-4" />
-            הצג דוח ציות
+          <Button 
+            variant="outline" 
+            onClick={handleViewCompliance} 
+            className="h-auto py-4 flex-col gap-2 hover:bg-muted/50"
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span className="text-sm">דוח ציות</span>
           </Button>
         </div>
       </div>
