@@ -212,194 +212,241 @@ export function PolicyPreview({ organizationId }: Props) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-emerald-200 border-t-emerald-500 animate-spin" />
+          <span className="text-sm text-muted-foreground">טוען תצוגה מקדימה...</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Eye className="w-5 h-5" />
-          תצוגה מקדימה של המדיניות
-        </CardTitle>
-        <CardDescription>
-          סקירה כללית של כל חוקי המדיניות שהוגדרו
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {!hasAnyData ? (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 border border-emerald-100/50 p-6 sm:p-8">
+        <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-emerald-200/30 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-teal-200/30 to-transparent rounded-full blur-2xl translate-x-1/3 translate-y-1/3" />
+        
+        <div className="relative flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200/50">
+            <Eye className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">תצוגה מקדימה של המדיניות</h2>
+            <p className="text-sm text-gray-600 mt-1">סקירה כללית של כל חוקי המדיניות שהוגדרו</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      {!hasAnyData ? (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">אין מדיניות מוגדרת</h3>
+            <p className="text-sm text-gray-500 text-center max-w-md">
               עדיין לא הוגדרה מדיניות נסיעות. השתמש בלשוניות למעלה כדי להגדיר חוקים.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <>
-            {/* Employee Grades */}
-            {grades.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  דרגות עובדים
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {grades.map((grade) => (
-                    <Badge key={grade.id} variant="outline" className="py-1.5 px-3">
-                      <span className="font-mono text-xs ml-2">#{grade.level}</span>
-                      {grade.name}
-                    </Badge>
-                  ))}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Employee Grades */}
+          {grades.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-violet-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">דרגות עובדים</h3>
+                  <p className="text-xs text-gray-500">{grades.length} דרגות מוגדרות</p>
                 </div>
               </div>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {grades.map((grade) => (
+                  <div 
+                    key={grade.id} 
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-violet-200 text-violet-700 text-xs font-bold flex items-center justify-center">
+                      {grade.level}
+                    </span>
+                    <span className="font-medium text-gray-700">{grade.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-            {grades.length > 0 && (rules.length > 0 || restrictions.length > 0 || customRules.length > 0) && (
-              <Separator />
-            )}
-
-            {/* Category Rules */}
-            {Object.keys(rulesByCategory).length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
-                  <Plane className="w-5 h-5 text-green-600" />
-                  מגבלות לפי קטגוריה
-                </h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {Object.entries(rulesByCategory).map(([category, categoryRules]) => {
-                    const Icon = CATEGORY_ICONS[category] || MoreHorizontal;
-                    return (
-                      <Card key={category} className="border-dashed">
-                        <CardHeader className="py-3">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            {CATEGORY_LABELS[category] || category}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="py-2">
-                          <ul className="space-y-2 text-sm">
-                            {categoryRules.map((rule) => (
-                              <li key={rule.id} className="flex items-center justify-between">
-                                <span className="text-muted-foreground">
-                                  {getGradeName(rule.grade_id)} • {getDestinationLabel(rule.destination_type)}
-                                </span>
-                                <span className="font-medium">
-                                  {rule.max_amount ? (
-                                    <>
-                                      {rule.max_amount.toLocaleString()} {rule.currency} {getPerTypeLabel(rule.per_type)}
-                                    </>
-                                  ) : (
-                                    <span className="text-muted-foreground">ללא הגבלה</span>
-                                  )}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+          {/* Category Rules */}
+          {Object.keys(rulesByCategory).length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center">
+                  <Plane className="w-5 h-5 text-sky-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">מגבלות לפי קטגוריה</h3>
+                  <p className="text-xs text-gray-500">{rules.length} חוקים מוגדרים</p>
                 </div>
               </div>
-            )}
-
-            {Object.keys(rulesByCategory).length > 0 && (restrictions.length > 0 || customRules.length > 0) && (
-              <Separator />
-            )}
-
-            {/* Restrictions */}
-            {restrictions.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
-                  <Ban className="w-5 h-5 text-red-600" />
-                  הגבלות ואיסורים
-                </h3>
-                <div className="grid gap-2">
-                  {restrictions.map((restriction) => {
-                    const ActionIcon = getActionIcon(restriction.action_type);
-                    return (
-                      <div
-                        key={restriction.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-2">
-                          <ActionIcon className={`w-4 h-4 ${
-                            restriction.action_type === 'block' ? 'text-red-500' :
-                            restriction.action_type === 'warn' ? 'text-amber-500' :
-                            'text-blue-500'
-                          }`} />
-                          <span className="font-medium">{restriction.name}</span>
-                          {restriction.description && (
-                            <span className="text-muted-foreground text-sm">
-                              - {restriction.description}
+              <div className="grid gap-4 md:grid-cols-2">
+                {Object.entries(rulesByCategory).map(([category, categoryRules]) => {
+                  const Icon = CATEGORY_ICONS[category] || MoreHorizontal;
+                  const categoryColors: Record<string, { bg: string; icon: string; border: string }> = {
+                    flights: { bg: 'from-sky-50 to-blue-50', icon: 'text-sky-600', border: 'border-sky-100' },
+                    accommodation: { bg: 'from-violet-50 to-purple-50', icon: 'text-violet-600', border: 'border-violet-100' },
+                    food: { bg: 'from-orange-50 to-amber-50', icon: 'text-orange-600', border: 'border-orange-100' },
+                    transportation: { bg: 'from-emerald-50 to-green-50', icon: 'text-emerald-600', border: 'border-emerald-100' },
+                    miscellaneous: { bg: 'from-gray-50 to-slate-50', icon: 'text-gray-600', border: 'border-gray-100' },
+                  };
+                  const colors = categoryColors[category] || categoryColors.miscellaneous;
+                  
+                  return (
+                    <div 
+                      key={category} 
+                      className={`rounded-xl bg-gradient-to-br ${colors.bg} border ${colors.border} overflow-hidden`}
+                    >
+                      <div className="px-4 py-3 border-b border-white/50 flex items-center gap-2">
+                        <Icon className={`w-5 h-5 ${colors.icon}`} />
+                        <span className="font-semibold text-gray-800">
+                          {CATEGORY_LABELS[category] || category}
+                        </span>
+                        <Badge variant="outline" className="ml-auto text-xs bg-white/60">
+                          {categoryRules.length} חוקים
+                        </Badge>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        {categoryRules.map((rule) => (
+                          <div 
+                            key={rule.id} 
+                            className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/60 text-sm"
+                          >
+                            <span className="text-gray-600">
+                              {getGradeName(rule.grade_id)} • {getDestinationLabel(rule.destination_type)}
                             </span>
+                            <span className="font-semibold text-gray-800">
+                              {rule.max_amount ? (
+                                <>
+                                  {rule.max_amount.toLocaleString()} {rule.currency} {getPerTypeLabel(rule.per_type)}
+                                </>
+                              ) : (
+                                <span className="text-gray-400 font-normal">ללא הגבלה</span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Restrictions */}
+          {restrictions.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-100 to-red-100 flex items-center justify-center">
+                  <Ban className="w-5 h-5 text-rose-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">הגבלות ואיסורים</h3>
+                  <p className="text-xs text-gray-500">{restrictions.length} הגבלות מוגדרות</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {restrictions.map((restriction) => {
+                  const ActionIcon = getActionIcon(restriction.action_type);
+                  const actionColors: Record<string, { bg: string; text: string; badge: string }> = {
+                    block: { bg: 'from-rose-50 to-red-50', text: 'text-rose-600', badge: 'bg-rose-100 text-rose-700 border-rose-200' },
+                    warn: { bg: 'from-amber-50 to-yellow-50', text: 'text-amber-600', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+                    require_approval: { bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600', badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+                  };
+                  const colors = actionColors[restriction.action_type] || actionColors.warn;
+                  
+                  return (
+                    <div
+                      key={restriction.id}
+                      className={`flex items-center justify-between p-4 rounded-xl bg-gradient-to-br ${colors.bg} border border-white/50`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center`}>
+                          <ActionIcon className={`w-4 h-4 ${colors.text}`} />
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-800">{restriction.name}</span>
+                          {restriction.description && (
+                            <p className="text-xs text-gray-500 mt-0.5">{restriction.description}</p>
                           )}
                         </div>
-                        <Badge variant={
-                          restriction.action_type === 'block' ? 'destructive' :
-                          restriction.action_type === 'warn' ? 'secondary' :
-                          'default'
-                        }>
-                          {getActionLabel(restriction.action_type)}
-                        </Badge>
                       </div>
-                    );
-                  })}
+                      <Badge variant="outline" className={colors.badge}>
+                        {getActionLabel(restriction.action_type)}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Rules */}
+          {customRules.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">חוקים מותאמים</h3>
+                  <p className="text-xs text-gray-500">{customRules.length} חוקים מותאמים</p>
                 </div>
               </div>
-            )}
-
-            {restrictions.length > 0 && customRules.length > 0 && (
-              <Separator />
-            )}
-
-            {/* Custom Rules */}
-            {customRules.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
-                  חוקים מותאמים
-                </h3>
-                <div className="grid gap-2">
-                  {customRules.map((rule) => {
-                    const ActionIcon = getActionIcon(rule.action_type);
-                    return (
-                      <div
-                        key={rule.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-2">
-                          <ActionIcon className={`w-4 h-4 ${
-                            rule.action_type === 'block' ? 'text-red-500' :
-                            rule.action_type === 'warn' ? 'text-amber-500' :
-                            'text-blue-500'
-                          }`} />
-                          <span className="font-medium">{rule.rule_name}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {getConditionSummary(rule.condition_json)}
-                          </Badge>
+              <div className="space-y-2">
+                {customRules.map((rule) => {
+                  const ActionIcon = getActionIcon(rule.action_type);
+                  const actionColors: Record<string, { bg: string; text: string; badge: string }> = {
+                    block: { bg: 'from-rose-50 to-red-50', text: 'text-rose-600', badge: 'bg-rose-100 text-rose-700 border-rose-200' },
+                    warn: { bg: 'from-amber-50 to-yellow-50', text: 'text-amber-600', badge: 'bg-amber-100 text-amber-700 border-amber-200' },
+                    require_approval: { bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600', badge: 'bg-blue-100 text-blue-700 border-blue-200' },
+                  };
+                  const colors = actionColors[rule.action_type] || actionColors.warn;
+                  
+                  return (
+                    <div
+                      key={rule.id}
+                      className={`flex items-center justify-between p-4 rounded-xl bg-gradient-to-br ${colors.bg} border border-white/50`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg bg-white/60 flex items-center justify-center`}>
+                          <ActionIcon className={`w-4 h-4 ${colors.text}`} />
                         </div>
-                        <Badge variant={
-                          rule.action_type === 'block' ? 'destructive' :
-                          rule.action_type === 'warn' ? 'secondary' :
-                          'default'
-                        }>
-                          {getActionLabel(rule.action_type)}
-                        </Badge>
+                        <div>
+                          <span className="font-medium text-gray-800">{rule.rule_name}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs bg-white/60 text-gray-600 border-gray-200">
+                              {getConditionSummary(rule.condition_json)}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <Badge variant="outline" className={colors.badge}>
+                        {getActionLabel(rule.action_type)}
+                      </Badge>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
