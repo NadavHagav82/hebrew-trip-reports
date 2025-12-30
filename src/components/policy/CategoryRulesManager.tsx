@@ -42,10 +42,12 @@ import {
   Utensils,
   Car,
   MoreHorizontal,
-  AlertCircle
+  AlertCircle,
+  Upload
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FilterBar } from './FilterBar';
+import { PolicyImportDialog } from './PolicyImportDialog';
 
 interface EmployeeGrade {
   id: string;
@@ -104,6 +106,7 @@ export function CategoryRulesManager({ organizationId }: Props) {
   const [rules, setRules] = useState<TravelPolicyRule[]>([]);
   const [grades, setGrades] = useState<EmployeeGrade[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<TravelPolicyRule | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,6 +123,42 @@ export function CategoryRulesManager({ organizationId }: Props) {
     notes: '',
     is_active: true,
   });
+
+  const handleImportRules = async (parsedRules: any[]) => {
+    for (const rule of parsedRules) {
+      const ruleData = {
+        organization_id: organizationId,
+        category: rule.category as any,
+        grade_id: null, // Will need to match by name if provided
+        max_amount: rule.max_amount || null,
+        currency: (rule.currency || 'ILS') as any,
+        destination_type: (rule.destination_type || 'all') as any,
+        per_type: (rule.per_type || 'per_trip') as any,
+        notes: rule.notes || null,
+        is_active: true,
+        created_by: user?.id,
+      };
+
+      // Try to find matching grade
+      if (rule.grade) {
+        const matchingGrade = grades.find(g => 
+          g.name.toLowerCase().includes(rule.grade.toLowerCase()) ||
+          rule.grade.toLowerCase().includes(g.name.toLowerCase())
+        );
+        if (matchingGrade) {
+          ruleData.grade_id = matchingGrade.id;
+        }
+      }
+
+      const { error } = await supabase
+        .from('travel_policy_rules')
+        .insert(ruleData);
+
+      if (error) throw error;
+    }
+
+    loadData();
+  };
 
   const getCategoryIcon = (category: string) => {
     const cat = CATEGORIES.find(c => c.value === category);
@@ -349,10 +388,16 @@ export function CategoryRulesManager({ organizationId }: Props) {
               הגדר מגבלות תקציב לפי קטגוריית הוצאה ודרגת עובד
             </CardDescription>
           </div>
-          <Button onClick={openCreateDialog} className="w-full sm:w-auto">
-            <Plus className="w-4 h-4 ml-2" />
-            הוסף חוק
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="flex-1 sm:flex-initial">
+              <Upload className="w-4 h-4 ml-2" />
+              <span className="hidden sm:inline">ייבוא</span>
+            </Button>
+            <Button onClick={openCreateDialog} className="flex-1 sm:flex-initial">
+              <Plus className="w-4 h-4 ml-2" />
+              הוסף חוק
+            </Button>
+          </div>
         </div>
         {rules.length > 0 && (
           <FilterBar
@@ -700,6 +745,13 @@ export function CategoryRulesManager({ organizationId }: Props) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <PolicyImportDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          onImport={handleImportRules}
+          type="category_rules"
+        />
       </CardContent>
     </Card>
   );
