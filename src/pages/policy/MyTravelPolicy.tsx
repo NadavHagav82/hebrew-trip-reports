@@ -77,6 +77,8 @@ const DESTINATION_LABELS: Record<string, string> = {
 export default function MyTravelPolicy() {
   const [loading, setLoading] = useState(true);
   const [organizationName, setOrganizationName] = useState('');
+  const [hasOrganization, setHasOrganization] = useState(true);
+  const [hasPolicy, setHasPolicy] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userGrade, setUserGrade] = useState<EmployeeGrade | null>(null);
   const [isDefaultGrade, setIsDefaultGrade] = useState(false);
@@ -118,15 +120,15 @@ export default function MyTravelPolicy() {
 
       setUserProfile(profile);
 
+      // If no organization, user is independent - no restrictions
       if (!profile.organization_id) {
-        toast({
-          title: 'שגיאה',
-          description: 'לא נמצא ארגון משויך',
-          variant: 'destructive',
-        });
-        navigate('/');
+        setHasOrganization(false);
+        setHasPolicy(false);
+        setLoading(false);
         return;
       }
+
+      setHasOrganization(true);
 
       // Get organization name
       const { data: orgData } = await supabase
@@ -197,6 +199,10 @@ export default function MyTravelPolicy() {
         .eq('is_active', true);
 
       setRestrictions(restrictionsData || []);
+      
+      // Check if there's any policy defined
+      const hasPolicyDefined = rulesWithGrades.length > 0 || (restrictionsData && restrictionsData.length > 0);
+      setHasPolicy(hasPolicyDefined);
 
     } catch (error) {
       console.error('Error loading policy data:', error);
@@ -244,10 +250,18 @@ export default function MyTravelPolicy() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-foreground">מדיניות הנסיעות שלי</h1>
-                <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                  <Building2 className="h-4 w-4" />
-                  <span>{organizationName}</span>
-                </div>
+                {hasOrganization && organizationName && (
+                  <div className="flex items-center gap-2 mt-2 text-muted-foreground">
+                    <Building2 className="h-4 w-4" />
+                    <span>{organizationName}</span>
+                  </div>
+                )}
+                {!hasOrganization && (
+                  <div className="flex items-center gap-2 mt-2 text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>משתמש עצמאי</span>
+                  </div>
+                )}
               </div>
             </div>
             <Button 
@@ -263,55 +277,111 @@ export default function MyTravelPolicy() {
       </div>
 
       <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Welcome Card */}
-        <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10">
-                <User className="h-8 w-8 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-foreground">
-                  שלום {userProfile?.full_name || 'משתמש'},
-                </h2>
-                <div className="flex items-center gap-3 mt-2">
-                  <Badge variant="secondary" className="rounded-full px-4 py-1">
-                    <Shield className="h-3.5 w-3.5 ml-1.5" />
-                    {userGrade?.name || 'עובד'}
-                  </Badge>
-                  {userGrade?.description && (
-                    <span className="text-sm text-muted-foreground">{userGrade.description}</span>
-                  )}
+        {/* No Organization or No Policy - Show No Restrictions */}
+        {(!hasOrganization || !hasPolicy) && (
+          <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-br from-emerald-50 via-background to-emerald-50/50 dark:from-emerald-950/30 dark:via-background dark:to-emerald-950/20">
+            <CardContent className="p-8">
+              <div className="text-center space-y-6">
+                <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-lg">
+                  <CheckCircle2 className="h-12 w-12 text-white" />
                 </div>
-              </div>
-            </div>
-            
-            {isDefaultGrade && (
-              <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium text-foreground">לא הוגדרה דרגה לחשבון שלך</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      מוצגת מדיניות ברירת מחדל (דרגה בסיסית). פנה למנהל הארגון לעדכון הדרגה שלך.
-                    </p>
+                <div>
+                  <h2 className="text-3xl font-bold text-foreground mb-3">
+                    {!hasOrganization ? 'אין הגבלות' : 'אין מדיניות מוגדרת'}
+                  </h2>
+                  <p className="text-lg text-muted-foreground max-w-lg mx-auto">
+                    {!hasOrganization 
+                      ? 'אינך משויך לארגון כלשהו. אתה יכול לדווח על הוצאות בכל סכום ובכל קטגוריה ללא הגבלה.'
+                      : 'לארגון שלך אין מדיניות נסיעות מוגדרת. אתה יכול לדווח על הוצאות בכל סכום ובכל קטגוריה ללא הגבלה.'
+                    }
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 max-w-3xl mx-auto">
+                  <div className="p-4 rounded-xl bg-white/80 dark:bg-background/80 border border-emerald-200/50 dark:border-emerald-800/50 shadow-sm">
+                    <Plane className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <p className="font-medium text-foreground">טיסות</p>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400">ללא הגבלה</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/80 dark:bg-background/80 border border-emerald-200/50 dark:border-emerald-800/50 shadow-sm">
+                    <Hotel className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <p className="font-medium text-foreground">מלונות</p>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400">ללא הגבלה</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/80 dark:bg-background/80 border border-emerald-200/50 dark:border-emerald-800/50 shadow-sm">
+                    <Utensils className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <p className="font-medium text-foreground">ארוחות</p>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400">ללא הגבלה</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/30 max-w-lg mx-auto">
+                  <div className="flex items-start gap-3 text-right">
+                    <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        למרות שאין הגבלות, מומלץ לנהוג באחריות ולתעד את ההוצאות כראוי.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
-            
-            <div className={`mt-6 p-4 rounded-xl bg-muted/30 border border-border/30 ${isDefaultGrade ? 'mt-4' : ''}`}>
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">להלן התקציבים והחוקים שחלים עליך</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    המידע המוצג כאן הוא בהתאם לדרגה שלך בארגון. במידה ויש שאלות, פנה למנהל הישיר שלך.
-                  </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Regular Policy View - Only show if has organization and has policy */}
+        {hasOrganization && hasPolicy && (
+          <>
+            {/* Welcome Card */}
+            <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-foreground">
+                      שלום {userProfile?.full_name || 'משתמש'},
+                    </h2>
+                    <div className="flex items-center gap-3 mt-2">
+                      <Badge variant="secondary" className="rounded-full px-4 py-1">
+                        <Shield className="h-3.5 w-3.5 ml-1.5" />
+                        {userGrade?.name || 'עובד'}
+                      </Badge>
+                      {userGrade?.description && (
+                        <span className="text-sm text-muted-foreground">{userGrade.description}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </CardContent>
+                
+                {isDefaultGrade && (
+                  <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">לא הוגדרה דרגה לחשבון שלך</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          מוצגת מדיניות ברירת מחדל (דרגה בסיסית). פנה למנהל הארגון לעדכון הדרגה שלך.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className={`mt-6 p-4 rounded-xl bg-muted/30 border border-border/30 ${isDefaultGrade ? 'mt-4' : ''}`}>
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-foreground">להלן התקציבים והחוקים שחלים עליך</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        המידע המוצג כאן הוא בהתאם לדרגה שלך בארגון. במידה ויש שאלות, פנה למנהל הישיר שלך.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
         </Card>
 
         {/* Policy Categories */}
@@ -487,6 +557,8 @@ export default function MyTravelPolicy() {
           <p>מדיניות זו עודכנה לאחרונה ומחייבת את כל עובדי הארגון.</p>
           <p className="mt-1">במקרה של סתירה בין מסמכים, מדיניות זו גוברת.</p>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
