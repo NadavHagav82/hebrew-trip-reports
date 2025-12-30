@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole, BookOpen } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole, BookOpen, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -72,6 +73,7 @@ export default function Dashboard() {
   const [isManager, setIsManager] = useState(false);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [isAccountingManager, setIsAccountingManager] = useState(false);
+  const [pendingReportsCount, setPendingReportsCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -87,6 +89,7 @@ export default function Dashboard() {
     checkManagerStatus();
     checkOrgAdminStatus();
     checkAccountingManagerStatus();
+    fetchPendingReportsForManager();
   }, [user, navigate]);
 
   const checkAdminStatus = async () => {
@@ -115,6 +118,37 @@ export default function Dashboard() {
     const { data } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'accounting_manager' });
     setIsAccountingManager(!!data);
+  };
+
+  const fetchPendingReportsForManager = async () => {
+    if (!user) return;
+    
+    // Check if user is a manager
+    const { data: isManagerData } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'manager' });
+    
+    if (!isManagerData) return;
+
+    // Get pending reports count for team members
+    const { data: pendingReports, error } = await supabase
+      .from('reports')
+      .select(`
+        id,
+        profiles!reports_user_id_fkey(manager_id)
+      `)
+      .eq('status', 'pending_approval');
+
+    if (error) {
+      console.error('Error fetching pending reports:', error);
+      return;
+    }
+
+    // Filter to only reports where the current user is the manager
+    const myPendingReports = pendingReports?.filter(
+      (report: any) => report.profiles?.manager_id === user.id
+    ) || [];
+
+    setPendingReportsCount(myPendingReports.length);
   };
 
   const fetchReports = async () => {
@@ -535,6 +569,32 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 relative">
+        {/* Manager Pending Reports Alert */}
+        {isManager && pendingReportsCount > 0 && (
+          <Alert 
+            className="mb-6 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 dark:border-orange-800 cursor-pointer hover:shadow-lg transition-all"
+            onClick={() => navigate('/manager/dashboard')}
+          >
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
+            <AlertDescription className="flex items-center justify-between w-full">
+              <span className="text-orange-800 dark:text-orange-200 font-medium">
+                יש לך {pendingReportsCount} דוחות ממתינים לאישור
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/manager/dashboard');
+                }}
+              >
+                לצפייה ואישור
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Create New Report Button */}
         <div className="mb-6">
           <Button 
