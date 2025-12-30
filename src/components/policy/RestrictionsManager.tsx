@@ -58,7 +58,7 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { value: '', label: 'כל הקטגוריות' },
+  { value: 'all', label: 'כל הקטגוריות' },
   { value: 'flights', label: 'טיסות' },
   { value: 'accommodation', label: 'לינה' },
   { value: 'food', label: 'אוכל' },
@@ -397,15 +397,15 @@ export function RestrictionsManager({ organizationId }: Props) {
                 <div className="grid gap-2">
                   <Label>קטגוריה</Label>
                   <Select
-                    value={formData.category}
-                    onValueChange={(v) => setFormData({ ...formData, category: v })}
+                    value={formData.category || "all"}
+                    onValueChange={(v) => setFormData({ ...formData, category: v === "all" ? "" : v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="כל הקטגוריות" />
                     </SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value || 'all'} value={cat.value}>
+                        <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}
                         </SelectItem>
                       ))}
