@@ -443,118 +443,148 @@ export default function MyTravelPolicy() {
               </CardContent>
             </Card>
 
-            {/* Search and Filter Section */}
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex flex-col lg:flex-row gap-4">
-                  {/* Search Input */}
-                  <div className="relative flex-1">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="חיפוש במדיניות..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pr-10"
-                    />
+            {/* Search and Filter Section - Modern Design */}
+            <div className="bg-gradient-to-r from-muted/50 via-background to-muted/50 rounded-2xl p-6 shadow-sm border border-border/30">
+              <div className="flex flex-col gap-5">
+                {/* Search Row */}
+                <div className="relative">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-primary/10">
+                    <Search className="h-4 w-4 text-primary" />
                   </div>
-                  
-                  {/* Filters */}
-                  <div className="flex flex-wrap gap-3">
-                    {/* Category Filter */}
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-[160px]">
-                        <Filter className="h-4 w-4 ml-2" />
-                        <SelectValue placeholder="קטגוריה" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">כל הקטגוריות</SelectItem>
-                        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            {config.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    {/* Destination Filter */}
-                    <Select value={destinationFilter} onValueChange={setDestinationFilter}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="יעד" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">כל היעדים</SelectItem>
-                        {Object.entries(DESTINATION_LABELS).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    {/* Per Type Filter */}
-                    <Select value={perTypeFilter} onValueChange={setPerTypeFilter}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="סוג" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">כל הסוגים</SelectItem>
-                        {Object.entries(PER_TYPE_LABELS).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    {/* Clear Filters Button */}
-                    {hasActiveFilters && (
-                      <Button variant="ghost" size="icon" onClick={clearFilters} title="נקה סינון">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                  <Input
+                    placeholder="חיפוש במדיניות..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-14 h-12 text-base rounded-xl border-border/50 bg-background/80 backdrop-blur-sm shadow-sm focus:shadow-md focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
+                  />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-muted hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 
-                {/* Active Filters Display */}
+                {/* Filters Row */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground pl-3 border-l border-border/50">
+                    <Filter className="h-4 w-4" />
+                    <span className="font-medium">סינון:</span>
+                  </div>
+                  
+                  {/* Category Filter */}
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className={`w-auto min-w-[140px] h-10 rounded-xl border-border/50 bg-background/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all ${categoryFilter !== 'all' ? 'border-primary/50 bg-primary/5' : ''}`}>
+                      <SelectValue placeholder="כל הקטגוריות" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="all" className="rounded-lg">כל הקטגוריות</SelectItem>
+                      {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                        const IconComp = config.icon;
+                        return (
+                          <SelectItem key={key} value={key} className="rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <IconComp className={`h-4 w-4 ${config.color}`} />
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Destination Filter */}
+                  <Select value={destinationFilter} onValueChange={setDestinationFilter}>
+                    <SelectTrigger className={`w-auto min-w-[130px] h-10 rounded-xl border-border/50 bg-background/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all ${destinationFilter !== 'all' ? 'border-primary/50 bg-primary/5' : ''}`}>
+                      <SelectValue placeholder="כל היעדים" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="all" className="rounded-lg">כל היעדים</SelectItem>
+                      {Object.entries(DESTINATION_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key} className="rounded-lg">
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Per Type Filter */}
+                  <Select value={perTypeFilter} onValueChange={setPerTypeFilter}>
+                    <SelectTrigger className={`w-auto min-w-[120px] h-10 rounded-xl border-border/50 bg-background/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all ${perTypeFilter !== 'all' ? 'border-primary/50 bg-primary/5' : ''}`}>
+                      <SelectValue placeholder="כל הסוגים" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="all" className="rounded-lg">כל הסוגים</SelectItem>
+                      {Object.entries(PER_TYPE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key} className="rounded-lg">
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Clear Filters Button */}
+                  {hasActiveFilters && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearFilters}
+                      className="h-10 px-4 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                    >
+                      <X className="h-4 w-4 ml-1" />
+                      נקה הכל
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Active Filters Pills */}
                 {hasActiveFilters && (
-                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/30">
-                    <span className="text-sm text-muted-foreground">מסננים פעילים:</span>
+                  <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/30">
+                    <span className="text-xs text-muted-foreground/70 font-medium">פעיל:</span>
                     {searchQuery && (
-                      <Badge variant="secondary" className="rounded-full">
-                        חיפוש: {searchQuery}
-                        <button onClick={() => setSearchQuery('')} className="mr-1 hover:text-destructive">
+                      <Badge variant="secondary" className="rounded-full px-3 py-1 bg-primary/10 text-primary border-0 gap-1.5 hover:bg-primary/20 transition-colors">
+                        <Search className="h-3 w-3" />
+                        "{searchQuery}"
+                        <button onClick={() => setSearchQuery('')} className="mr-0.5 hover:text-destructive transition-colors">
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
                     )}
                     {categoryFilter !== 'all' && (
-                      <Badge variant="secondary" className="rounded-full">
-                        קטגוריה: {CATEGORY_CONFIG[categoryFilter]?.label}
-                        <button onClick={() => setCategoryFilter('all')} className="mr-1 hover:text-destructive">
+                      <Badge variant="secondary" className="rounded-full px-3 py-1 bg-primary/10 text-primary border-0 gap-1.5 hover:bg-primary/20 transition-colors">
+                        {(() => {
+                          const config = CATEGORY_CONFIG[categoryFilter];
+                          const IconComp = config?.icon;
+                          return IconComp ? <IconComp className="h-3 w-3" /> : null;
+                        })()}
+                        {CATEGORY_CONFIG[categoryFilter]?.label}
+                        <button onClick={() => setCategoryFilter('all')} className="mr-0.5 hover:text-destructive transition-colors">
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
                     )}
                     {destinationFilter !== 'all' && (
-                      <Badge variant="secondary" className="rounded-full">
-                        יעד: {DESTINATION_LABELS[destinationFilter]}
-                        <button onClick={() => setDestinationFilter('all')} className="mr-1 hover:text-destructive">
+                      <Badge variant="secondary" className="rounded-full px-3 py-1 bg-primary/10 text-primary border-0 gap-1.5 hover:bg-primary/20 transition-colors">
+                        {DESTINATION_LABELS[destinationFilter]}
+                        <button onClick={() => setDestinationFilter('all')} className="mr-0.5 hover:text-destructive transition-colors">
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
                     )}
                     {perTypeFilter !== 'all' && (
-                      <Badge variant="secondary" className="rounded-full">
-                        סוג: {PER_TYPE_LABELS[perTypeFilter]}
-                        <button onClick={() => setPerTypeFilter('all')} className="mr-1 hover:text-destructive">
+                      <Badge variant="secondary" className="rounded-full px-3 py-1 bg-primary/10 text-primary border-0 gap-1.5 hover:bg-primary/20 transition-colors">
+                        {PER_TYPE_LABELS[perTypeFilter]}
+                        <button onClick={() => setPerTypeFilter('all')} className="mr-0.5 hover:text-destructive transition-colors">
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
         {/* Policy Categories */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
