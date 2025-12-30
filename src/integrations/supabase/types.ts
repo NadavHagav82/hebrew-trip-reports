@@ -399,6 +399,7 @@ export type Database = {
           created_at: string
           created_by: string
           expires_at: string
+          grade_id: string | null
           id: string
           is_used: boolean
           manager_id: string | null
@@ -415,6 +416,7 @@ export type Database = {
           created_at?: string
           created_by: string
           expires_at: string
+          grade_id?: string | null
           id?: string
           is_used?: boolean
           manager_id?: string | null
@@ -431,6 +433,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           expires_at?: string
+          grade_id?: string | null
           id?: string
           is_used?: boolean
           manager_id?: string | null
@@ -455,6 +458,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles_limited"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_codes_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "employee_grades"
             referencedColumns: ["id"]
           },
           {

@@ -37,10 +37,17 @@ import {
   XCircle,
   CalendarDays,
   Hash,
-  User
+  User,
+  GraduationCap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+
+interface EmployeeGrade {
+  id: string;
+  name: string;
+  level: number;
+}
 
 interface InvitationCode {
   id: string;
@@ -48,6 +55,7 @@ interface InvitationCode {
   organization_id: string;
   role: string;
   manager_id: string | null;
+  grade_id: string | null;
   created_at: string;
   expires_at: string;
   is_used: boolean;
@@ -58,6 +66,7 @@ interface InvitationCode {
   use_count: number;
   manager?: { full_name: string; email: string };
   used_by_profile?: { full_name: string; email: string };
+  grade?: EmployeeGrade | null;
 }
 
 interface Manager {
@@ -69,6 +78,7 @@ interface Manager {
 export default function InvitationCodesManagement() {
   const [codes, setCodes] = useState<InvitationCode[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [grades, setGrades] = useState<EmployeeGrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -80,6 +90,7 @@ export default function InvitationCodesManagement() {
   const [formData, setFormData] = useState({
     role: 'user' as 'user' | 'manager',
     manager_id: '',
+    grade_id: '',
     expires_days: '7',
     notes: '',
     max_uses: '1',
@@ -149,6 +160,7 @@ export default function InvitationCodesManagement() {
 
       loadCodes(profile.organization_id);
       loadManagers(profile.organization_id);
+      loadGrades(profile.organization_id);
     } catch (error) {
       console.error('Error checking org admin status:', error);
       navigate('/');
@@ -169,6 +181,7 @@ export default function InvitationCodesManagement() {
         (data || []).map(async (code: InvitationCode) => {
           let manager = null;
           let usedByProfile = null;
+          let grade = null;
 
           if (code.manager_id) {
             const { data: m } = await supabase
@@ -188,7 +201,16 @@ export default function InvitationCodesManagement() {
             usedByProfile = u;
           }
 
-          return { ...code, manager, used_by_profile: usedByProfile };
+          if (code.grade_id) {
+            const { data: g } = await (supabase as any)
+              .from('employee_grades')
+              .select('id, name, level')
+              .eq('id', code.grade_id)
+              .single();
+            grade = g;
+          }
+
+          return { ...code, manager, used_by_profile: usedByProfile, grade };
         })
       );
 
@@ -221,6 +243,22 @@ export default function InvitationCodesManagement() {
     }
   };
 
+  const loadGrades = async (orgId: string) => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('employee_grades')
+        .select('id, name, level')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .order('level');
+
+      if (error) throw error;
+      setGrades(data || []);
+    } catch (error) {
+      console.error('Error loading grades:', error);
+    }
+  };
+
   const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
@@ -249,6 +287,7 @@ export default function InvitationCodesManagement() {
           organization_id: organizationId,
           role: formData.role,
           manager_id: formData.manager_id || null,
+          grade_id: formData.grade_id || null,
           created_by: user.id,
           expires_at: expiresAt.toISOString(),
           notes: formData.notes || null,
@@ -281,6 +320,7 @@ export default function InvitationCodesManagement() {
     setFormData({
       role: 'user',
       manager_id: '',
+      grade_id: '',
       expires_days: '7',
       notes: '',
       max_uses: '1',
@@ -524,13 +564,14 @@ export default function InvitationCodesManagement() {
                         <div className="grid gap-2">
                           <Label htmlFor="manager_id">מנהל ישיר</Label>
                           <Select
-                            value={formData.manager_id}
-                            onValueChange={(value) => setFormData({ ...formData, manager_id: value })}
+                            value={formData.manager_id || "none"}
+                            onValueChange={(value) => setFormData({ ...formData, manager_id: value === "none" ? "" : value })}
                           >
                             <SelectTrigger className="h-11">
                               <SelectValue placeholder="בחר מנהל (אופציונלי)" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="none">ללא מנהל</SelectItem>
                               {managers.map((m) => (
                                 <SelectItem key={m.id} value={m.id}>
                                   {m.full_name} ({m.email})
@@ -538,6 +579,34 @@ export default function InvitationCodesManagement() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                      )}
+
+                      {formData.role === 'user' && grades.length > 0 && (
+                        <div className="grid gap-2">
+                          <Label htmlFor="grade_id">דרגת עובד</Label>
+                          <Select
+                            value={formData.grade_id || "none"}
+                            onValueChange={(value) => setFormData({ ...formData, grade_id: value === "none" ? "" : value })}
+                          >
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="בחר דרגה (אופציונלי)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">ללא דרגה</SelectItem>
+                              {grades.map((g) => (
+                                <SelectItem key={g.id} value={g.id}>
+                                  <span className="flex items-center gap-2">
+                                    <GraduationCap className="w-4 h-4" />
+                                    {g.name} (רמה {g.level})
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            עובדים שיירשמו עם קוד זה ישויכו אוטומטית לדרגה זו
+                          </p>
                         </div>
                       )}
 
@@ -678,6 +747,12 @@ export default function InvitationCodesManagement() {
                                   מנהל: {code.manager.full_name}
                                 </p>
                               )}
+                              {code.grade && (
+                                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <GraduationCap className="w-3.5 h-3.5" />
+                                  דרגה: {code.grade.name}
+                                </p>
+                              )}
                             </div>
                           </div>
                           {status.label === 'פעיל' && (
@@ -717,6 +792,7 @@ export default function InvitationCodesManagement() {
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableHead className="font-semibold">קוד</TableHead>
                         <TableHead className="font-semibold">תפקיד</TableHead>
+                        <TableHead className="font-semibold">דרגה</TableHead>
                         <TableHead className="font-semibold">מנהל משויך</TableHead>
                         <TableHead className="font-semibold">סטטוס</TableHead>
                         <TableHead className="font-semibold">תוקף</TableHead>
@@ -739,6 +815,16 @@ export default function InvitationCodesManagement() {
                               <span className="text-sm px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                 {getRoleLabel(code.role)}
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              {code.grade ? (
+                                <span className="text-sm px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 w-fit">
+                                  <GraduationCap className="w-3.5 h-3.5" />
+                                  {code.grade.name}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {code.manager?.full_name || '-'}

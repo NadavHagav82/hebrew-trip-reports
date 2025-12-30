@@ -16,6 +16,7 @@ interface InvitationCode {
   organization_id: string;
   role: string;
   manager_id: string | null;
+  grade_id: string | null;
   expires_at: string;
   organization?: { name: string };
   manager?: { full_name: string; email: string };
@@ -73,6 +74,7 @@ export default function RegisterWithCode() {
           organization_id,
           role,
           manager_id,
+          grade_id,
           expires_at,
           is_used,
           max_uses,
@@ -253,6 +255,14 @@ export default function RegisterWithCode() {
             use_count: (codeData as any).use_count + 1,
           })
           .eq('id', codeData.id);
+
+        // Assign grade from invitation code if exists
+        if (codeData.grade_id) {
+          await supabase
+            .from('profiles')
+            .update({ grade_id: codeData.grade_id })
+            .eq('id', user.id);
+        }
       }
 
       toast({
