@@ -99,6 +99,131 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_travel_rules: {
+        Row: {
+          action_type: Database["public"]["Enums"]["policy_action_type"]
+          applies_to_grades: string[] | null
+          condition_json: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          organization_id: string
+          priority: number
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          action_type?: Database["public"]["Enums"]["policy_action_type"]
+          applies_to_grades?: string[] | null
+          condition_json?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          priority?: number
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["policy_action_type"]
+          applies_to_grades?: string[] | null
+          condition_json?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          priority?: number
+          rule_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_travel_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_travel_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_travel_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_grades: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          level: number
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          level: number
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          level?: number
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_grades_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_grades_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_grades_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_alerts: {
         Row: {
           alert_type: string
@@ -908,6 +1033,147 @@ export type Database = {
           },
         ]
       }
+      travel_policy_restrictions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["policy_action_type"]
+          category: Database["public"]["Enums"]["expense_category"] | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          keywords: string[] | null
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          action_type?: Database["public"]["Enums"]["policy_action_type"]
+          category?: Database["public"]["Enums"]["expense_category"] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          keywords?: string[] | null
+          name: string
+          organization_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["policy_action_type"]
+          category?: Database["public"]["Enums"]["expense_category"] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          keywords?: string[] | null
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_policy_restrictions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_policy_restrictions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_policy_restrictions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_policy_rules: {
+        Row: {
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at: string
+          created_by: string | null
+          currency: Database["public"]["Enums"]["expense_currency"]
+          destination_countries: string[] | null
+          destination_type: Database["public"]["Enums"]["destination_type"]
+          grade_id: string | null
+          id: string
+          is_active: boolean
+          max_amount: number | null
+          notes: string | null
+          organization_id: string
+          per_type: Database["public"]["Enums"]["policy_rule_per_type"]
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          currency?: Database["public"]["Enums"]["expense_currency"]
+          destination_countries?: string[] | null
+          destination_type?: Database["public"]["Enums"]["destination_type"]
+          grade_id?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          notes?: string | null
+          organization_id: string
+          per_type?: Database["public"]["Enums"]["policy_rule_per_type"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          currency?: Database["public"]["Enums"]["expense_currency"]
+          destination_countries?: string[] | null
+          destination_type?: Database["public"]["Enums"]["destination_type"]
+          grade_id?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          notes?: string | null
+          organization_id?: string
+          per_type?: Database["public"]["Enums"]["policy_rule_per_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_policy_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_policy_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_policy_rules_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "employee_grades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_policy_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1015,6 +1281,7 @@ export type Database = {
         | "user"
         | "accounting_manager"
         | "org_admin"
+      destination_type: "domestic" | "international" | "all"
       expense_approval_status: "pending" | "approved" | "rejected"
       expense_category:
         | "flights"
@@ -1078,6 +1345,8 @@ export type Database = {
       expense_status: "draft" | "open" | "closed" | "pending_approval"
       file_type_enum: "image" | "pdf"
       payment_method: "company_card" | "out_of_pocket"
+      policy_action_type: "block" | "warn" | "require_approval"
+      policy_rule_per_type: "per_day" | "per_trip" | "per_item"
       report_action:
         | "created"
         | "submitted"
@@ -1212,6 +1481,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "user", "accounting_manager", "org_admin"],
+      destination_type: ["domestic", "international", "all"],
       expense_approval_status: ["pending", "approved", "rejected"],
       expense_category: [
         "flights",
@@ -1277,6 +1547,8 @@ export const Constants = {
       expense_status: ["draft", "open", "closed", "pending_approval"],
       file_type_enum: ["image", "pdf"],
       payment_method: ["company_card", "out_of_pocket"],
+      policy_action_type: ["block", "warn", "require_approval"],
+      policy_rule_per_type: ["per_day", "per_trip", "per_item"],
       report_action: ["created", "submitted", "approved", "rejected", "edited"],
     },
   },

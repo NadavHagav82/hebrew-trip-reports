@@ -40,6 +40,7 @@ import OrgAdminDashboard from "./pages/orgadmin/OrgAdminDashboard";
 import InvitationCodesManagement from "./pages/orgadmin/InvitationCodesManagement";
 import OrgUsersManagement from "./pages/orgadmin/OrgUsersManagement";
 import OrgAnalytics from "./pages/orgadmin/OrgAnalytics";
+import TravelPolicyBuilder from "./pages/orgadmin/TravelPolicyBuilder";
 import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/orgadmin/invitation-codes" element={<InvitationCodesManagement />} />
             <Route path="/orgadmin/users" element={<OrgUsersManagement />} />
             <Route path="/orgadmin/analytics" element={<OrgAnalytics />} />
+            <Route path="/orgadmin/travel-policy" element={<TravelPolicyBuilder />} />
             <Route path="/install" element={<InstallApp />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

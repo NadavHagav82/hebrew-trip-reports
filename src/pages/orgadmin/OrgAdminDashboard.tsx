@@ -340,7 +340,7 @@ export default function OrgAdminDashboard() {
             פעולות מהירות
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Button
             variant="outline"
             className="h-20 flex flex-col gap-2"
@@ -364,6 +364,14 @@ export default function OrgAdminDashboard() {
           >
             <BarChart3 className="h-6 w-6" />
             <span>דוחות וסטטיסטיקות</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-20 flex flex-col gap-2 border-primary/50 bg-primary/5"
+            onClick={() => navigate('/orgadmin/travel-policy')}
+          >
+            <FileText className="h-6 w-6 text-primary" />
+            <span>מדיניות נסיעות</span>
           </Button>
         </CardContent>
       </Card>
