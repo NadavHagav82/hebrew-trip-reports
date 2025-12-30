@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { usePolicyAuditLog } from '@/hooks/usePolicyAuditLog';
 import {
   Dialog,
   DialogContent,
@@ -102,6 +103,7 @@ const PER_TYPES = [
 export function CategoryRulesManager({ organizationId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { logChange } = usePolicyAuditLog();
   const [loading, setLoading] = useState(true);
   const [rules, setRules] = useState<TravelPolicyRule[]>([]);
   const [grades, setGrades] = useState<EmployeeGrade[]>([]);
@@ -305,16 +307,43 @@ export function CategoryRulesManager({ organizationId }: Props) {
 
         if (error) throw error;
 
+        await logChange({
+          organizationId,
+          action: 'update',
+          entityType: 'travel_rule',
+          entityId: editingRule.id,
+          entityName: getCategoryLabel(formData.category),
+          oldValues: {
+            category: editingRule.category,
+            max_amount: editingRule.max_amount,
+            currency: editingRule.currency,
+            destination_type: editingRule.destination_type,
+            per_type: editingRule.per_type,
+          },
+          newValues: ruleData,
+        });
+
         toast({
           title: 'החוק עודכן',
           description: 'חוק המדיניות עודכן בהצלחה',
         });
       } else {
-        const { error } = await supabase
+        const { data: newRule, error } = await supabase
           .from('travel_policy_rules')
-          .insert(ruleData);
+          .insert(ruleData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logChange({
+          organizationId,
+          action: 'create',
+          entityType: 'travel_rule',
+          entityId: newRule?.id,
+          entityName: getCategoryLabel(formData.category),
+          newValues: ruleData,
+        });
 
         toast({
           title: 'החוק נוצר',
@@ -348,6 +377,21 @@ export function CategoryRulesManager({ organizationId }: Props) {
         .eq('id', rule.id);
 
       if (error) throw error;
+
+      await logChange({
+        organizationId,
+        action: 'delete',
+        entityType: 'travel_rule',
+        entityId: rule.id,
+        entityName: getCategoryLabel(rule.category),
+        oldValues: {
+          category: rule.category,
+          max_amount: rule.max_amount,
+          currency: rule.currency,
+          destination_type: rule.destination_type,
+          per_type: rule.per_type,
+        },
+      });
 
       toast({
         title: 'החוק נמחק',

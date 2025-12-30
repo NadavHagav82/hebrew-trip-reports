@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { usePolicyAuditLog } from '@/hooks/usePolicyAuditLog';
 import {
   Dialog,
   DialogContent,
@@ -107,6 +108,7 @@ const CONDITION_TEMPLATES = [
 export function CustomRulesManager({ organizationId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { logChange } = usePolicyAuditLog();
   const [loading, setLoading] = useState(true);
   const [rules, setRules] = useState<CustomRule[]>([]);
   const [grades, setGrades] = useState<EmployeeGrade[]>([]);
@@ -311,16 +313,43 @@ export function CustomRulesManager({ organizationId }: Props) {
 
         if (error) throw error;
 
+        await logChange({
+          organizationId,
+          action: 'update',
+          entityType: 'custom_rule',
+          entityId: editingRule.id,
+          entityName: formData.rule_name.trim(),
+          oldValues: {
+            rule_name: editingRule.rule_name,
+            description: editingRule.description,
+            condition_json: editingRule.condition_json,
+            action_type: editingRule.action_type,
+            priority: editingRule.priority,
+          },
+          newValues: ruleData,
+        });
+
         toast({
           title: 'החוק עודכן',
           description: `חוק "${formData.rule_name}" עודכן בהצלחה`,
         });
       } else {
-        const { error } = await supabase
+        const { data: newRule, error } = await supabase
           .from('custom_travel_rules')
-          .insert(ruleData);
+          .insert(ruleData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logChange({
+          organizationId,
+          action: 'create',
+          entityType: 'custom_rule',
+          entityId: newRule?.id,
+          entityName: formData.rule_name.trim(),
+          newValues: ruleData,
+        });
 
         toast({
           title: 'החוק נוצר',
@@ -354,6 +383,21 @@ export function CustomRulesManager({ organizationId }: Props) {
         .eq('id', rule.id);
 
       if (error) throw error;
+
+      await logChange({
+        organizationId,
+        action: 'delete',
+        entityType: 'custom_rule',
+        entityId: rule.id,
+        entityName: rule.rule_name,
+        oldValues: {
+          rule_name: rule.rule_name,
+          description: rule.description,
+          condition_json: rule.condition_json,
+          action_type: rule.action_type,
+          priority: rule.priority,
+        },
+      });
 
       toast({
         title: 'החוק נמחק',

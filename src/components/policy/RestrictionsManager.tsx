@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { usePolicyAuditLog } from '@/hooks/usePolicyAuditLog';
 import {
   Dialog,
   DialogContent,
@@ -76,6 +77,7 @@ const ACTION_TYPES = [
 export function RestrictionsManager({ organizationId }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { logChange } = usePolicyAuditLog();
   const [loading, setLoading] = useState(true);
   const [restrictions, setRestrictions] = useState<Restriction[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -228,16 +230,43 @@ export function RestrictionsManager({ organizationId }: Props) {
 
         if (error) throw error;
 
+        await logChange({
+          organizationId,
+          action: 'update',
+          entityType: 'restriction',
+          entityId: editingRestriction.id,
+          entityName: formData.name.trim(),
+          oldValues: {
+            name: editingRestriction.name,
+            description: editingRestriction.description,
+            category: editingRestriction.category,
+            action_type: editingRestriction.action_type,
+            keywords: editingRestriction.keywords,
+          },
+          newValues: restrictionData,
+        });
+
         toast({
           title: 'ההגבלה עודכנה',
           description: `הגבלת "${formData.name}" עודכנה בהצלחה`,
         });
       } else {
-        const { error } = await supabase
+        const { data: newRestriction, error } = await supabase
           .from('travel_policy_restrictions')
-          .insert(restrictionData);
+          .insert(restrictionData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logChange({
+          organizationId,
+          action: 'create',
+          entityType: 'restriction',
+          entityId: newRestriction?.id,
+          entityName: formData.name.trim(),
+          newValues: restrictionData,
+        });
 
         toast({
           title: 'ההגבלה נוצרה',
@@ -271,6 +300,21 @@ export function RestrictionsManager({ organizationId }: Props) {
         .eq('id', restriction.id);
 
       if (error) throw error;
+
+      await logChange({
+        organizationId,
+        action: 'delete',
+        entityType: 'restriction',
+        entityId: restriction.id,
+        entityName: restriction.name,
+        oldValues: {
+          name: restriction.name,
+          description: restriction.description,
+          category: restriction.category,
+          action_type: restriction.action_type,
+          keywords: restriction.keywords,
+        },
+      });
 
       toast({
         title: 'ההגבלה נמחקה',
