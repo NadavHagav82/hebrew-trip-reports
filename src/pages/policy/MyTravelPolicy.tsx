@@ -79,6 +79,7 @@ export default function MyTravelPolicy() {
   const [organizationName, setOrganizationName] = useState('');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userGrade, setUserGrade] = useState<EmployeeGrade | null>(null);
+  const [isDefaultGrade, setIsDefaultGrade] = useState(false);
   const [policyRules, setPolicyRules] = useState<PolicyRule[]>([]);
   const [restrictions, setRestrictions] = useState<Restriction[]>([]);
   const [allGrades, setAllGrades] = useState<EmployeeGrade[]>([]);
@@ -148,6 +149,7 @@ export default function MyTravelPolicy() {
 
       // Get user's actual grade from profile
       let currentUserGrade: EmployeeGrade | null = null;
+      let usingDefaultGrade = false;
       
       if (profile.grade_id) {
         // User has a grade assigned - find it
@@ -157,9 +159,11 @@ export default function MyTravelPolicy() {
       // If no grade assigned, use the lowest grade as default
       if (!currentUserGrade && grades && grades.length > 0) {
         currentUserGrade = grades[0];
+        usingDefaultGrade = true;
       }
       
       setUserGrade(currentUserGrade);
+      setIsDefaultGrade(usingDefaultGrade);
 
       // Get policy rules - filter by user's grade or rules without specific grade
       const { data: rules } = await supabase
@@ -282,7 +286,21 @@ export default function MyTravelPolicy() {
               </div>
             </div>
             
-            <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/30">
+            {isDefaultGrade && (
+              <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-foreground">לא הוגדרה דרגה לחשבון שלך</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      מוצגת מדיניות ברירת מחדל (דרגה בסיסית). פנה למנהל הארגון לעדכון הדרגה שלך.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className={`mt-6 p-4 rounded-xl bg-muted/30 border border-border/30 ${isDefaultGrade ? 'mt-4' : ''}`}>
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
