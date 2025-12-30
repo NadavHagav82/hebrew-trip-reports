@@ -161,48 +161,48 @@ export default function TravelPolicyBuilder() {
       <main className="container mx-auto px-4 py-6">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 dark:border-slate-700/50 p-2 shadow-sm">
-            <TabsList className="grid w-full grid-cols-6 h-auto bg-transparent gap-1">
+          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/40 dark:border-slate-700/40 p-1.5 shadow-sm">
+            <TabsList className="grid w-full grid-cols-6 h-auto bg-transparent gap-0.5">
               <TabsTrigger 
                 value="dashboard" 
-                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-slate-900 data-[state=active]:dark:text-slate-100 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/60 data-[state=active]:dark:border-slate-700/60 transition-all duration-200"
               >
-                <LayoutDashboard className="w-5 h-5" />
+                <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-[10px] sm:text-xs font-medium">דשבורד</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="grades" 
-                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-slate-900 data-[state=active]:dark:text-slate-100 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/60 data-[state=active]:dark:border-slate-700/60 transition-all duration-200"
               >
-                <Users className="w-5 h-5" />
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-[10px] sm:text-xs font-medium">דרגות</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="categories" 
-                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-slate-900 data-[state=active]:dark:text-slate-100 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/60 data-[state=active]:dark:border-slate-700/60 transition-all duration-200"
               >
-                <Plane className="w-5 h-5" />
+                <Plane className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-[10px] sm:text-xs font-medium">קטגוריות</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="restrictions" 
-                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-slate-900 data-[state=active]:dark:text-slate-100 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/60 data-[state=active]:dark:border-slate-700/60 transition-all duration-200"
               >
-                <Ban className="w-5 h-5" />
+                <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-[10px] sm:text-xs font-medium">הגבלות</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="custom" 
-                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-slate-900 data-[state=active]:dark:text-slate-100 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/60 data-[state=active]:dark:border-slate-700/60 transition-all duration-200"
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-[10px] sm:text-xs font-medium">מותאם</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="preview" 
-                className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+                className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-slate-900 data-[state=active]:dark:text-slate-100 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/60 data-[state=active]:dark:border-slate-700/60 transition-all duration-200"
               >
-                <Eye className="w-5 h-5" />
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-[10px] sm:text-xs font-medium">תצוגה</span>
               </TabsTrigger>
             </TabsList>
