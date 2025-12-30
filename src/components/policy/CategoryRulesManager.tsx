@@ -411,39 +411,64 @@ export function CategoryRulesManager({ organizationId }: Props) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin" />
+          <span className="text-sm text-muted-foreground">טוען חוקים...</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Plane className="w-4 h-4 sm:w-5 sm:h-5" />
-              חוקי קטגוריות
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              הגדר מגבלות תקציב לפי קטגוריית הוצאה ודרגת עובד
-            </CardDescription>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 border border-sky-100/50 p-6 sm:p-8">
+        <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-sky-200/30 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-cyan-200/30 to-transparent rounded-full blur-2xl translate-x-1/3 translate-y-1/3" />
+        
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-200/50">
+              <Plane className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">חוקי קטגוריות</h2>
+              <p className="text-sm text-gray-600 mt-1">הגדר מגבלות תקציב לפי קטגוריית הוצאה ודרגת עובד</p>
+            </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="flex-1 sm:flex-initial">
+            <Button 
+              variant="outline" 
+              onClick={() => setImportDialogOpen(true)} 
+              className="flex-1 sm:flex-initial bg-white/80 border-sky-200 hover:bg-sky-50 hover:border-sky-300"
+            >
               <Upload className="w-4 h-4 ml-2" />
               <span className="hidden sm:inline">ייבוא</span>
             </Button>
-            <Button onClick={openCreateDialog} className="flex-1 sm:flex-initial">
+            <Button 
+              onClick={openCreateDialog} 
+              className="flex-1 sm:flex-initial bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 shadow-lg shadow-sky-200/50"
+            >
               <Plus className="w-4 h-4 ml-2" />
               הוסף חוק
             </Button>
           </div>
         </div>
-        {rules.length > 0 && (
+      </div>
+
+      {/* Filter Section */}
+      {rules.length > 0 && (
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl border border-slate-200/50 p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-400 to-gray-500 flex items-center justify-center">
+              <AlertCircle className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800">סינון וחיפוש</h3>
+              <p className="text-xs text-gray-500">מצא את החוקים שאתה מחפש</p>
+            </div>
+          </div>
           <FilterBar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -490,72 +515,110 @@ export function CategoryRulesManager({ organizationId }: Props) {
             totalCount={rules.length}
             filteredCount={filteredRules.length}
           />
-        )}
-      </CardHeader>
-      <CardContent>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {rules.length === 0 ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-100 to-cyan-100 flex items-center justify-center mb-4">
+              <Plane className="w-8 h-8 text-sky-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">אין חוקי קטגוריות</h3>
+            <p className="text-sm text-gray-500 text-center max-w-md mb-6">
               עדיין לא הוגדרו חוקי קטגוריות. הוסף חוקים כדי להגביל הוצאות לפי קטגוריה.
-            </AlertDescription>
-          </Alert>
+            </p>
+            <Button 
+              onClick={openCreateDialog}
+              className="bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600"
+            >
+              <Plus className="w-4 h-4 ml-2" />
+              הוסף חוק ראשון
+            </Button>
+          </div>
         ) : filteredRules.length === 0 ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div className="w-14 h-14 rounded-xl bg-amber-100 flex items-center justify-center mb-3">
+              <AlertCircle className="w-7 h-7 text-amber-600" />
+            </div>
+            <p className="text-sm text-gray-600 text-center">
               לא נמצאו חוקים התואמים את החיפוש "{searchQuery}"
-            </AlertDescription>
-          </Alert>
+            </p>
+          </div>
         ) : (
           <>
             {/* Mobile Card View */}
-            <div className="sm:hidden space-y-3">
-              {filteredRules.map((rule) => {
+            <div className="sm:hidden divide-y divide-gray-100">
+              {filteredRules.map((rule, index) => {
                 const Icon = getCategoryIcon(rule.category);
                 return (
-                  <div key={rule.id} className="border rounded-lg p-3 bg-card shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">{getCategoryLabel(rule.category)}</span>
+                  <div 
+                    key={rule.id} 
+                    className="p-4 hover:bg-gray-50/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          rule.category === 'flights' ? 'bg-gradient-to-br from-sky-100 to-blue-100' :
+                          rule.category === 'accommodation' ? 'bg-gradient-to-br from-violet-100 to-purple-100' :
+                          rule.category === 'food' ? 'bg-gradient-to-br from-orange-100 to-amber-100' :
+                          rule.category === 'transportation' ? 'bg-gradient-to-br from-emerald-100 to-green-100' :
+                          'bg-gradient-to-br from-gray-100 to-slate-100'
+                        }`}>
+                          <Icon className={`w-5 h-5 ${
+                            rule.category === 'flights' ? 'text-sky-600' :
+                            rule.category === 'accommodation' ? 'text-violet-600' :
+                            rule.category === 'food' ? 'text-orange-600' :
+                            rule.category === 'transportation' ? 'text-emerald-600' :
+                            'text-gray-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-800">{getCategoryLabel(rule.category)}</h3>
+                          <p className="text-xs text-gray-500">{getGradeName(rule.grade_id)}</p>
+                        </div>
                       </div>
-                      <Badge variant={rule.is_active ? 'default' : 'secondary'} className="text-xs">
+                      <Badge 
+                        variant="outline"
+                        className={`text-xs ${rule.is_active 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-gray-50 text-gray-600 border-gray-200'}`}
+                      >
                         {rule.is_active ? 'פעיל' : 'לא פעיל'}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                      <div>
-                        <span className="text-muted-foreground">דרגה: </span>
-                        <span>{getGradeName(rule.grade_id)}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">יעד: </span>
-                        <span>{getDestinationLabel(rule.destination_type)}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">תקרה: </span>
-                        <span className="font-mono">
+                    
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="bg-sky-50/50 rounded-lg p-2">
+                        <span className="text-xs text-gray-500 block">תקרה</span>
+                        <span className="text-sm font-semibold text-sky-700">
                           {rule.max_amount ? `${rule.max_amount.toLocaleString()} ${rule.currency}` : 'ללא הגבלה'}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">לכל: </span>
-                        <span>{getPerTypeLabel(rule.per_type)}</span>
+                      <div className="bg-purple-50/50 rounded-lg p-2">
+                        <span className="text-xs text-gray-500 block">יעד</span>
+                        <span className="text-sm font-semibold text-purple-700">{getDestinationLabel(rule.destination_type)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      <Button variant="ghost" size="sm" onClick={() => openEditDialog(rule)} className="flex-1">
-                        <Edit className="w-3 h-3 ml-1" />
+
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => openEditDialog(rule)} 
+                        className="flex-1 h-9 text-sky-600 hover:text-sky-700 hover:bg-sky-50"
+                      >
+                        <Edit className="w-4 h-4 ml-1" />
                         עריכה
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(rule)}
-                        className="flex-1 text-destructive hover:text-destructive"
+                        className="flex-1 h-9 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                       >
-                        <Trash2 className="w-3 h-3 ml-1" />
+                        <Trash2 className="w-4 h-4 ml-1" />
                         מחיקה
                       </Button>
                     </div>
@@ -565,238 +628,285 @@ export function CategoryRulesManager({ organizationId }: Props) {
             </div>
             
             {/* Desktop Table View */}
-            <Table className="hidden sm:table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>קטגוריה</TableHead>
-                  <TableHead>דרגה</TableHead>
-                  <TableHead>תקרה</TableHead>
-                  <TableHead>יעד</TableHead>
-                  <TableHead>לכל</TableHead>
-                  <TableHead className="w-24">סטטוס</TableHead>
-                  <TableHead className="w-24">פעולות</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRules.map((rule) => {
-                  const Icon = getCategoryIcon(rule.category);
-                  return (
-                    <TableRow key={rule.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{getCategoryLabel(rule.category)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getGradeName(rule.grade_id)}</TableCell>
-                      <TableCell>
-                        {rule.max_amount ? (
-                          <span className="font-mono">
-                            {rule.max_amount.toLocaleString()} {rule.currency}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">ללא הגבלה</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{getDestinationLabel(rule.destination_type)}</TableCell>
-                      <TableCell>{getPerTypeLabel(rule.per_type)}</TableCell>
-                      <TableCell>
-                        <Badge variant={rule.is_active ? 'default' : 'secondary'}>
-                          {rule.is_active ? 'פעיל' : 'לא פעיל'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(rule)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(rule)}
-                            className="text-destructive hover:text-destructive"
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                    <TableHead className="font-semibold text-gray-700">קטגוריה</TableHead>
+                    <TableHead className="font-semibold text-gray-700">דרגה</TableHead>
+                    <TableHead className="font-semibold text-gray-700">תקרה</TableHead>
+                    <TableHead className="font-semibold text-gray-700">יעד</TableHead>
+                    <TableHead className="font-semibold text-gray-700">לכל</TableHead>
+                    <TableHead className="font-semibold text-gray-700 w-24">סטטוס</TableHead>
+                    <TableHead className="font-semibold text-gray-700 w-24">פעולות</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRules.map((rule) => {
+                    const Icon = getCategoryIcon(rule.category);
+                    return (
+                      <TableRow 
+                        key={rule.id}
+                        className="group hover:bg-sky-50/30 transition-colors"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                              rule.category === 'flights' ? 'bg-gradient-to-br from-sky-100 to-blue-100' :
+                              rule.category === 'accommodation' ? 'bg-gradient-to-br from-violet-100 to-purple-100' :
+                              rule.category === 'food' ? 'bg-gradient-to-br from-orange-100 to-amber-100' :
+                              rule.category === 'transportation' ? 'bg-gradient-to-br from-emerald-100 to-green-100' :
+                              'bg-gradient-to-br from-gray-100 to-slate-100'
+                            }`}>
+                              <Icon className={`w-5 h-5 ${
+                                rule.category === 'flights' ? 'text-sky-600' :
+                                rule.category === 'accommodation' ? 'text-violet-600' :
+                                rule.category === 'food' ? 'text-orange-600' :
+                                rule.category === 'transportation' ? 'text-emerald-600' :
+                                'text-gray-600'
+                              }`} />
+                            </div>
+                            <span className="font-medium text-gray-800">{getCategoryLabel(rule.category)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-gray-600">{getGradeName(rule.grade_id)}</TableCell>
+                        <TableCell>
+                          {rule.max_amount ? (
+                            <span className="font-mono font-medium text-sky-700 bg-sky-50 px-2 py-1 rounded">
+                              {rule.max_amount.toLocaleString()} {rule.currency}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">ללא הגבלה</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-gray-600">{getDestinationLabel(rule.destination_type)}</TableCell>
+                        <TableCell className="text-gray-600">{getPerTypeLabel(rule.per_type)}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline"
+                            className={rule.is_active 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                              : 'bg-gray-50 text-gray-600 border-gray-200'}
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                            {rule.is_active ? 'פעיל' : 'לא פעיל'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => openEditDialog(rule)}
+                              className="h-8 w-8 text-sky-600 hover:text-sky-700 hover:bg-sky-100"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(rule)}
+                              className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-100"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </>
         )}
+      </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {editingRule ? 'ערוך חוק קטגוריה' : 'הוסף חוק קטגוריה חדש'}
-              </DialogTitle>
-              <DialogDescription>
-                הגדר מגבלת תקציב לקטגוריית הוצאה
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>קטגוריה</Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(v) => setFormData({ ...formData, category: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          <div className="flex items-center gap-2">
-                            <cat.icon className="w-4 h-4" />
-                            {cat.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>דרגת עובד</Label>
-                  <Select
-                    value={formData.grade_id || "all"}
-                    onValueChange={(v) => setFormData({ ...formData, grade_id: v === "all" ? "" : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="כל הדרגות" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">כל הדרגות</SelectItem>
-                      {grades.map((grade) => (
-                        <SelectItem key={grade.id} value={grade.id}>
-                          {grade.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center">
+                <Plane className="w-5 h-5 text-white" />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>תקרת סכום</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.max_amount}
-                    onChange={(e) => setFormData({ ...formData, max_amount: e.target.value })}
-                    placeholder="ללא הגבלה"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>מטבע</Label>
-                  <Select
-                    value={formData.currency}
-                    onValueChange={(v) => setFormData({ ...formData, currency: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map((curr) => (
-                        <SelectItem key={curr.value} value={curr.value}>
-                          {curr.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>סוג יעד</Label>
-                  <Select
-                    value={formData.destination_type}
-                    onValueChange={(v) => setFormData({ ...formData, destination_type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DESTINATION_TYPES.map((dest) => (
-                        <SelectItem key={dest.value} value={dest.value}>
-                          {dest.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>לכל</Label>
-                  <Select
-                    value={formData.per_type}
-                    onValueChange={(v) => setFormData({ ...formData, per_type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PER_TYPES.map((per) => (
-                        <SelectItem key={per.value} value={per.value}>
-                          {per.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>הערות</Label>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="הערות נוספות לחוק זה"
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label>חוק פעיל</Label>
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
+              <div>
+                <DialogTitle className="text-lg">
+                  {editingRule ? 'ערוך חוק קטגוריה' : 'הוסף חוק קטגוריה חדש'}
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  הגדר מגבלת תקציב לקטגוריית הוצאה
+                </DialogDescription>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-                ביטול
-              </Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    שומר...
-                  </>
-                ) : editingRule ? (
-                  'עדכן'
-                ) : (
-                  'הוסף'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">קטגוריה</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(v) => setFormData({ ...formData, category: v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        <div className="flex items-center gap-2">
+                          <cat.icon className="w-4 h-4" />
+                          {cat.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">דרגת עובד</Label>
+                <Select
+                  value={formData.grade_id || "all"}
+                  onValueChange={(v) => setFormData({ ...formData, grade_id: v === "all" ? "" : v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue placeholder="כל הדרגות" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">כל הדרגות</SelectItem>
+                    {grades.map((grade) => (
+                      <SelectItem key={grade.id} value={grade.id}>
+                        {grade.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-        <PolicyImportDialog
-          open={importDialogOpen}
-          onOpenChange={setImportDialogOpen}
-          onImport={handleImportRules}
-          type="category_rules"
-        />
-      </CardContent>
-    </Card>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">תקרת סכום</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formData.max_amount}
+                  onChange={(e) => setFormData({ ...formData, max_amount: e.target.value })}
+                  placeholder="ללא הגבלה"
+                  className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">מטבע</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(v) => setFormData({ ...formData, currency: v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((curr) => (
+                      <SelectItem key={curr.value} value={curr.value}>
+                        {curr.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">סוג יעד</Label>
+                <Select
+                  value={formData.destination_type}
+                  onValueChange={(v) => setFormData({ ...formData, destination_type: v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DESTINATION_TYPES.map((dest) => (
+                      <SelectItem key={dest.value} value={dest.value}>
+                        {dest.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">לכל</Label>
+                <Select
+                  value={formData.per_type}
+                  onValueChange={(v) => setFormData({ ...formData, per_type: v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PER_TYPES.map((per) => (
+                      <SelectItem key={per.value} value={per.value}>
+                        {per.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-sm font-medium">הערות</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="הערות נוספות לחוק זה"
+                rows={2}
+                className="bg-gray-50/50 border-gray-200 focus:bg-white resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50/80 border border-gray-100">
+              <div>
+                <Label className="text-sm font-medium">חוק פעיל</Label>
+                <p className="text-xs text-gray-500">הפעל או השבת את החוק</p>
+              </div>
+              <Switch
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                className="data-[state=checked]:bg-sky-500"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={submitting}
+              className="bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  שומר...
+                </>
+              ) : editingRule ? (
+                'עדכן'
+              ) : (
+                'הוסף'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <PolicyImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={handleImportRules}
+        type="category_rules"
+      />
+    </div>
   );
 }
