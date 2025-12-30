@@ -117,6 +117,28 @@ export function CategoryRulesManager({ organizationId }: Props) {
     is_active: true,
   });
 
+  const getCategoryIcon = (category: string) => {
+    const cat = CATEGORIES.find(c => c.value === category);
+    return cat?.icon || MoreHorizontal;
+  };
+
+  const getCategoryLabel = (category: string) => {
+    return CATEGORIES.find(c => c.value === category)?.label || category;
+  };
+
+  const getGradeName = (gradeId: string | null) => {
+    if (!gradeId) return 'כל הדרגות';
+    return grades.find(g => g.id === gradeId)?.name || 'לא ידוע';
+  };
+
+  const getPerTypeLabel = (perType: string) => {
+    return PER_TYPES.find(p => p.value === perType)?.label || perType;
+  };
+
+  const getDestinationLabel = (destType: string) => {
+    return DESTINATION_TYPES.find(d => d.value === destType)?.label || destType;
+  };
+
   const filteredRules = rules.filter(rule => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -161,28 +183,6 @@ export function CategoryRulesManager({ organizationId }: Props) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    const cat = CATEGORIES.find(c => c.value === category);
-    return cat?.icon || MoreHorizontal;
-  };
-
-  const getCategoryLabel = (category: string) => {
-    return CATEGORIES.find(c => c.value === category)?.label || category;
-  };
-
-  const getGradeName = (gradeId: string | null) => {
-    if (!gradeId) return 'כל הדרגות';
-    return grades.find(g => g.id === gradeId)?.name || 'לא ידוע';
-  };
-
-  const getPerTypeLabel = (perType: string) => {
-    return PER_TYPES.find(p => p.value === perType)?.label || perType;
-  };
-
-  const getDestinationLabel = (destType: string) => {
-    return DESTINATION_TYPES.find(d => d.value === destType)?.label || destType;
   };
 
   const openCreateDialog = () => {
