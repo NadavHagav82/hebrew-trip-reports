@@ -334,33 +334,54 @@ export function RestrictionsManager({ organizationId }: Props) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-rose-200 border-t-rose-500 animate-spin" />
+          <span className="text-sm text-muted-foreground">טוען הגבלות...</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
-              הגבלות
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              הגדר פריטים או שירותים שאסורים או דורשים אישור מיוחד
-            </CardDescription>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50 via-pink-50 to-red-50 border border-rose-100/50 p-6 sm:p-8">
+        <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-rose-200/30 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-pink-200/30 to-transparent rounded-full blur-2xl translate-x-1/3 translate-y-1/3" />
+        
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-200/50">
+              <Ban className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">הגבלות</h2>
+              <p className="text-sm text-gray-600 mt-1">הגדר פריטים או שירותים שאסורים או דורשים אישור מיוחד</p>
+            </div>
           </div>
-          <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+          <Button 
+            onClick={openCreateDialog} 
+            className="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 shadow-lg shadow-rose-200/50"
+          >
             <Plus className="w-4 h-4 ml-2" />
             הוסף הגבלה
           </Button>
         </div>
-        {restrictions.length > 0 && (
+      </div>
+
+      {/* Filter Section */}
+      {restrictions.length > 0 && (
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl border border-slate-200/50 p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-400 to-gray-500 flex items-center justify-center">
+              <AlertCircle className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800">סינון וחיפוש</h3>
+              <p className="text-xs text-gray-500">מצא את ההגבלות שאתה מחפש</p>
+            </div>
+          </div>
           <FilterBar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -407,76 +428,121 @@ export function RestrictionsManager({ organizationId }: Props) {
             totalCount={restrictions.length}
             filteredCount={filteredRestrictions.length}
           />
-        )}
-      </CardHeader>
-      <CardContent>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {restrictions.length === 0 ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center mb-4">
+              <Ban className="w-8 h-8 text-rose-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">אין הגבלות</h3>
+            <p className="text-sm text-gray-500 text-center max-w-md mb-2">
               עדיין לא הוגדרו הגבלות. הוסף הגבלות לפריטים אסורים.
-              <br />
-              <span className="text-muted-foreground text-xs">
-                דוגמאות: ספא, אלכוהול, כביסה, שדרוג מחלקה
-              </span>
-            </AlertDescription>
-          </Alert>
+            </p>
+            <p className="text-xs text-gray-400 text-center mb-6">
+              דוגמאות: ספא, אלכוהול, כביסה, שדרוג מחלקה
+            </p>
+            <Button 
+              onClick={openCreateDialog}
+              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+            >
+              <Plus className="w-4 h-4 ml-2" />
+              הוסף הגבלה ראשונה
+            </Button>
+          </div>
         ) : filteredRestrictions.length === 0 ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div className="w-14 h-14 rounded-xl bg-amber-100 flex items-center justify-center mb-3">
+              <AlertCircle className="w-7 h-7 text-amber-600" />
+            </div>
+            <p className="text-sm text-gray-600 text-center">
               לא נמצאו הגבלות התואמות את החיפוש "{searchQuery}"
-            </AlertDescription>
-          </Alert>
+            </p>
+          </div>
         ) : (
           <>
             {/* Mobile Card View */}
-            <div className="sm:hidden space-y-3">
+            <div className="sm:hidden divide-y divide-gray-100">
               {filteredRestrictions.map((restriction) => (
-                <div key={restriction.id} className="border rounded-lg p-3 bg-card shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm">{restriction.name}</span>
-                    <Badge variant={restriction.is_active ? 'default' : 'secondary'} className="text-xs">
+                <div 
+                  key={restriction.id} 
+                  className="p-4 hover:bg-gray-50/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        restriction.action_type === 'block' ? 'bg-gradient-to-br from-rose-100 to-red-100' :
+                        restriction.action_type === 'warn' ? 'bg-gradient-to-br from-amber-100 to-yellow-100' :
+                        'bg-gradient-to-br from-blue-100 to-indigo-100'
+                      }`}>
+                        <Ban className={`w-5 h-5 ${
+                          restriction.action_type === 'block' ? 'text-rose-600' :
+                          restriction.action_type === 'warn' ? 'text-amber-600' :
+                          'text-blue-600'
+                        }`} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">{restriction.name}</h3>
+                        <p className="text-xs text-gray-500">{getCategoryLabel(restriction.category)}</p>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant="outline"
+                      className={`text-xs ${restriction.is_active 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        : 'bg-gray-50 text-gray-600 border-gray-200'}`}
+                    >
                       {restriction.is_active ? 'פעיל' : 'לא פעיל'}
                     </Badge>
                   </div>
+                  
                   {restriction.description && (
-                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{restriction.description}</p>
+                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">{restriction.description}</p>
                   )}
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    <Badge variant={getActionColor(restriction.action_type)} className="text-xs">
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Badge 
+                      variant="outline"
+                      className={`text-xs ${
+                        restriction.action_type === 'block' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                        restriction.action_type === 'warn' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        'bg-blue-50 text-blue-700 border-blue-200'
+                      }`}
+                    >
                       {getActionLabel(restriction.action_type)}
                     </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {getCategoryLabel(restriction.category)}
-                    </Badge>
+                    {restriction.keywords?.slice(0, 2).map((kw, i) => (
+                      <Badge key={i} variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                        {kw}
+                      </Badge>
+                    ))}
+                    {restriction.keywords && restriction.keywords.length > 2 && (
+                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                        +{restriction.keywords.length - 2}
+                      </Badge>
+                    )}
                   </div>
-                  {restriction.keywords?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {restriction.keywords.slice(0, 3).map((kw, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">
-                          {kw}
-                        </Badge>
-                      ))}
-                      {restriction.keywords.length > 3 && (
-                        <Badge variant="outline" className="text-[10px]">
-                          +{restriction.keywords.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(restriction)} className="flex-1">
-                      <Edit className="w-3 h-3 ml-1" />
+
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditDialog(restriction)} 
+                      className="flex-1 h-9 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                    >
+                      <Edit className="w-4 h-4 ml-1" />
                       עריכה
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(restriction)}
-                      className="flex-1 text-destructive hover:text-destructive"
+                      className="flex-1 h-9 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                     >
-                      <Trash2 className="w-3 h-3 ml-1" />
+                      <Trash2 className="w-4 h-4 ml-1" />
                       מחיקה
                     </Button>
                   </div>
@@ -485,188 +551,244 @@ export function RestrictionsManager({ organizationId }: Props) {
             </div>
             
             {/* Desktop Table View */}
-            <Table className="hidden sm:table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>שם</TableHead>
-                  <TableHead>תיאור</TableHead>
-                  <TableHead>קטגוריה</TableHead>
-                  <TableHead>מילות מפתח</TableHead>
-                  <TableHead>פעולה</TableHead>
-                  <TableHead className="w-24">סטטוס</TableHead>
-                  <TableHead className="w-24">פעולות</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRestrictions.map((restriction) => (
-                  <TableRow key={restriction.id}>
-                    <TableCell className="font-medium">{restriction.name}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                      {restriction.description || '-'}
-                    </TableCell>
-                    <TableCell>{getCategoryLabel(restriction.category)}</TableCell>
-                    <TableCell>
-                      {restriction.keywords?.length ? (
-                        <div className="flex flex-wrap gap-1">
-                          {restriction.keywords.slice(0, 3).map((kw, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {kw}
-                            </Badge>
-                          ))}
-                          {restriction.keywords.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{restriction.keywords.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getActionColor(restriction.action_type)}>
-                        {getActionLabel(restriction.action_type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={restriction.is_active ? 'default' : 'secondary'}>
-                        {restriction.is_active ? 'פעיל' : 'לא פעיל'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(restriction)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(restriction)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                    <TableHead className="font-semibold text-gray-700">שם</TableHead>
+                    <TableHead className="font-semibold text-gray-700">תיאור</TableHead>
+                    <TableHead className="font-semibold text-gray-700">קטגוריה</TableHead>
+                    <TableHead className="font-semibold text-gray-700">מילות מפתח</TableHead>
+                    <TableHead className="font-semibold text-gray-700">פעולה</TableHead>
+                    <TableHead className="font-semibold text-gray-700 w-24">סטטוס</TableHead>
+                    <TableHead className="font-semibold text-gray-700 w-24">פעולות</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredRestrictions.map((restriction) => (
+                    <TableRow 
+                      key={restriction.id}
+                      className="group hover:bg-rose-50/30 transition-colors"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                            restriction.action_type === 'block' ? 'bg-gradient-to-br from-rose-100 to-red-100' :
+                            restriction.action_type === 'warn' ? 'bg-gradient-to-br from-amber-100 to-yellow-100' :
+                            'bg-gradient-to-br from-blue-100 to-indigo-100'
+                          }`}>
+                            <Ban className={`w-5 h-5 ${
+                              restriction.action_type === 'block' ? 'text-rose-600' :
+                              restriction.action_type === 'warn' ? 'text-amber-600' :
+                              'text-blue-600'
+                            }`} />
+                          </div>
+                          <span className="font-medium text-gray-800">{restriction.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-500 max-w-[200px] truncate">
+                        {restriction.description || <span className="italic text-gray-300">-</span>}
+                      </TableCell>
+                      <TableCell className="text-gray-600">{getCategoryLabel(restriction.category)}</TableCell>
+                      <TableCell>
+                        {restriction.keywords?.length ? (
+                          <div className="flex flex-wrap gap-1">
+                            {restriction.keywords.slice(0, 3).map((kw, i) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                                {kw}
+                              </Badge>
+                            ))}
+                            {restriction.keywords.length > 3 && (
+                              <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                                +{restriction.keywords.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="italic text-gray-300">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline"
+                          className={`${
+                            restriction.action_type === 'block' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                            restriction.action_type === 'warn' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                            'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          {getActionLabel(restriction.action_type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline"
+                          className={restriction.is_active 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-gray-50 text-gray-600 border-gray-200'}
+                        >
+                          {restriction.is_active ? 'פעיל' : 'לא פעיל'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openEditDialog(restriction)}
+                            className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-100"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(restriction)}
+                            className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-100"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </>
         )}
+      </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingRestriction ? 'ערוך הגבלה' : 'הוסף הגבלה חדשה'}
-              </DialogTitle>
-              <DialogDescription>
-                הגדר פריט או שירות שאסור או דורש אישור
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">שם ההגבלה *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="לדוגמה: אלכוהול"
-                />
+      {/* Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center">
+                <Ban className="w-5 h-5 text-white" />
               </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="description">תיאור</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="הסבר על ההגבלה"
-                  rows={2}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>קטגוריה</Label>
-                  <Select
-                    value={formData.category || "all"}
-                    onValueChange={(v) => setFormData({ ...formData, category: v === "all" ? "" : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="כל הקטגוריות" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>פעולה</Label>
-                  <Select
-                    value={formData.action_type}
-                    onValueChange={(v) => setFormData({ ...formData, action_type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACTION_TYPES.map((action) => (
-                        <SelectItem key={action.value} value={action.value}>
-                          {action.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="keywords">מילות מפתח</Label>
-                <Input
-                  id="keywords"
-                  value={formData.keywords}
-                  onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                  placeholder="מילים מופרדות בפסיקים: spa, ספא, massage"
-                />
-                <p className="text-xs text-muted-foreground">
-                  המערכת תחפש מילים אלו בתיאור ההוצאות
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label>הגבלה פעילה</Label>
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
+              <div>
+                <DialogTitle className="text-lg">
+                  {editingRestriction ? 'ערוך הגבלה' : 'הוסף הגבלה חדשה'}
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  הגדר פריט או שירות שאסור או דורש אישור
+                </DialogDescription>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-                ביטול
-              </Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    שומר...
-                  </>
-                ) : editingRestriction ? (
-                  'עדכן'
-                ) : (
-                  'הוסף'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name" className="text-sm font-medium">שם ההגבלה *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="לדוגמה: אלכוהול"
+                className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description" className="text-sm font-medium">תיאור</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="הסבר על ההגבלה"
+                rows={2}
+                className="bg-gray-50/50 border-gray-200 focus:bg-white resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">קטגוריה</Label>
+                <Select
+                  value={formData.category || "all"}
+                  onValueChange={(v) => setFormData({ ...formData, category: v === "all" ? "" : v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue placeholder="כל הקטגוריות" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm font-medium">פעולה</Label>
+                <Select
+                  value={formData.action_type}
+                  onValueChange={(v) => setFormData({ ...formData, action_type: v })}
+                >
+                  <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACTION_TYPES.map((action) => (
+                      <SelectItem key={action.value} value={action.value}>
+                        {action.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="keywords" className="text-sm font-medium">מילות מפתח</Label>
+              <Input
+                id="keywords"
+                value={formData.keywords}
+                onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                placeholder="מילים מופרדות בפסיקים: spa, ספא, massage"
+                className="h-10 bg-gray-50/50 border-gray-200 focus:bg-white"
+              />
+              <p className="text-xs text-gray-500">
+                המערכת תחפש מילים אלו בתיאור ההוצאות
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50/80 border border-gray-100">
+              <div>
+                <Label className="text-sm font-medium">הגבלה פעילה</Label>
+                <p className="text-xs text-gray-500">הפעל או השבת את ההגבלה</p>
+              </div>
+              <Switch
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                className="data-[state=checked]:bg-rose-500"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={submitting}
+              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  שומר...
+                </>
+              ) : editingRestriction ? (
+                'עדכן'
+              ) : (
+                'הוסף'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
