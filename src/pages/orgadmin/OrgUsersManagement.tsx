@@ -43,7 +43,8 @@ import {
   Hash,
   Shield,
   AlertCircle,
-  GraduationCap
+  GraduationCap,
+  Bell
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -424,6 +425,27 @@ export default function OrgUsersManagement() {
   const totalUsers = users.length;
   const totalManagers = users.filter(u => u.is_manager).length;
   const usersWithoutManager = users.filter(u => !u.manager_id && !u.is_manager).length;
+  const usersWithoutGrade = users.filter(u => !u.grade_id).length;
+
+  const sendMissingGradesNotification = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('notify-missing-grades');
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'ההתראה נשלחה בהצלחה',
+        description: `נשלחו ${data?.details?.length || 0} התראות`,
+      });
+    } catch (error: any) {
+      console.error('Error sending notification:', error);
+      toast({
+        title: 'שגיאה בשליחת ההתראה',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5" dir="rtl">
@@ -498,6 +520,36 @@ export default function OrgUsersManagement() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Missing Grades Alert */}
+        {usersWithoutGrade > 0 && (
+          <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-amber-950/20 border-r-4 border-r-amber-500">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                    <GraduationCap className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">
+                      {usersWithoutGrade} עובדים ללא דרגה משויכת
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      עובדים אלו רואים מדיניות ברירת מחדל. מומלץ לשייך להם דרגה מתאימה.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={sendMissingGradesNotification}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
+                >
+                  <Bell className="ml-2 h-4 w-4" />
+                  שלח התראה למנהלי ארגון
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Users Table */}
         <Card className="border-0 shadow-lg overflow-hidden">
