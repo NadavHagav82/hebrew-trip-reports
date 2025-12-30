@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole, BookOpen } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -451,6 +451,15 @@ export default function Dashboard() {
                   <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </Button>
               )}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/my-travel-policy')}
+                className="h-9 w-9 sm:h-10 sm:w-10 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl"
+                title="מדיניות הנסיעות שלי"
+              >
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
