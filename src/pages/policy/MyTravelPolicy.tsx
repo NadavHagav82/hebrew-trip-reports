@@ -95,6 +95,7 @@ export default function MyTravelPolicy() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [destinationFilter, setDestinationFilter] = useState<string>('all');
+  const [perTypeFilter, setPerTypeFilter] = useState<string>('all');
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -116,9 +117,12 @@ export default function MyTravelPolicy() {
       // Destination filter
       const matchesDestination = destinationFilter === 'all' || rule.destination_type === destinationFilter;
       
-      return matchesSearch && matchesCategory && matchesDestination;
+      // Per type filter
+      const matchesPerType = perTypeFilter === 'all' || rule.per_type === perTypeFilter;
+      
+      return matchesSearch && matchesCategory && matchesDestination && matchesPerType;
     });
-  }, [policyRules, searchQuery, categoryFilter, destinationFilter]);
+  }, [policyRules, searchQuery, categoryFilter, destinationFilter, perTypeFilter]);
   
   // Filtered restrictions
   const filteredRestrictions = useMemo(() => {
@@ -136,12 +140,13 @@ export default function MyTravelPolicy() {
     });
   }, [restrictions, searchQuery, categoryFilter]);
   
-  const hasActiveFilters = searchQuery !== '' || categoryFilter !== 'all' || destinationFilter !== 'all';
+  const hasActiveFilters = searchQuery !== '' || categoryFilter !== 'all' || destinationFilter !== 'all' || perTypeFilter !== 'all';
   
   const clearFilters = () => {
     setSearchQuery('');
     setCategoryFilter('all');
     setDestinationFilter('all');
+    setPerTypeFilter('all');
   };
 
   useEffect(() => {
@@ -486,6 +491,21 @@ export default function MyTravelPolicy() {
                       </SelectContent>
                     </Select>
                     
+                    {/* Per Type Filter */}
+                    <Select value={perTypeFilter} onValueChange={setPerTypeFilter}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="סוג" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">כל הסוגים</SelectItem>
+                        {Object.entries(PER_TYPE_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
                     {/* Clear Filters Button */}
                     {hasActiveFilters && (
                       <Button variant="ghost" size="icon" onClick={clearFilters} title="נקה סינון">
@@ -519,6 +539,14 @@ export default function MyTravelPolicy() {
                       <Badge variant="secondary" className="rounded-full">
                         יעד: {DESTINATION_LABELS[destinationFilter]}
                         <button onClick={() => setDestinationFilter('all')} className="mr-1 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    {perTypeFilter !== 'all' && (
+                      <Badge variant="secondary" className="rounded-full">
+                        סוג: {PER_TYPE_LABELS[perTypeFilter]}
+                        <button onClick={() => setPerTypeFilter('all')} className="mr-1 hover:text-destructive">
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
