@@ -425,14 +425,14 @@ export function CategoryRulesManager({ organizationId }: Props) {
                 <div className="grid gap-2">
                   <Label>דרגת עובד</Label>
                   <Select
-                    value={formData.grade_id}
-                    onValueChange={(v) => setFormData({ ...formData, grade_id: v })}
+                    value={formData.grade_id || "all"}
+                    onValueChange={(v) => setFormData({ ...formData, grade_id: v === "all" ? "" : v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="כל הדרגות" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">כל הדרגות</SelectItem>
+                      <SelectItem value="all">כל הדרגות</SelectItem>
                       {grades.map((grade) => (
                         <SelectItem key={grade.id} value={grade.id}>
                           {grade.name}
