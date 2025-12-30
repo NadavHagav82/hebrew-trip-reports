@@ -392,6 +392,81 @@ export default function MyTravelPolicy() {
         {/* Regular Policy View - Only show if has organization and has policy */}
         {hasOrganization && hasPolicy && (
           <>
+            {/* Quick Navigation Dashboard */}
+            <div className="bg-gradient-to-r from-primary/5 via-background to-primary/5 rounded-2xl p-4 shadow-sm border border-border/30 sticky top-4 z-10 backdrop-blur-md">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <span className="text-sm text-muted-foreground font-medium hidden sm:block">קיצורי דרך:</span>
+                
+                {/* Categories Shortcuts */}
+                {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                  const IconComp = config.icon;
+                  const rulesCount = policyRules.filter(r => r.category === key).length;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setCategoryFilter(key);
+                        document.getElementById('policy-categories')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${
+                        categoryFilter === key 
+                          ? `${config.bgColor} ${config.color} shadow-md` 
+                          : 'bg-background/80 hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <IconComp className="h-4 w-4" />
+                      <span className="text-sm font-medium hidden md:block">{config.label}</span>
+                      {rulesCount > 0 && (
+                        <Badge variant="secondary" className="h-5 min-w-[20px] text-xs px-1.5 rounded-full">
+                          {rulesCount}
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
+                
+                {/* Divider */}
+                <div className="h-6 w-px bg-border/50 mx-1 hidden sm:block" />
+                
+                {/* Restrictions Shortcut */}
+                <button
+                  onClick={() => document.getElementById('restrictions-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-all duration-200 hover:scale-105"
+                >
+                  <Ban className="h-4 w-4" />
+                  <span className="text-sm font-medium hidden md:block">מה אסור</span>
+                  {restrictions.length > 0 && (
+                    <Badge variant="secondary" className="h-5 min-w-[20px] text-xs px-1.5 rounded-full bg-red-100 text-red-600">
+                      {restrictions.length}
+                    </Badge>
+                  )}
+                </button>
+                
+                {/* Tips Shortcut */}
+                <button
+                  onClick={() => document.getElementById('tips-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all duration-200 hover:scale-105"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  <span className="text-sm font-medium hidden md:block">טיפים</span>
+                </button>
+                
+                {/* Clear Filter */}
+                {categoryFilter !== 'all' && (
+                  <>
+                    <div className="h-6 w-px bg-border/50 mx-1 hidden sm:block" />
+                    <button
+                      onClick={clearFilters}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="text-sm font-medium hidden md:block">הצג הכל</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Welcome Card */}
             <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
               <CardContent className="p-6">
@@ -587,7 +662,7 @@ export default function MyTravelPolicy() {
             </div>
 
         {/* Policy Categories */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div id="policy-categories" className="grid grid-cols-1 lg:grid-cols-2 gap-6 scroll-mt-24">
           {Object.entries(CATEGORY_CONFIG)
             .filter(([category]) => categoryFilter === 'all' || category === categoryFilter)
             .map(([category, config]) => {
@@ -656,8 +731,9 @@ export default function MyTravelPolicy() {
         </div>
 
         {/* Restrictions Section */}
+        <div id="restrictions-section" className="scroll-mt-24">
         {filteredRestrictions.length > 0 && (
-          <Card className="border-0 shadow-lg overflow-hidden">
+          <Card className="border-0 shadow-lg overflow-hidden animate-fade-in">
             <CardHeader className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border-b border-border/30">
               <CardTitle className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-red-500/10">
@@ -704,6 +780,7 @@ export default function MyTravelPolicy() {
             </CardContent>
           </Card>
         )}
+        </div>
         
         {/* No Results Message */}
         {hasActiveFilters && filteredPolicyRules.length === 0 && filteredRestrictions.length === 0 && (
@@ -721,7 +798,7 @@ export default function MyTravelPolicy() {
         )}
 
         {/* Tips Section */}
-        <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-amber-500/5 via-background to-amber-500/10">
+        <Card id="tips-section" className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-amber-500/5 via-background to-amber-500/10 scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-amber-500/10">
