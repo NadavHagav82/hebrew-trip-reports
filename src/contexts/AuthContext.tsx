@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -27,22 +27,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasInitialized = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const handleAuthUpdate = (nextSession: Session | null) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+    };
+
+    // Listener FIRST
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      handleAuthUpdate(nextSession);
+
+      // Prevent "logout on refresh" race: don't mark loading=false until we confirm initialization
+      if (!hasInitialized.current && event === 'INITIAL_SESSION') {
+        hasInitialized.current = true;
         setLoading(false);
       }
-    );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      // After initialization, any auth change means we're no longer "loading"
+      if (hasInitialized.current) {
+        setLoading(false);
+      }
+    });
+
+    // THEN check for existing session (authoritative for initialization)
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      handleAuthUpdate(existingSession);
+      hasInitialized.current = true;
       setLoading(false);
     });
 
