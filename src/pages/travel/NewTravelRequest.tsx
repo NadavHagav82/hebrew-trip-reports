@@ -260,22 +260,43 @@ export default function NewTravelRequest() {
           .insert(violationRecords);
       }
 
-      // If submitting, create approval record for manager
+      // If submitting, create approval record for manager and send notification
       if (submit && request) {
-        const { data: profile } = await supabase
+        const { data: userProfile } = await supabase
           .from('profiles')
-          .select('manager_id')
+          .select('manager_id, full_name')
           .eq('id', user.id)
           .single();
 
-        if (profile?.manager_id) {
+        if (userProfile?.manager_id) {
           await supabase
             .from('travel_request_approvals')
             .insert({
               travel_request_id: request.id,
-              approver_id: profile.manager_id,
+              approver_id: userProfile.manager_id,
               approval_level: 1
             });
+
+          // Send email notification to manager
+          try {
+            await supabase.functions.invoke('notify-travel-request', {
+              body: {
+                travel_request_id: request.id,
+                approver_id: userProfile.manager_id,
+                requester_name: userProfile.full_name || 'עובד',
+                destination: `${destinationCity}, ${destinationCountry}`,
+                start_date: startDate,
+                end_date: endDate,
+                purpose: purpose,
+                estimated_total: estimatedTotal,
+                has_violations: violations.length > 0,
+                violation_count: violations.length
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending notification:', notifyError);
+            // Don't fail the request if notification fails
+          }
         }
       }
 
