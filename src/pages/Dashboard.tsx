@@ -75,6 +75,10 @@ export default function Dashboard() {
   const [isAccountingManager, setIsAccountingManager] = useState(false);
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
   const [pendingTravelApprovalsCount, setPendingTravelApprovalsCount] = useState(0);
+  const [travelSummary, setTravelSummary] = useState({
+    thisMonth: { pending: 0, approved: 0, rejected: 0 },
+    total: { pending: 0, approved: 0 }
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -92,6 +96,7 @@ export default function Dashboard() {
     checkAccountingManagerStatus();
     fetchPendingReportsForManager();
     fetchPendingTravelApprovals();
+    fetchTravelSummary();
   }, [user, navigate]);
 
   const checkAdminStatus = async () => {
@@ -167,6 +172,42 @@ export default function Dashboard() {
       setPendingTravelApprovalsCount(count || 0);
     } catch (error) {
       console.error('Error fetching pending travel approvals:', error);
+    }
+  };
+
+  const fetchTravelSummary = async () => {
+    if (!user) return;
+    
+    try {
+      // Get current month start
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      
+      // Get all user's travel requests
+      const { data: requests, error } = await supabase
+        .from('travel_requests')
+        .select('status, created_at')
+        .eq('requested_by', user.id);
+      
+      if (error) throw error;
+      
+      const thisMonthRequests = (requests || []).filter(
+        r => new Date(r.created_at) >= new Date(monthStart)
+      );
+      
+      setTravelSummary({
+        thisMonth: {
+          pending: thisMonthRequests.filter(r => r.status === 'pending_approval').length,
+          approved: thisMonthRequests.filter(r => r.status === 'approved' || r.status === 'partially_approved').length,
+          rejected: thisMonthRequests.filter(r => r.status === 'rejected' || r.status === 'cancelled').length
+        },
+        total: {
+          pending: (requests || []).filter(r => r.status === 'pending_approval').length,
+          approved: (requests || []).filter(r => r.status === 'approved' || r.status === 'partially_approved').length
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching travel summary:', error);
     }
   };
 
@@ -679,6 +720,43 @@ export default function Dashboard() {
               </Button>
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Travel Requests Summary */}
+        {(travelSummary.total.pending > 0 || travelSummary.total.approved > 0 || travelSummary.thisMonth.rejected > 0) && (
+          <Card className="mb-6 border-0 bg-gradient-to-br from-sky-50 to-cyan-50/50 dark:from-sky-950/30 dark:to-cyan-950/20 overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Plane className="h-5 w-5 text-sky-600" />
+                סיכום בקשות נסיעה - החודש
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div 
+                  className="p-3 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-lg cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                  onClick={() => navigate('/travel-requests')}
+                >
+                  <p className="text-2xl font-bold text-yellow-600">{travelSummary.thisMonth.pending}</p>
+                  <p className="text-xs text-muted-foreground">ממתינות לאישור</p>
+                </div>
+                <div 
+                  className="p-3 bg-green-100/50 dark:bg-green-900/20 rounded-lg cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                  onClick={() => navigate('/approved-travels')}
+                >
+                  <p className="text-2xl font-bold text-green-600">{travelSummary.thisMonth.approved}</p>
+                  <p className="text-xs text-muted-foreground">אושרו</p>
+                </div>
+                <div 
+                  className="p-3 bg-red-100/50 dark:bg-red-900/20 rounded-lg cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                  onClick={() => navigate('/travel-requests')}
+                >
+                  <p className="text-2xl font-bold text-red-600">{travelSummary.thisMonth.rejected}</p>
+                  <p className="text-xs text-muted-foreground">נדחו/בוטלו</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Statistics Cards */}
