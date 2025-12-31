@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.notify-missing-grades]
 verify_jwt = true
+
+[functions.notify-travel-request]
+verify_jwt = true
+
+[functions.notify-travel-decision]
+verify_jwt = true

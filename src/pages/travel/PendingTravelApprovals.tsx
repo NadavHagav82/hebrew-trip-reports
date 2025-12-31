@@ -166,6 +166,68 @@ export default function PendingTravelApprovals() {
     setDialogOpen(true);
   };
 
+  // Determine required approval levels based on violations
+  const getRequiredApprovalLevels = (violations: Violation[] | undefined): number => {
+    if (!violations || violations.length === 0) return 1; // Just direct manager
+    
+    const maxOverage = Math.max(...violations.map(v => v.overage_percentage));
+    
+    if (maxOverage > 30) return 3;      // Manager + Department Head + CFO/Org Admin
+    if (maxOverage > 15) return 2;      // Manager + Department Head
+    return 1;                           // Just direct manager
+  };
+
+  // Get next level approver
+  const getNextLevelApprover = async (currentLevel: number, requesterId: string): Promise<string | null> => {
+    try {
+      // Get the requester's manager chain
+      const { data: requesterProfile } = await supabase
+        .from('profiles')
+        .select('manager_id, organization_id')
+        .eq('id', requesterId)
+        .single();
+      
+      if (!requesterProfile?.manager_id) return null;
+      
+      if (currentLevel === 1) {
+        // Need level 2 - get manager's manager (department head)
+        const { data: managerProfile } = await supabase
+          .from('profiles')
+          .select('manager_id')
+          .eq('id', requesterProfile.manager_id)
+          .single();
+        
+        return managerProfile?.manager_id || null;
+      }
+      
+      if (currentLevel === 2) {
+        // Need level 3 - get org admin or accounting manager
+        const { data: orgAdmins } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .in('role', ['org_admin', 'accounting_manager'])
+          .limit(1);
+        
+        if (orgAdmins && orgAdmins.length > 0) {
+          // Verify the org admin is in the same organization
+          const { data: adminProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', orgAdmins[0].user_id)
+            .eq('organization_id', requesterProfile.organization_id)
+            .single();
+          
+          return adminProfile?.id || null;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting next level approver:', error);
+      return null;
+    }
+  };
+
   const handleApprovalDecision = async () => {
     if (!selectedApproval || !user) return;
     
@@ -173,6 +235,15 @@ export default function PendingTravelApprovals() {
     try {
       const request = selectedApproval.request;
       if (!request) throw new Error('Request not found');
+
+      // Get approver name for email
+      const { data: approverProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      
+      const approverName = approverProfile?.full_name || 'מאשר';
 
       // Update approval record
       const approvalUpdate: any = {
@@ -198,23 +269,77 @@ export default function PendingTravelApprovals() {
       // Update request status
       let newStatus = request.status;
       let requestUpdate: any = {};
+      let isFinalApproval = false;
 
       if (decision === 'reject') {
         newStatus = 'rejected';
+        isFinalApproval = true;
       } else {
         // Check if there are violations requiring additional approval levels
-        const hasSignificantViolations = selectedApproval.violations?.some(v => v.overage_percentage > 30);
+        const requiredLevels = getRequiredApprovalLevels(selectedApproval.violations);
+        const currentLevel = selectedApproval.approval_level;
         
-        if (hasSignificantViolations && selectedApproval.approval_level < 3) {
-          // Need additional approval - keep as pending
-          // TODO: Add next level approver
-          newStatus = 'pending_approval';
+        if (currentLevel < requiredLevels) {
+          // Need additional approval - find next level approver
+          const nextApprover = await getNextLevelApprover(currentLevel, (request as any).requested_by);
+          
+          if (nextApprover) {
+            // Create next level approval record
+            await supabase
+              .from('travel_request_approvals')
+              .insert({
+                travel_request_id: request.id,
+                approver_id: nextApprover,
+                approval_level: currentLevel + 1
+              });
+            
+            // Update request's current approval level
+            requestUpdate.current_approval_level = currentLevel + 1;
+            newStatus = 'pending_approval';
+            
+            // Send notification to next approver
+            try {
+              const { data: requesterProfile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', (request as any).requested_by)
+                .single();
+              
+              await supabase.functions.invoke('notify-travel-request', {
+                body: {
+                  travel_request_id: request.id,
+                  approver_id: nextApprover,
+                  requester_name: requesterProfile?.full_name || 'עובד',
+                  destination: `${request.destination_city}, ${request.destination_country}`,
+                  start_date: request.start_date,
+                  end_date: request.end_date,
+                  purpose: request.purpose,
+                  estimated_total: request.estimated_total_ils,
+                  has_violations: selectedApproval.violations && selectedApproval.violations.length > 0,
+                  violation_count: selectedApproval.violations?.length || 0
+                }
+              });
+            } catch (notifyError) {
+              console.error('Error notifying next approver:', notifyError);
+            }
+            
+            toast.info(`אושר ברמה ${currentLevel}. הבקשה נשלחה למאשר ברמה ${currentLevel + 1}`);
+          } else {
+            // No next level approver found - this is final approval
+            isFinalApproval = true;
+          }
         } else {
+          // This is the final approval level
+          isFinalApproval = true;
+        }
+        
+        if (isFinalApproval) {
           // Final approval
           newStatus = decision === 'approve_with_changes' ? 'partially_approved' : 'approved';
           
           // Set approved amounts
           requestUpdate = {
+            ...requestUpdate,
             approved_flights: decision === 'approve' ? request.estimated_flights : (modifiedFlights ?? request.estimated_flights),
             approved_accommodation_per_night: decision === 'approve' ? request.estimated_accommodation_per_night : (modifiedAccommodation ?? request.estimated_accommodation_per_night),
             approved_meals_per_day: decision === 'approve' ? request.estimated_meals_per_day : (modifiedMeals ?? request.estimated_meals_per_day),
@@ -266,15 +391,12 @@ export default function PendingTravelApprovals() {
 
       if (requestError) throw requestError;
 
-      // Send notification to employee
-      try {
-        const { data: requestedByProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', (selectedApproval.request as any).requested_by)
-          .maybeSingle();
-        
-        if (requestedByProfile) {
+      // Send notification and email to employee if this is a final decision
+      if (isFinalApproval) {
+        try {
+          const requestedById = (selectedApproval.request as any).requested_by;
+          
+          // In-app notification
           const notificationTitle = decision === 'reject' 
             ? 'בקשת הנסיעה נדחתה' 
             : decision === 'approve_with_changes' 
@@ -286,22 +408,42 @@ export default function PendingTravelApprovals() {
           await supabase
             .from('notifications')
             .insert({
-              user_id: requestedByProfile.id,
+              user_id: requestedById,
               title: notificationTitle,
               message: notificationMessage,
               type: decision === 'reject' ? 'travel_rejected' : 'travel_approved'
             });
-        }
-      } catch (notifyError) {
-        console.error('Error sending notification:', notifyError);
-        // Don't fail the approval if notification fails
-      }
 
-      toast.success(
-        decision === 'reject' ? 'הבקשה נדחתה' :
-        decision === 'approve_with_changes' ? 'הבקשה אושרה עם שינויים' :
-        'הבקשה אושרה'
-      );
+          // Send email notification
+          await supabase.functions.invoke('notify-travel-decision', {
+            body: {
+              employee_id: requestedById,
+              decision: decision === 'reject' ? 'rejected' : decision === 'approve_with_changes' ? 'partially_approved' : 'approved',
+              destination: `${request.destination_city}, ${request.destination_country}`,
+              start_date: request.start_date,
+              end_date: request.end_date,
+              approver_name: approverName,
+              comments: comments || undefined,
+              approved_budget: decision !== 'reject' ? {
+                flights: requestUpdate.approved_flights || request.estimated_flights,
+                accommodation_per_night: requestUpdate.approved_accommodation_per_night || request.estimated_accommodation_per_night,
+                meals_per_day: requestUpdate.approved_meals_per_day || request.estimated_meals_per_day,
+                transport: requestUpdate.approved_transport || request.estimated_transport,
+                total: requestUpdate.approved_total_ils || request.estimated_total_ils
+              } : undefined
+            }
+          });
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError);
+          // Don't fail the approval if notification fails
+        }
+
+        toast.success(
+          decision === 'reject' ? 'הבקשה נדחתה' :
+          decision === 'approve_with_changes' ? 'הבקשה אושרה עם שינויים' :
+          'הבקשה אושרה'
+        );
+      }
 
       setDialogOpen(false);
       loadPendingApprovals();
