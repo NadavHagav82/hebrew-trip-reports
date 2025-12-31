@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
 import { AccountingComments } from '@/components/AccountingComments';
+import { BudgetComparisonCard } from '@/components/BudgetComparisonCard';
 import AddExpenseByAccounting from '@/components/AddExpenseByAccounting';
 import { ManagerExpenseReview } from '@/components/ManagerExpenseReview';
 import { Textarea } from '@/components/ui/textarea';
@@ -1721,6 +1722,9 @@ const ViewReport = () => {
 
           {/* Report History */}
           <ReportHistory reportId={report.id} />
+
+          {/* Budget Comparison (if linked to approved travel) */}
+          <BudgetComparisonCard reportId={report.id} />
           
           {/* Accounting Comments */}
           {(report.status === 'closed' || report.status === 'pending_approval' || isAccountingUser) && (

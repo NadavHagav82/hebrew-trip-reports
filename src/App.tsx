@@ -47,6 +47,7 @@ import TravelRequestsList from "./pages/travel/TravelRequestsList";
 import NewTravelRequest from "./pages/travel/NewTravelRequest";
 import TravelRequestDetails from "./pages/travel/TravelRequestDetails";
 import PendingTravelApprovals from "./pages/travel/PendingTravelApprovals";
+import ApprovedTravels from "./pages/travel/ApprovedTravels";
 import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 
@@ -106,6 +107,7 @@ const App = () => (
             <Route path="/travel-requests/new" element={<NewTravelRequest />} />
             <Route path="/travel-requests/:id" element={<TravelRequestDetails />} />
             <Route path="/travel-requests/pending" element={<PendingTravelApprovals />} />
+            <Route path="/approved-travels" element={<ApprovedTravels />} />
             <Route path="/install" element={<InstallApp />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
