@@ -266,6 +266,37 @@ export default function PendingTravelApprovals() {
 
       if (requestError) throw requestError;
 
+      // Send notification to employee
+      try {
+        const { data: requestedByProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', (selectedApproval.request as any).requested_by)
+          .maybeSingle();
+        
+        if (requestedByProfile) {
+          const notificationTitle = decision === 'reject' 
+            ? 'בקשת הנסיעה נדחתה' 
+            : decision === 'approve_with_changes' 
+              ? 'בקשת הנסיעה אושרה עם שינויים'
+              : 'בקשת הנסיעה אושרה';
+          
+          const notificationMessage = `בקשת הנסיעה שלך ל-${request.destination_city}, ${request.destination_country} ${decision === 'reject' ? 'נדחתה' : 'אושרה'}${comments ? `. הערה: ${comments}` : ''}`;
+          
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: requestedByProfile.id,
+              title: notificationTitle,
+              message: notificationMessage,
+              type: decision === 'reject' ? 'travel_rejected' : 'travel_approved'
+            });
+        }
+      } catch (notifyError) {
+        console.error('Error sending notification:', notifyError);
+        // Don't fail the approval if notification fails
+      }
+
       toast.success(
         decision === 'reject' ? 'הבקשה נדחתה' :
         decision === 'approve_with_changes' ? 'הבקשה אושרה עם שינויים' :
