@@ -295,6 +295,33 @@ export default function TravelRequestDetails() {
     }
   };
 
+  const handleResubmit = async () => {
+    if (!request) return;
+    
+    setSubmitting(true);
+    try {
+      // Reset request to draft status
+      const { error: updateError } = await supabase
+        .from('travel_requests')
+        .update({
+          status: 'draft',
+          submitted_at: null,
+          final_decision_at: null
+        })
+        .eq('id', request.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('הבקשה הוחזרה לעריכה - תוכל לערוך ולשלוח מחדש');
+      navigate(`/travel-requests/new?edit=${request.id}`);
+    } catch (error) {
+      console.error('Error resubmitting request:', error);
+      toast.error('שגיאה בהחזרת הבקשה לעריכה');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -351,6 +378,12 @@ export default function TravelRequestDetails() {
               >
                 <Ban className="h-4 w-4 ml-2" />
                 בטל בקשה
+              </Button>
+            )}
+            {(request.status === 'rejected' || request.status === 'cancelled') && (
+              <Button onClick={handleResubmit} disabled={submitting}>
+                <Edit className="h-4 w-4 ml-2" />
+                ערוך ושלח מחדש
               </Button>
             )}
           </div>
