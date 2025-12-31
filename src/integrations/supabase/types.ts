@@ -1358,6 +1358,56 @@ export type Database = {
           },
         ]
       }
+      travel_request_attachments: {
+        Row: {
+          category: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id: string
+          link_url: string | null
+          notes: string | null
+          travel_request_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          category?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id?: string
+          link_url?: string | null
+          notes?: string | null
+          travel_request_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          category?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          link_url?: string | null
+          notes?: string | null
+          travel_request_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_request_attachments_travel_request_id_fkey"
+            columns: ["travel_request_id"]
+            isOneToOne: false
+            referencedRelation: "travel_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       travel_request_violations: {
         Row: {
           category: Database["public"]["Enums"]["expense_category"]

@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { toast } from 'sonner';
+import TravelRequestAttachments from '@/components/TravelRequestAttachments';
 
 interface TravelRequest {
   id: string;
@@ -670,6 +671,12 @@ export default function TravelRequestDetails() {
             </CardContent>
           </Card>
         )}
+
+        {/* Attachments */}
+        <TravelRequestAttachments 
+          travelRequestId={request.id} 
+          readOnly={true}
+        />
 
         {/* Employee Notes */}
         {request.employee_notes && (
