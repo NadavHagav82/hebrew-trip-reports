@@ -28,6 +28,7 @@ import MyTeam from "./pages/manager/MyTeam";
 import AdvancedReports from "./pages/manager/AdvancedReports";
 import ManagerStats from "./pages/manager/ManagerStats";
 import ManagerPersonalStats from "./pages/manager/ManagerPersonalStats";
+import ManagerTravelStats from "./pages/manager/ManagerTravelStats";
 import AccountingDashboard from "./pages/accounting/AccountingDashboard";
 import AccountingStats from "./pages/accounting/AccountingStats";
 import ManageUsers from "./pages/accounting/ManageUsers";
@@ -88,6 +89,7 @@ const App = () => (
             <Route path="/manager/stats" element={<ManagerStats />} />
             <Route path="/manager/personal-stats" element={<ManagerPersonalStats />} />
             <Route path="/manager/advanced-reports" element={<AdvancedReports />} />
+            <Route path="/manager/travel-stats" element={<ManagerTravelStats />} />
             <Route path="/accounting" element={<AccountingHome />} />
             <Route path="/accounting/home" element={<AccountingHome />} />
             <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
