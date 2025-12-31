@@ -746,7 +746,7 @@ export default function NewTravelRequest() {
 
         {/* Actions */}
         <div className="flex gap-4 justify-end">
-          <Button variant="outline" onClick={() => navigate(-1)}>
+          <Button variant="outline" onClick={() => navigate('/travel-requests')}>
             ביטול
           </Button>
           <Button variant="secondary" onClick={() => handleSave(false)} disabled={loading}>
