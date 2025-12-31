@@ -6,7 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Plane, Hotel, Utensils, Car, Calendar, MapPin, User, AlertTriangle, CheckCircle, XCircle, Clock, Send, Edit } from 'lucide-react';
+import { ArrowLeft, Plane, Hotel, Utensils, Car, Calendar, MapPin, User, AlertTriangle, CheckCircle, XCircle, Clock, Send, Edit, Ban } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -100,6 +110,8 @@ export default function TravelRequestDetails() {
   const [pendingApprover, setPendingApprover] = useState<{ id: string; full_name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -250,6 +262,39 @@ export default function TravelRequestDetails() {
     }
   };
 
+  const handleCancel = async () => {
+    if (!request || !user) return;
+
+    setCancelling(true);
+    try {
+      // Update request status to cancelled
+      const { error: updateError } = await supabase
+        .from('travel_requests')
+        .update({
+          status: 'cancelled'
+        })
+        .eq('id', request.id);
+
+      if (updateError) throw updateError;
+
+      // Delete pending approval records
+      await supabase
+        .from('travel_request_approvals')
+        .delete()
+        .eq('travel_request_id', request.id)
+        .eq('status', 'pending');
+
+      toast.success('הבקשה בוטלה');
+      setCancelDialogOpen(false);
+      loadRequest();
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+      toast.error('שגיאה בביטול הבקשה');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -291,28 +336,53 @@ export default function TravelRequestDetails() {
             </div>
           </div>
           
-          {request.status === 'draft' && (
-            <Button onClick={handleSubmit} disabled={submitting}>
-              <Send className="h-4 w-4 ml-2" />
-              שלח לאישור
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {request.status === 'draft' && (
+              <Button onClick={handleSubmit} disabled={submitting}>
+                <Send className="h-4 w-4 ml-2" />
+                שלח לאישור
+              </Button>
+            )}
+            {request.status === 'pending_approval' && (
+              <Button 
+                variant="outline" 
+                className="text-destructive hover:text-destructive"
+                onClick={() => setCancelDialogOpen(true)}
+              >
+                <Ban className="h-4 w-4 ml-2" />
+                בטל בקשה
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Pending Approver Info */}
         {pendingApprover && (request.status === 'draft' || request.status === 'pending_approval') && (
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-5 w-5 text-primary" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {request.status === 'draft' ? 'הבקשה תישלח לאישור של:' : 'ממתין לאישור מ:'}
+                    </p>
+                    <p className="font-medium text-foreground">{pendingApprover.full_name}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {request.status === 'draft' ? 'הבקשה תישלח לאישור של:' : 'ממתין לאישור מ:'}
-                  </p>
-                  <p className="font-medium text-foreground">{pendingApprover.full_name}</p>
-                </div>
+                {request.status === 'pending_approval' && request.submitted_at && (
+                  <div className="text-left">
+                    <p className="text-xs text-muted-foreground">הוגש</p>
+                    <p className="text-sm font-medium">
+                      {format(new Date(request.submitted_at), 'dd/MM/yyyy HH:mm', { locale: he })}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      אישור צפוי תוך 2-3 ימי עבודה
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -579,6 +649,29 @@ export default function TravelRequestDetails() {
             </CardContent>
           </Card>
         )}
+
+        {/* Cancel Confirmation Dialog */}
+        <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>האם לבטל את הבקשה?</AlertDialogTitle>
+              <AlertDialogDescription>
+                פעולה זו תבטל את בקשת הנסיעה ותסיר אותה מרשימת הבקשות הממתינות לאישור.
+                ניתן יהיה ליצור בקשה חדשה בהמשך.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2">
+              <AlertDialogCancel>חזור</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleCancel} 
+                disabled={cancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {cancelling ? 'מבטל...' : 'בטל בקשה'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
