@@ -97,6 +97,7 @@ export default function TravelRequestDetails() {
   const [request, setRequest] = useState<TravelRequest | null>(null);
   const [violations, setViolations] = useState<Violation[]>([]);
   const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [pendingApprover, setPendingApprover] = useState<{ id: string; full_name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -136,7 +137,7 @@ export default function TravelRequestDetails() {
         .eq('travel_request_id', id)
         .order('approval_level', { ascending: true });
       
-      if (approvalsData) {
+      if (approvalsData && approvalsData.length > 0) {
         // Fetch approver names
         const approverIds = approvalsData.map(a => a.approver_id);
         const { data: profiles } = await supabase
@@ -150,6 +151,34 @@ export default function TravelRequestDetails() {
         }));
         
         setApprovals(approvalsWithNames);
+        
+        // Set pending approver for display
+        const pendingApproval = approvalsData.find(a => a.status === 'pending');
+        if (pendingApproval && profiles) {
+          const approver = profiles.find(p => p.id === pendingApproval.approver_id);
+          if (approver) {
+            setPendingApprover(approver);
+          }
+        }
+      } else if (requestData.status === 'draft') {
+        // For draft requests, show who will be the approver (the user's manager)
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('manager_id')
+          .eq('id', user?.id)
+          .maybeSingle();
+        
+        if (userProfile?.manager_id) {
+          const { data: managerProfile } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('id', userProfile.manager_id)
+            .maybeSingle();
+          
+          if (managerProfile) {
+            setPendingApprover(managerProfile);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading request:', error);
@@ -270,7 +299,24 @@ export default function TravelRequestDetails() {
           )}
         </div>
 
-        {/* Trip Details */}
+        {/* Pending Approver Info */}
+        {pendingApprover && (request.status === 'draft' || request.status === 'pending_approval') && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {request.status === 'draft' ? 'הבקשה תישלח לאישור של:' : 'ממתין לאישור מ:'}
+                  </p>
+                  <p className="font-medium text-foreground">{pendingApprover.full_name}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
