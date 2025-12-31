@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Shield } from 'lucide-react';
+import { Shield, Plane } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [isAccountingManager, setIsAccountingManager] = useState(false);
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
+  const [pendingTravelApprovalsCount, setPendingTravelApprovalsCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -90,6 +91,7 @@ export default function Dashboard() {
     checkOrgAdminStatus();
     checkAccountingManagerStatus();
     fetchPendingReportsForManager();
+    fetchPendingTravelApprovals();
   }, [user, navigate]);
 
   const checkAdminStatus = async () => {
@@ -149,6 +151,23 @@ export default function Dashboard() {
     ) || [];
 
     setPendingReportsCount(myPendingReports.length);
+  };
+
+  const fetchPendingTravelApprovals = async () => {
+    if (!user) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('travel_request_approvals')
+        .select('*', { count: 'exact', head: true })
+        .eq('approver_id', user.id)
+        .eq('status', 'pending');
+      
+      if (error) throw error;
+      setPendingTravelApprovalsCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching pending travel approvals:', error);
+    }
   };
 
   const fetchReports = async () => {
@@ -488,6 +507,20 @@ export default function Dashboard() {
               <Button 
                 variant="ghost" 
                 size="icon" 
+                onClick={() => navigate('/travel-requests')}
+                className="h-9 w-9 sm:h-10 sm:w-10 bg-sky-500/10 hover:bg-sky-500/20 rounded-xl relative"
+                title="בקשות נסיעה"
+              >
+                <Plane className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600" />
+                {pendingTravelApprovalsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {pendingTravelApprovalsCount}
+                  </span>
+                )}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
                 onClick={() => navigate('/my-travel-policy')}
                 className="h-9 w-9 sm:h-10 sm:w-10 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl"
                 title="מדיניות הנסיעות שלי"
@@ -595,20 +628,58 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {/* Create New Report Button */}
-        <div className="mb-6">
+        {/* Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <Button 
             onClick={() => navigate('/reports/new')} 
             size="lg"
-            className="w-full h-16 sm:h-20 text-lg font-bold shadow-xl hover:shadow-2xl transition-all gap-3 bg-gradient-to-r from-blue-500 via-primary to-indigo-600 hover:from-blue-400 hover:via-primary/90 hover:to-indigo-500 relative overflow-hidden group rounded-2xl"
+            className="h-16 sm:h-20 text-lg font-bold shadow-xl hover:shadow-2xl transition-all gap-3 bg-gradient-to-r from-blue-500 via-primary to-indigo-600 hover:from-blue-400 hover:via-primary/90 hover:to-indigo-500 relative overflow-hidden group rounded-2xl"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center ring-2 ring-white/30 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300 relative z-10 backdrop-blur-sm">
-              <Plus className="w-7 h-7" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 flex items-center justify-center ring-2 ring-white/30 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300 relative z-10 backdrop-blur-sm">
+              <Plus className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
-            <span className="relative z-10 text-xl">דוח נסיעה חדש</span>
+            <span className="relative z-10 text-base sm:text-xl">דוח נסיעה חדש</span>
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/travel-requests')} 
+            size="lg"
+            variant="outline"
+            className="h-16 sm:h-20 text-lg font-bold shadow-xl hover:shadow-2xl transition-all gap-3 bg-gradient-to-r from-sky-50 to-cyan-50 hover:from-sky-100 hover:to-cyan-100 dark:from-sky-950/30 dark:to-cyan-950/20 border-sky-200 dark:border-sky-800 relative overflow-hidden group rounded-2xl"
+          >
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/30 group-hover:scale-110 transition-all duration-300">
+              <Plane className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+            </div>
+            <span className="text-base sm:text-xl text-sky-700 dark:text-sky-300">בקשות נסיעה עתידיות</span>
           </Button>
         </div>
+
+        {/* Manager Travel Approvals Alert */}
+        {isManager && pendingTravelApprovalsCount > 0 && (
+          <Alert 
+            className="mb-6 border-sky-200 bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/20 dark:border-sky-800 cursor-pointer hover:shadow-lg transition-all"
+            onClick={() => navigate('/travel-requests/pending')}
+          >
+            <Plane className="h-5 w-5 text-sky-600" />
+            <AlertDescription className="flex items-center justify-between w-full">
+              <span className="text-sky-800 dark:text-sky-200 font-medium">
+                יש לך {pendingTravelApprovalsCount} בקשות נסיעה ממתינות לאישור
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/travel-requests/pending');
+                }}
+              >
+                לצפייה ואישור
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
