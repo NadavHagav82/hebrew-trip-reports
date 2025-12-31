@@ -66,6 +66,67 @@ export type Database = {
           },
         ]
       }
+      approved_travels: {
+        Row: {
+          approval_number: string
+          approved_budget: Json
+          created_at: string
+          expense_report_id: string | null
+          id: string
+          is_used: boolean
+          organization_id: string
+          travel_request_id: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          approval_number: string
+          approved_budget?: Json
+          created_at?: string
+          expense_report_id?: string | null
+          id?: string
+          is_used?: boolean
+          organization_id: string
+          travel_request_id: string
+          valid_from: string
+          valid_until: string
+        }
+        Update: {
+          approval_number?: string
+          approved_budget?: Json
+          created_at?: string
+          expense_report_id?: string | null
+          id?: string
+          is_used?: boolean
+          organization_id?: string
+          travel_request_id?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approved_travels_expense_report_id_fkey"
+            columns: ["expense_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approved_travels_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approved_travels_travel_request_id_fkey"
+            columns: ["travel_request_id"]
+            isOneToOne: true
+            referencedRelation: "travel_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bootstrap_tokens: {
         Row: {
           created_at: string
@@ -1241,6 +1302,270 @@ export type Database = {
           },
         ]
       }
+      travel_request_approvals: {
+        Row: {
+          approval_level: number
+          approved_accommodation_per_night: number | null
+          approved_flights: number | null
+          approved_meals_per_day: number | null
+          approved_other: number | null
+          approved_transport: number | null
+          approver_id: string
+          comments: string | null
+          created_at: string
+          decided_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["approval_status"]
+          travel_request_id: string
+        }
+        Insert: {
+          approval_level?: number
+          approved_accommodation_per_night?: number | null
+          approved_flights?: number | null
+          approved_meals_per_day?: number | null
+          approved_other?: number | null
+          approved_transport?: number | null
+          approver_id: string
+          comments?: string | null
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["approval_status"]
+          travel_request_id: string
+        }
+        Update: {
+          approval_level?: number
+          approved_accommodation_per_night?: number | null
+          approved_flights?: number | null
+          approved_meals_per_day?: number | null
+          approved_other?: number | null
+          approved_transport?: number | null
+          approver_id?: string
+          comments?: string | null
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["approval_status"]
+          travel_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_request_approvals_travel_request_id_fkey"
+            columns: ["travel_request_id"]
+            isOneToOne: false
+            referencedRelation: "travel_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_request_violations: {
+        Row: {
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at: string
+          employee_explanation: string | null
+          id: string
+          is_resolved: boolean
+          overage_amount: number
+          overage_percentage: number
+          policy_limit: number
+          requested_amount: number
+          requires_special_approval: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          travel_request_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          employee_explanation?: string | null
+          id?: string
+          is_resolved?: boolean
+          overage_amount: number
+          overage_percentage: number
+          policy_limit: number
+          requested_amount: number
+          requires_special_approval?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          travel_request_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          employee_explanation?: string | null
+          id?: string
+          is_resolved?: boolean
+          overage_amount?: number
+          overage_percentage?: number
+          policy_limit?: number
+          requested_amount?: number
+          requires_special_approval?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          travel_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_request_violations_travel_request_id_fkey"
+            columns: ["travel_request_id"]
+            isOneToOne: false
+            referencedRelation: "travel_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_requests: {
+        Row: {
+          approved_accommodation_per_night: number | null
+          approved_flights: number | null
+          approved_meals_per_day: number | null
+          approved_other: number | null
+          approved_total_ils: number | null
+          approved_transport: number | null
+          created_at: string
+          current_approval_level: number | null
+          days: number | null
+          destination_city: string
+          destination_country: string
+          employee_notes: string | null
+          end_date: string
+          estimated_accommodation_currency:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_accommodation_per_night: number | null
+          estimated_flights: number | null
+          estimated_flights_currency:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_meals_currency:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_meals_per_day: number | null
+          estimated_other: number | null
+          estimated_other_currency:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_total_ils: number | null
+          estimated_transport: number | null
+          estimated_transport_currency:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          final_decision_at: string | null
+          id: string
+          nights: number | null
+          organization_id: string
+          purpose: string
+          purpose_details: string | null
+          requested_by: string
+          start_date: string
+          status: Database["public"]["Enums"]["travel_request_status"]
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_accommodation_per_night?: number | null
+          approved_flights?: number | null
+          approved_meals_per_day?: number | null
+          approved_other?: number | null
+          approved_total_ils?: number | null
+          approved_transport?: number | null
+          created_at?: string
+          current_approval_level?: number | null
+          days?: number | null
+          destination_city: string
+          destination_country: string
+          employee_notes?: string | null
+          end_date: string
+          estimated_accommodation_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_accommodation_per_night?: number | null
+          estimated_flights?: number | null
+          estimated_flights_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_meals_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_meals_per_day?: number | null
+          estimated_other?: number | null
+          estimated_other_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_total_ils?: number | null
+          estimated_transport?: number | null
+          estimated_transport_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          final_decision_at?: string | null
+          id?: string
+          nights?: number | null
+          organization_id: string
+          purpose: string
+          purpose_details?: string | null
+          requested_by: string
+          start_date: string
+          status?: Database["public"]["Enums"]["travel_request_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_accommodation_per_night?: number | null
+          approved_flights?: number | null
+          approved_meals_per_day?: number | null
+          approved_other?: number | null
+          approved_total_ils?: number | null
+          approved_transport?: number | null
+          created_at?: string
+          current_approval_level?: number | null
+          days?: number | null
+          destination_city?: string
+          destination_country?: string
+          employee_notes?: string | null
+          end_date?: string
+          estimated_accommodation_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_accommodation_per_night?: number | null
+          estimated_flights?: number | null
+          estimated_flights_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_meals_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_meals_per_day?: number | null
+          estimated_other?: number | null
+          estimated_other_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          estimated_total_ils?: number | null
+          estimated_transport?: number | null
+          estimated_transport_currency?:
+            | Database["public"]["Enums"]["expense_currency"]
+            | null
+          final_decision_at?: string | null
+          id?: string
+          nights?: number | null
+          organization_id?: string
+          purpose?: string
+          purpose_details?: string | null
+          requested_by?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["travel_request_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1327,6 +1652,7 @@ export type Database = {
         Args: { _profile_id: string; _viewer_id: string }
         Returns: boolean
       }
+      generate_travel_approval_number: { Args: never; Returns: string }
       get_org_id_for_policy: { Args: { _user_id: string }; Returns: string }
       get_team_user_ids: { Args: { _manager_id: string }; Returns: string[] }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
@@ -1348,6 +1674,7 @@ export type Database = {
         | "user"
         | "accounting_manager"
         | "org_admin"
+      approval_status: "pending" | "approved" | "rejected" | "skipped"
       destination_type: "domestic" | "international" | "all"
       expense_approval_status: "pending" | "approved" | "rejected"
       expense_category:
@@ -1420,6 +1747,13 @@ export type Database = {
         | "approved"
         | "rejected"
         | "edited"
+      travel_request_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "partially_approved"
+        | "rejected"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1548,6 +1882,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "user", "accounting_manager", "org_admin"],
+      approval_status: ["pending", "approved", "rejected", "skipped"],
       destination_type: ["domestic", "international", "all"],
       expense_approval_status: ["pending", "approved", "rejected"],
       expense_category: [
@@ -1617,6 +1952,14 @@ export const Constants = {
       policy_action_type: ["block", "warn", "require_approval"],
       policy_rule_per_type: ["per_day", "per_trip", "per_item"],
       report_action: ["created", "submitted", "approved", "rejected", "edited"],
+      travel_request_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "partially_approved",
+        "rejected",
+        "cancelled",
+      ],
     },
   },
 } as const

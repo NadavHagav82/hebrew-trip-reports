@@ -43,6 +43,10 @@ import OrgUsersManagement from "./pages/orgadmin/OrgUsersManagement";
 import OrgAnalytics from "./pages/orgadmin/OrgAnalytics";
 import TravelPolicyBuilder from "./pages/orgadmin/TravelPolicyBuilder";
 import MyTravelPolicy from "./pages/policy/MyTravelPolicy";
+import TravelRequestsList from "./pages/travel/TravelRequestsList";
+import NewTravelRequest from "./pages/travel/NewTravelRequest";
+import TravelRequestDetails from "./pages/travel/TravelRequestDetails";
+import PendingTravelApprovals from "./pages/travel/PendingTravelApprovals";
 import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 
@@ -98,6 +102,10 @@ const App = () => (
             <Route path="/orgadmin/analytics" element={<OrgAnalytics />} />
             <Route path="/orgadmin/travel-policy" element={<TravelPolicyBuilder />} />
             <Route path="/my-travel-policy" element={<MyTravelPolicy />} />
+            <Route path="/travel-requests" element={<TravelRequestsList />} />
+            <Route path="/travel-requests/new" element={<NewTravelRequest />} />
+            <Route path="/travel-requests/:id" element={<TravelRequestDetails />} />
+            <Route path="/travel-requests/pending" element={<PendingTravelApprovals />} />
             <Route path="/install" element={<InstallApp />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
