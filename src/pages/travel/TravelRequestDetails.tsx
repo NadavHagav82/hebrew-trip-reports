@@ -200,7 +200,18 @@ export default function TravelRequestDetails() {
           });
       }
 
-      toast.success('הבקשה נשלחה לאישור');
+      // Get manager name for toast
+      if (profile?.manager_id) {
+        const { data: managerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', profile.manager_id)
+          .single();
+        
+        toast.success(`הבקשה נשלחה לאישור ${managerProfile?.full_name || 'המנהל'}`);
+      } else {
+        toast.success('הבקשה נשלחה לאישור');
+      }
       loadRequest();
     } catch (error) {
       console.error('Error submitting request:', error);

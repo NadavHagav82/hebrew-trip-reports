@@ -63,6 +63,7 @@ const App = () => (
           <InstallBanner />
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<RegisterSelection />} />
             <Route path="/auth/register/employee" element={<RegisterEmployee />} />
