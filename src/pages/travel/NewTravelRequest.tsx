@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,8 @@ const CURRENCIES = ['ILS', 'USD', 'EUR', 'GBP'];
 export default function NewTravelRequest() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editRequestId = searchParams.get('edit');
   
   const [loading, setLoading] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
@@ -76,7 +78,10 @@ export default function NewTravelRequest() {
 
   useEffect(() => {
     loadOrganizationAndPolicy();
-  }, [user]);
+    if (editRequestId) {
+      loadExistingRequest(editRequestId);
+    }
+  }, [user, editRequestId]);
 
   useEffect(() => {
     if (policyRules.length > 0) {
@@ -111,6 +116,44 @@ export default function NewTravelRequest() {
       }
     } catch (error) {
       console.error('Error loading organization:', error);
+    }
+  };
+
+  const loadExistingRequest = async (requestId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('travel_requests')
+        .select('*')
+        .eq('id', requestId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (!data) {
+        toast.error('הבקשה לא נמצאה');
+        return;
+      }
+      
+      // Populate form with existing data
+      setDestinationCity(data.destination_city);
+      setDestinationCountry(data.destination_country);
+      setStartDate(data.start_date);
+      setEndDate(data.end_date);
+      setPurpose(data.purpose);
+      setPurposeDetails(data.purpose_details || '');
+      setEstimatedFlights(data.estimated_flights || 0);
+      setFlightsCurrency(data.estimated_flights_currency || 'USD');
+      setAccommodationPerNight(data.estimated_accommodation_per_night || 0);
+      setAccommodationCurrency(data.estimated_accommodation_currency || 'USD');
+      setMealsPerDay(data.estimated_meals_per_day || 0);
+      setMealsCurrency(data.estimated_meals_currency || 'USD');
+      setEstimatedTransport(data.estimated_transport || 0);
+      setTransportCurrency(data.estimated_transport_currency || 'USD');
+      setEstimatedOther(data.estimated_other || 0);
+      setOtherCurrency(data.estimated_other_currency || 'USD');
+      setEmployeeNotes(data.employee_notes || '');
+    } catch (error) {
+      console.error('Error loading existing request:', error);
+      toast.error('שגיאה בטעינת הבקשה');
     }
   };
 
@@ -211,41 +254,86 @@ export default function NewTravelRequest() {
 
     setLoading(true);
     try {
-      const { data: request, error: requestError } = await supabase
-        .from('travel_requests')
-        .insert({
-          organization_id: organizationId,
-          requested_by: user.id,
-          destination_city: destinationCity,
-          destination_country: destinationCountry,
-          start_date: startDate,
-          end_date: endDate,
-          purpose: purpose,
-          purpose_details: purposeDetails,
-          estimated_flights: estimatedFlights,
-          estimated_flights_currency: flightsCurrency as any,
-          estimated_accommodation_per_night: accommodationPerNight,
-          estimated_accommodation_currency: accommodationCurrency as any,
-          estimated_meals_per_day: mealsPerDay,
-          estimated_meals_currency: mealsCurrency as any,
-          estimated_transport: estimatedTransport,
-          estimated_transport_currency: transportCurrency as any,
-          estimated_other: estimatedOther,
-          estimated_other_currency: otherCurrency as any,
-          estimated_total_ils: estimatedTotal, // TODO: Convert to ILS
-          employee_notes: employeeNotes,
-          status: submit ? 'pending_approval' : 'draft',
-          submitted_at: submit ? new Date().toISOString() : null
-        })
-        .select()
-        .single();
+      let requestId = editRequestId;
+      
+      if (editRequestId) {
+        // Update existing request
+        const { error: updateError } = await supabase
+          .from('travel_requests')
+          .update({
+            destination_city: destinationCity,
+            destination_country: destinationCountry,
+            start_date: startDate,
+            end_date: endDate,
+            nights: nights,
+            days: days,
+            purpose: purpose,
+            purpose_details: purposeDetails,
+            estimated_flights: estimatedFlights,
+            estimated_flights_currency: flightsCurrency as any,
+            estimated_accommodation_per_night: accommodationPerNight,
+            estimated_accommodation_currency: accommodationCurrency as any,
+            estimated_meals_per_day: mealsPerDay,
+            estimated_meals_currency: mealsCurrency as any,
+            estimated_transport: estimatedTransport,
+            estimated_transport_currency: transportCurrency as any,
+            estimated_other: estimatedOther,
+            estimated_other_currency: otherCurrency as any,
+            estimated_total_ils: estimatedTotal,
+            employee_notes: employeeNotes,
+            status: submit ? 'pending_approval' : 'draft',
+            submitted_at: submit ? new Date().toISOString() : null
+          })
+          .eq('id', editRequestId);
 
-      if (requestError) throw requestError;
+        if (updateError) throw updateError;
+
+        // Delete existing violations and re-insert
+        await supabase
+          .from('travel_request_violations')
+          .delete()
+          .eq('travel_request_id', editRequestId);
+      } else {
+        // Insert new request
+        const { data: request, error: requestError } = await supabase
+          .from('travel_requests')
+          .insert({
+            organization_id: organizationId,
+            requested_by: user.id,
+            destination_city: destinationCity,
+            destination_country: destinationCountry,
+            start_date: startDate,
+            end_date: endDate,
+            nights: nights,
+            days: days,
+            purpose: purpose,
+            purpose_details: purposeDetails,
+            estimated_flights: estimatedFlights,
+            estimated_flights_currency: flightsCurrency as any,
+            estimated_accommodation_per_night: accommodationPerNight,
+            estimated_accommodation_currency: accommodationCurrency as any,
+            estimated_meals_per_day: mealsPerDay,
+            estimated_meals_currency: mealsCurrency as any,
+            estimated_transport: estimatedTransport,
+            estimated_transport_currency: transportCurrency as any,
+            estimated_other: estimatedOther,
+            estimated_other_currency: otherCurrency as any,
+            estimated_total_ils: estimatedTotal,
+            employee_notes: employeeNotes,
+            status: submit ? 'pending_approval' : 'draft',
+            submitted_at: submit ? new Date().toISOString() : null
+          })
+          .select()
+          .single();
+
+        if (requestError) throw requestError;
+        requestId = request.id;
+      }
 
       // Save violations if any
-      if (violations.length > 0 && request) {
+      if (violations.length > 0 && requestId) {
         const violationRecords = violations.map(v => ({
-          travel_request_id: request.id,
+          travel_request_id: requestId,
           category: v.category as any,
           requested_amount: v.requestedAmount,
           policy_limit: v.policyLimit,
@@ -261,7 +349,7 @@ export default function NewTravelRequest() {
       }
 
       // If submitting, create approval record for manager and send notification
-      if (submit && request) {
+      if (submit && requestId) {
         const { data: userProfile } = await supabase
           .from('profiles')
           .select('manager_id, full_name')
@@ -269,19 +357,31 @@ export default function NewTravelRequest() {
           .single();
 
         if (userProfile?.manager_id) {
-          await supabase
-            .from('travel_request_approvals')
-            .insert({
-              travel_request_id: request.id,
-              approver_id: userProfile.manager_id,
-              approval_level: 1
-            });
+          // Only insert approval record if it doesn't exist (for new submissions)
+          if (!editRequestId) {
+            await supabase
+              .from('travel_request_approvals')
+              .insert({
+                travel_request_id: requestId,
+                approver_id: userProfile.manager_id,
+                approval_level: 1
+              });
+          } else {
+            // For resubmissions, insert new approval record
+            await supabase
+              .from('travel_request_approvals')
+              .insert({
+                travel_request_id: requestId,
+                approver_id: userProfile.manager_id,
+                approval_level: 1
+              });
+          }
 
           // Send email notification to manager
           try {
             await supabase.functions.invoke('notify-travel-request', {
               body: {
-                travel_request_id: request.id,
+                travel_request_id: requestId,
                 approver_id: userProfile.manager_id,
                 requester_name: userProfile.full_name || 'עובד',
                 destination: `${destinationCity}, ${destinationCountry}`,
@@ -319,8 +419,12 @@ export default function NewTravelRequest() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">בקשה לאישור נסיעה</h1>
-            <p className="text-muted-foreground">מלא את פרטי הנסיעה המתוכננת</p>
+            <h1 className="text-2xl font-bold text-foreground">
+              {editRequestId ? 'עריכת בקשה לאישור נסיעה' : 'בקשה לאישור נסיעה'}
+            </h1>
+            <p className="text-muted-foreground">
+              {editRequestId ? 'ערוך את הבקשה ושלח מחדש לאישור' : 'מלא את פרטי הנסיעה המתוכננת'}
+            </p>
           </div>
         </div>
 
