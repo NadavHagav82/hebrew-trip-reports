@@ -15,6 +15,7 @@ import { ArrowLeft, Plane, Hotel, Utensils, Car, Calendar, MapPin, User, AlertTr
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { toast } from 'sonner';
+import TravelRequestAttachments from '@/components/TravelRequestAttachments';
 
 interface TravelRequest {
   id: string;
@@ -668,6 +669,12 @@ export default function PendingTravelApprovals() {
                     ))}
                   </div>
                 )}
+
+                {/* Attachments */}
+                <TravelRequestAttachments 
+                  travelRequestId={selectedApproval.request.id} 
+                  readOnly={true}
+                />
 
                 {/* Employee Notes */}
                 {selectedApproval.request.employee_notes && (

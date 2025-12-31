@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Plane, Hotel, Utensils, Car, AlertTriangle, CheckCircle, Send, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
+import TravelRequestAttachments from '@/components/TravelRequestAttachments';
 
 interface PolicyRule {
   id: string;
@@ -66,6 +67,7 @@ export default function NewTravelRequest() {
   
   const [employeeNotes, setEmployeeNotes] = useState('');
   const [violationExplanations, setViolationExplanations] = useState<Record<string, string>>({});
+  const [savedRequestId, setSavedRequestId] = useState<string | null>(editRequestId);
 
   // Calculate nights and days
   const nights = startDate && endDate ? Math.max(0, differenceInDays(new Date(endDate), new Date(startDate))) : 0;
@@ -328,6 +330,15 @@ export default function NewTravelRequest() {
 
         if (requestError) throw requestError;
         requestId = request.id;
+        setSavedRequestId(request.id);
+      }
+
+      // Upload attachments if any
+      if (requestId) {
+        const uploadFn = (window as any).uploadTravelAttachments;
+        if (uploadFn) {
+          await uploadFn(requestId);
+        }
       }
 
       // Save violations if any
@@ -729,6 +740,12 @@ export default function NewTravelRequest() {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Attachments */}
+        <TravelRequestAttachments 
+          travelRequestId={savedRequestId} 
+          readOnly={false}
+        />
 
         {/* Employee Notes */}
         <Card>
