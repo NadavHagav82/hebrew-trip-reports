@@ -15,7 +15,8 @@ import {
   Ban,
   Sparkles,
   Eye,
-  LayoutDashboard
+  LayoutDashboard,
+  GitBranch
 } from 'lucide-react';
 import { EmployeeGradesManager } from '@/components/policy/EmployeeGradesManager';
 import { CategoryRulesManager } from '@/components/policy/CategoryRulesManager';
@@ -23,6 +24,7 @@ import { RestrictionsManager } from '@/components/policy/RestrictionsManager';
 import { CustomRulesManager } from '@/components/policy/CustomRulesManager';
 import { PolicyPreview } from '@/components/policy/PolicyPreview';
 import { PolicyDashboard } from '@/components/policy/PolicyDashboard';
+import { ApprovalChainManager } from '@/components/policy/ApprovalChainManager';
 
 export default function TravelPolicyBuilder() {
   const { user } = useAuth();
@@ -162,7 +164,7 @@ export default function TravelPolicyBuilder() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/40 dark:border-slate-700/40 p-1.5 shadow-sm">
-            <TabsList className="grid w-full grid-cols-6 h-auto bg-transparent gap-0.5">
+            <TabsList className="grid w-full grid-cols-7 h-auto bg-transparent gap-0.5">
               <TabsTrigger 
                 value="dashboard" 
                 className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-blue-600 data-[state=active]:dark:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-200/60 data-[state=active]:dark:border-blue-700/60 transition-all duration-200"
@@ -176,6 +178,13 @@ export default function TravelPolicyBuilder() {
               >
                 <Users className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-violet-600 dark:group-data-[state=active]:text-violet-400" />
                 <span className="text-[10px] sm:text-xs font-medium">דרגות</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="approvals" 
+                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-teal-600 data-[state=active]:dark:text-teal-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-teal-200/60 data-[state=active]:dark:border-teal-700/60 transition-all duration-200"
+              >
+                <GitBranch className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-teal-600 dark:group-data-[state=active]:text-teal-400" />
+                <span className="text-[10px] sm:text-xs font-medium">אישורים</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="categories" 
@@ -218,6 +227,21 @@ export default function TravelPolicyBuilder() {
 
           <TabsContent value="grades">
             <EmployeeGradesManager organizationId={organizationId} />
+          </TabsContent>
+
+          <TabsContent value="approvals">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GitBranch className="h-5 w-5 text-teal-600" />
+                  שרשראות אישורים
+                </CardTitle>
+                <CardDescription>הגדר מי מאשר בקשות נסיעה ובאיזה סדר</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ApprovalChainManager />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="categories">
