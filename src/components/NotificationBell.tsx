@@ -278,6 +278,27 @@ export const NotificationBell = () => {
     setUnreadCount(0);
   };
 
+  const deleteAllNotifications = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Start exit animation for all
+    const allIds = new Set(notifications.map(n => n.id));
+    setDeletingIds(allIds);
+    
+    // Wait for animation
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", user.id);
+
+    setNotifications([]);
+    setUnreadCount(0);
+    setDeletingIds(new Set());
+  };
+
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.is_read) {
       markAsRead(notification.id);
@@ -438,6 +459,17 @@ export const NotificationBell = () => {
         <div className="flex items-center justify-between p-3 border-b">
           <h4 className="font-semibold">התראות</h4>
           <div className="flex items-center gap-1">
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={deleteAllNotifications}
+                className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3 w-3 ml-1" />
+                נקה הכל
+              </Button>
+            )}
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
