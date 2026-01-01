@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Shield, Plane } from 'lucide-react';
+import { Shield, Plane, History } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -577,7 +577,7 @@ export default function Dashboard() {
               >
                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </Button>
-              {isManager && (
+                {isManager && (
                 <>
                   <Button 
                     variant="ghost" 
@@ -587,6 +587,15 @@ export default function Dashboard() {
                     title="דשבורד מנהלים"
                   >
                     <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/travel/my-approval-history')}
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-violet-500/10 hover:bg-violet-500/20 rounded-xl"
+                    title="היסטוריית אישורים"
+                  >
+                    <History className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
                   </Button>
                   <Button 
                     variant="ghost" 
