@@ -227,6 +227,20 @@ export default function TravelRequestDetails() {
 
     setSubmitting(true);
     try {
+      // Get user's manager first
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('manager_id')
+        .eq('id', user.id)
+        .single();
+
+      // Block submission if no manager is defined
+      if (!profile?.manager_id) {
+        toast.error('לא הוגדר מנהל עבורך. אנא פנה למנהל המערכת');
+        setSubmitting(false);
+        return;
+      }
+
       // Update request status
       const { error: updateError } = await supabase
         .from('travel_requests')
@@ -239,34 +253,27 @@ export default function TravelRequestDetails() {
       if (updateError) throw updateError;
 
       // Create approval record for manager
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('manager_id')
-        .eq('id', user.id)
-        .single();
+      const { error: approvalError } = await supabase
+        .from('travel_request_approvals')
+        .insert({
+          travel_request_id: request.id,
+          approver_id: profile.manager_id,
+          approval_level: 1
+        });
 
-      if (profile?.manager_id) {
-        await supabase
-          .from('travel_request_approvals')
-          .insert({
-            travel_request_id: request.id,
-            approver_id: profile.manager_id,
-            approval_level: 1
-          });
+      if (approvalError) {
+        console.error('Error creating approval record:', approvalError);
+        throw approvalError;
       }
 
       // Get manager name for toast
-      if (profile?.manager_id) {
-        const { data: managerProfile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', profile.manager_id)
-          .single();
-        
-        toast.success(`הבקשה נשלחה לאישור ${managerProfile?.full_name || 'המנהל'}`);
-      } else {
-        toast.success('הבקשה נשלחה לאישור');
-      }
+      const { data: managerProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', profile.manager_id)
+        .single();
+      
+      toast.success(`הבקשה נשלחה לאישור ${managerProfile?.full_name || 'המנהל'}`);
       loadRequest();
     } catch (error) {
       console.error('Error submitting request:', error);
