@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, Link2, Trash2, FileText, Image, ExternalLink, Upload, X } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Paperclip, Link2, Trash2, FileText, Image, ExternalLink, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Attachment {
@@ -44,6 +45,7 @@ export default function TravelRequestAttachments({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [pendingLinks, setPendingLinks] = useState<{ url: string; category: string; notes: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; total: number; current: number } | null>(null);
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [newLinkCategory, setNewLinkCategory] = useState('flights');
   const [newLinkNotes, setNewLinkNotes] = useState('');
@@ -173,19 +175,63 @@ export default function TravelRequestAttachments({
 
     setUploading(true);
     const uploadedAttachments: Attachment[] = [];
+    const totalFiles = pendingFiles.length + pendingLinks.length;
+    let completedFiles = 0;
 
     try {
-      // Upload files
-      for (const file of pendingFiles) {
+      // Upload files with progress tracking
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const file = pendingFiles[i];
+        setUploadProgress({
+          fileName: file.name,
+          progress: 0,
+          total: totalFiles,
+          current: i + 1
+        });
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${requestId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('travel-attachments')
-          .upload(fileName, file);
+        // Use XMLHttpRequest for progress tracking
+        const uploadResult = await new Promise<{ error: Error | null }>((resolve) => {
+          const xhr = new XMLHttpRequest();
+          
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress({
+                fileName: file.name,
+                progress: percentComplete,
+                total: totalFiles,
+                current: i + 1
+              });
+            }
+          });
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve({ error: null });
+            } else {
+              resolve({ error: new Error(`Upload failed with status ${xhr.status}`) });
+            }
+          });
+
+          xhr.addEventListener('error', () => {
+            resolve({ error: new Error('Upload failed') });
+          });
+
+          // Get the Supabase storage URL
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          
+          xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${fileName}`);
+          xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+          xhr.setRequestHeader('x-upsert', 'true');
+          xhr.send(file);
+        });
+
+        if (uploadResult.error) {
+          console.error('Upload error:', uploadResult.error);
           toast.error(`שגיאה בהעלאת ${file.name}`);
           continue;
         }
@@ -213,10 +259,19 @@ export default function TravelRequestAttachments({
         } else if (attachmentData) {
           uploadedAttachments.push(attachmentData);
         }
+        
+        completedFiles++;
       }
 
       // Save links
       for (const link of pendingLinks) {
+        setUploadProgress({
+          fileName: new URL(link.url).hostname,
+          progress: 100,
+          total: totalFiles,
+          current: completedFiles + 1
+        });
+
         const { data: linkData, error: linkError } = await supabase
           .from('travel_request_attachments')
           .insert({
@@ -238,6 +293,8 @@ export default function TravelRequestAttachments({
         } else if (linkData) {
           uploadedAttachments.push(linkData);
         }
+        
+        completedFiles++;
       }
 
       setPendingFiles([]);
@@ -252,6 +309,7 @@ export default function TravelRequestAttachments({
       toast.error('שגיאה בהעלאת הקבצים');
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -310,7 +368,26 @@ export default function TravelRequestAttachments({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!readOnly && (
+        {/* Upload Progress Overlay */}
+        {uploading && uploadProgress && (
+          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm font-medium">
+                מעלה קובץ {uploadProgress.current} מתוך {uploadProgress.total}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="truncate max-w-[200px]">{uploadProgress.fileName}</span>
+                <span>{uploadProgress.progress}%</span>
+              </div>
+              <Progress value={uploadProgress.progress} className="h-2" />
+            </div>
+          </div>
+        )}
+
+        {!readOnly && !uploading && (
           <>
             {/* File Upload with Drag & Drop */}
             <div className="space-y-2">
