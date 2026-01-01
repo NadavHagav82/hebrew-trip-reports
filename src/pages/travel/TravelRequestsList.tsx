@@ -206,7 +206,7 @@ export default function TravelRequestsList() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {request.status === 'draft' && (
+                          {['draft', 'rejected', 'cancelled'].includes(request.status) && (
                             <Button 
                               variant="outline" 
                               size="sm"
