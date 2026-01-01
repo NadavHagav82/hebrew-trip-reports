@@ -63,6 +63,7 @@ interface PendingApproval {
   approval_level: number;
   request?: TravelRequest;
   violations?: Violation[];
+  custom_message?: string | null;
 }
 
 export default function PendingTravelApprovals() {
@@ -145,10 +146,22 @@ export default function PendingTravelApprovals() {
           .select('*')
           .in('travel_request_id', requestIds);
 
-        const enrichedApprovals = approvals.map(approval => {
+        // Get custom messages from approval chain levels for each approval
+        const enrichedApprovals = await Promise.all(approvals.map(async (approval) => {
           const request = requests.find(r => r.id === approval.travel_request_id);
           const requester = request ? profiles?.find(p => p.id === request.requested_by) : null;
           const requestViolations = violations?.filter(v => v.travel_request_id === approval.travel_request_id) || [];
+          
+          // Try to find custom message from approval chain level
+          let customMessage: string | null = null;
+          if (request) {
+            const { data: chainLevel } = await supabase
+              .from('approval_chain_levels')
+              .select('custom_message')
+              .eq('level_order', approval.approval_level)
+              .maybeSingle();
+            customMessage = chainLevel?.custom_message || null;
+          }
           
           return {
             ...approval,
@@ -156,9 +169,10 @@ export default function PendingTravelApprovals() {
               ...request,
               requester
             } : undefined,
-            violations: requestViolations
+            violations: requestViolations,
+            custom_message: customMessage
           };
-        });
+        }));
 
         setPendingApprovals(enrichedApprovals);
       }
@@ -593,6 +607,17 @@ export default function PendingTravelApprovals() {
 
             {selectedApproval?.request && (
               <div className="space-y-6">
+                {/* Custom Message from Approval Chain */}
+                {selectedApproval.custom_message && (
+                  <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
+                    <h4 className="font-medium text-primary mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      הודעה מותאמת לרמת אישור זו
+                    </h4>
+                    <p className="text-sm">{selectedApproval.custom_message}</p>
+                  </div>
+                )}
+
                 {/* Request Summary */}
                 <div className="bg-muted p-4 rounded-lg space-y-3">
                   <div className="flex items-center gap-2 text-sm">
