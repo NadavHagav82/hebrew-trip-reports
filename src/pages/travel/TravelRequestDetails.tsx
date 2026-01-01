@@ -77,6 +77,8 @@ interface Approval {
   approver?: {
     full_name: string;
   };
+  levelType?: string;
+  wasSkipped?: boolean;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: any }> = {
@@ -617,7 +619,7 @@ export default function TravelRequestDetails() {
           </Card>
         )}
 
-        {/* Approval Timeline */}
+        {/* Approval Timeline - Enhanced */}
         {approvals.length > 0 && (
           <Card>
             <CardHeader>
@@ -625,49 +627,102 @@ export default function TravelRequestDetails() {
                 <User className="h-5 w-5" />
                 שרשרת אישורים
               </CardTitle>
+              <CardDescription>
+                {request.status === 'pending_approval' && `ממתין לאישור רמה ${request.current_approval_level || 1} מתוך ${approvals.length}`}
+                {request.status === 'approved' && 'כל האישורים התקבלו'}
+                {request.status === 'rejected' && 'הבקשה נדחתה'}
+                {request.status === 'partially_approved' && 'הבקשה אושרה עם שינויים'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {approvals.map((approval, index) => (
-                  <div key={approval.id} className="flex items-start gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        approval.status === 'approved' ? 'bg-green-100 text-green-600' :
-                        approval.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
-                        {approval.status === 'approved' ? <CheckCircle className="h-4 w-4" /> :
-                         approval.status === 'rejected' ? <XCircle className="h-4 w-4" /> :
-                         <Clock className="h-4 w-4" />}
+                {approvals.map((approval, index) => {
+                  const isCurrentLevel = request.status === 'pending_approval' && 
+                    approval.status === 'pending' && 
+                    approval.approval_level === (request.current_approval_level || 1);
+                  
+                  return (
+                    <div key={approval.id} className={`flex items-start gap-4 ${isCurrentLevel ? 'bg-primary/5 -mx-4 px-4 py-3 rounded-lg' : ''}`}>
+                      <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                          approval.status === 'approved' ? 'bg-green-100 text-green-600 border-green-300' :
+                          approval.status === 'rejected' ? 'bg-red-100 text-red-600 border-red-300' :
+                          approval.status === 'skipped' ? 'bg-muted text-muted-foreground border-muted' :
+                          isCurrentLevel ? 'bg-primary/10 text-primary border-primary animate-pulse' :
+                          'bg-muted text-muted-foreground border-muted-foreground/30'
+                        }`}>
+                          {approval.status === 'approved' ? <CheckCircle className="h-5 w-5" /> :
+                           approval.status === 'rejected' ? <XCircle className="h-5 w-5" /> :
+                           approval.status === 'skipped' ? <span className="text-xs">דולג</span> :
+                           <Clock className="h-5 w-5" />}
+                        </div>
+                        {index < approvals.length - 1 && (
+                          <div className={`w-0.5 h-12 mt-2 ${
+                            approval.status === 'approved' ? 'bg-green-300' :
+                            approval.status === 'rejected' ? 'bg-red-300' :
+                            'bg-muted'
+                          }`} />
+                        )}
                       </div>
-                      {index < approvals.length - 1 && (
-                        <div className="w-0.5 h-8 bg-muted mt-2" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{approval.approver?.full_name || 'מאשר'}</p>
-                        <Badge variant="outline" className="text-xs">
-                          רמה {approval.approval_level}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {approval.status === 'pending' ? 'ממתין לאישור' :
-                         approval.status === 'approved' ? 'אישר' :
-                         approval.status === 'rejected' ? 'דחה' : approval.status}
-                      </p>
-                      {approval.decided_at && (
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(approval.decided_at), 'dd/MM/yyyy HH:mm', { locale: he })}
+                      <div className="flex-1 pt-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">{approval.approver?.full_name || 'מאשר'}</p>
+                          <Badge variant="outline" className="text-xs">
+                            רמה {approval.approval_level}
+                          </Badge>
+                          {isCurrentLevel && (
+                            <Badge className="text-xs bg-primary">
+                              ממתין כעת
+                            </Badge>
+                          )}
+                          {approval.status === 'skipped' && (
+                            <Badge variant="secondary" className="text-xs">
+                              דולג אוטומטית
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {approval.status === 'pending' ? (isCurrentLevel ? 'ממתין להחלטה...' : 'ממתין לתורו') :
+                           approval.status === 'approved' ? 'אישר את הבקשה' :
+                           approval.status === 'rejected' ? 'דחה את הבקשה' : 
+                           approval.status === 'skipped' ? 'דולג - סכום מתחת לסף' : approval.status}
                         </p>
-                      )}
-                      {approval.comments && (
-                        <p className="text-sm mt-2 p-2 bg-muted rounded">{approval.comments}</p>
-                      )}
+                        {approval.decided_at && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(approval.decided_at), 'dd/MM/yyyy HH:mm', { locale: he })}
+                          </p>
+                        )}
+                        {approval.comments && (
+                          <div className="text-sm mt-2 p-3 bg-muted rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">הערות:</p>
+                            <p>{approval.comments}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Progress indicator */}
+              {request.status === 'pending_approval' && (
+                <div className="mt-6 pt-4 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">התקדמות האישור</span>
+                    <span className="text-sm font-medium">
+                      {approvals.filter(a => a.status === 'approved' || a.status === 'skipped').length} / {approvals.length}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ 
+                        width: `${(approvals.filter(a => a.status === 'approved' || a.status === 'skipped').length / approvals.length) * 100}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

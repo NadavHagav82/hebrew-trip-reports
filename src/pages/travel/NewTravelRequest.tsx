@@ -574,11 +574,11 @@ export default function NewTravelRequest() {
 
         if (useApprovalChain && approvalChain && approvalChain.levels.length > 0) {
           // Create approval records for each level in the chain
+          let levelOrder = 1;
           for (const level of approvalChain.levels) {
-            // Skip levels that can be skipped based on amount
-            if (level.can_skip_if_approved_amount_under && estimatedTotal < level.can_skip_if_approved_amount_under) {
-              continue;
-            }
+            // Check if this level should be skipped based on amount threshold
+            const shouldSkip = level.can_skip_if_approved_amount_under && 
+                              estimatedTotal < level.can_skip_if_approved_amount_under;
 
             let approverId: string | null = null;
 
@@ -621,8 +621,8 @@ export default function NewTravelRequest() {
             }
 
             if (approverId) {
-              // Set first approver for notification
-              if (!firstApproverId) {
+              // Set first non-skipped approver for notification
+              if (!firstApproverId && !shouldSkip) {
                 firstApproverId = approverId;
               }
 
@@ -631,9 +631,14 @@ export default function NewTravelRequest() {
                 .insert({
                   travel_request_id: requestId,
                   approver_id: approverId,
-                  approval_level: level.level_order,
-                  status: level.level_order === 1 ? 'pending' : 'pending' // All start as pending, handled by approval flow
+                  approval_level: levelOrder,
+                  // Mark as skipped if amount is below threshold
+                  status: shouldSkip ? 'skipped' : 'pending',
+                  decided_at: shouldSkip ? new Date().toISOString() : null,
+                  comments: shouldSkip ? `דולג אוטומטית - סכום מתחת ל-₪${level.can_skip_if_approved_amount_under}` : null
                 });
+              
+              levelOrder++;
             }
           }
         } else if (selectedApproverId) {
@@ -644,7 +649,8 @@ export default function NewTravelRequest() {
             .insert({
               travel_request_id: requestId,
               approver_id: selectedApproverId,
-              approval_level: 1
+              approval_level: 1,
+              status: 'pending'
             });
         }
 
