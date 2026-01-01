@@ -45,6 +45,7 @@ interface ApprovalChainLevel {
   specific_user_id: string | null;
   is_required: boolean;
   can_skip_if_approved_amount_under: number | null;
+  custom_message: string | null;
 }
 
 interface ApprovalChainConfig {
@@ -626,6 +627,10 @@ export default function NewTravelRequest() {
                 firstApproverId = approverId;
               }
 
+              const skipComment = shouldSkip 
+                ? `דולג אוטומטית - סכום מתחת ל-₪${level.can_skip_if_approved_amount_under}` 
+                : null;
+
               await supabase
                 .from('travel_request_approvals')
                 .insert({
@@ -635,8 +640,28 @@ export default function NewTravelRequest() {
                   // Mark as skipped if amount is below threshold
                   status: shouldSkip ? 'skipped' : 'pending',
                   decided_at: shouldSkip ? new Date().toISOString() : null,
-                  comments: shouldSkip ? `דולג אוטומטית - סכום מתחת ל-₪${level.can_skip_if_approved_amount_under}` : null
+                  comments: skipComment
                 });
+
+              // Send notification about skipped level
+              if (shouldSkip) {
+                try {
+                  await supabase.functions.invoke('notify-approval-skipped', {
+                    body: {
+                      travel_request_id: requestId,
+                      requester_id: user.id,
+                      requester_name: userProfile?.full_name || 'עובד',
+                      destination: `${destinationCity}, ${destinationCountry}`,
+                      skipped_level: levelOrder,
+                      skipped_level_type: level.level_type,
+                      skip_reason: skipComment,
+                      estimated_total: estimatedTotal
+                    }
+                  });
+                } catch (skipNotifyError) {
+                  console.error('Error sending skip notification:', skipNotifyError);
+                }
+              }
               
               levelOrder++;
             }

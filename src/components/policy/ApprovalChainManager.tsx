@@ -23,6 +23,7 @@ interface ApprovalChainLevel {
   specific_user_id: string | null;
   is_required: boolean;
   can_skip_if_approved_amount_under: number | null;
+  custom_message: string | null;
 }
 
 interface ApprovalChain {
@@ -74,6 +75,96 @@ const levelTypeIcons: Record<string, React.ReactNode> = {
   org_admin: <Building className="h-4 w-4" />,
   accounting_manager: <Calculator className="h-4 w-4" />,
   specific_user: <User className="h-4 w-4" />,
+};
+
+// Level Item Component
+const LevelItem = ({ 
+  level, 
+  onRemove, 
+  onUpdate 
+}: { 
+  level: ApprovalChainLevel; 
+  onRemove: () => void; 
+  onUpdate: (updates: Partial<ApprovalChainLevel>) => void;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [customMessage, setCustomMessage] = useState(level.custom_message || '');
+  const [skipAmount, setSkipAmount] = useState(level.can_skip_if_approved_amount_under?.toString() || '');
+
+  const handleSave = () => {
+    onUpdate({
+      custom_message: customMessage || null,
+      can_skip_if_approved_amount_under: skipAmount ? parseFloat(skipAmount) : null
+    });
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            {level.level_order}
+          </div>
+          <div className="flex items-center gap-2">
+            {levelTypeIcons[level.level_type]}
+            <span className="text-sm">{levelTypeLabels[level.level_type]}</span>
+          </div>
+          {level.can_skip_if_approved_amount_under && (
+            <Badge variant="outline" className="text-xs">
+              דילוג מתחת ל-₪{level.can_skip_if_approved_amount_under.toLocaleString()}
+            </Badge>
+          )}
+          {level.custom_message && (
+            <Badge variant="secondary" className="text-xs">הודעה מותאמת</Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive"
+            onClick={onRemove}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      {isEditing && (
+        <div className="pt-2 border-t space-y-3">
+          <div className="space-y-2">
+            <Label className="text-xs">הודעה מותאמת לרמת האישור</Label>
+            <Textarea
+              placeholder="הזן הודעה שתוצג למאשר..."
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">דילוג אוטומטי מתחת לסכום (₪)</Label>
+            <Input
+              type="number"
+              placeholder="ללא דילוג אוטומטי"
+              value={skipAmount}
+              onChange={(e) => setSkipAmount(e.target.value)}
+              className="w-48"
+            />
+          </div>
+          <Button size="sm" onClick={handleSave}>שמור</Button>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const ApprovalChainManager = () => {
@@ -306,6 +397,26 @@ export const ApprovalChainManager = () => {
     } catch (error) {
       console.error("Error removing level:", error);
       toast.error("שגיאה בהסרת רמת אישור");
+    }
+  };
+
+  const updateLevel = async (levelId: string, updates: Partial<ApprovalChainLevel>) => {
+    try {
+      const { error } = await supabase
+        .from("approval_chain_levels")
+        .update({
+          custom_message: updates.custom_message,
+          can_skip_if_approved_amount_under: updates.can_skip_if_approved_amount_under
+        })
+        .eq("id", levelId);
+
+      if (error) throw error;
+
+      toast.success("רמת אישור עודכנה");
+      fetchData();
+    } catch (error) {
+      console.error("Error updating level:", error);
+      toast.error("שגיאה בעדכון רמת אישור");
     }
   };
 
@@ -553,30 +664,14 @@ export const ApprovalChainManager = () => {
                     </div>
 
                     {chain.levels && chain.levels.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {chain.levels.map((level, index) => (
-                          <div
+                          <LevelItem
                             key={level.id}
-                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                                {level.level_order}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {levelTypeIcons[level.level_type]}
-                                <span className="text-sm">{levelTypeLabels[level.level_type]}</span>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => removeLevelFromChain(level.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                            level={level}
+                            onRemove={() => removeLevelFromChain(level.id)}
+                            onUpdate={(updates) => updateLevel(level.id, updates)}
+                          />
                         ))}
                       </div>
                     ) : (
