@@ -1864,6 +1864,10 @@ export type Database = {
         Returns: boolean
       }
       is_manager_of: { Args: { target_user_id: string }; Returns: boolean }
+      is_travel_request_approver: {
+        Args: { _travel_request_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_user_a_manager: { Args: { target_user_id: string }; Returns: boolean }
       same_organization: { Args: { _a: string; _b: string }; Returns: boolean }
     }
