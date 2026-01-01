@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Check } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Bell, Check, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -42,7 +42,6 @@ export const NotificationBell = () => {
   const [swipeState, setSwipeState] = useState<SwipeState | null>(null);
   const navigate = useNavigate();
 
-  // Play notification sound
   const playNotificationSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -65,7 +64,6 @@ export const NotificationBell = () => {
     }
   };
 
-  // Trigger shake animation
   const triggerShakeAnimation = () => {
     setIsShaking(true);
     playNotificationSound();
@@ -129,6 +127,21 @@ export const NotificationBell = () => {
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
+  const deleteNotification = async (notificationId: string) => {
+    const notification = notifications.find(n => n.id === notificationId);
+    
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId);
+
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    
+    if (notification && !notification.is_read) {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    }
+  };
+
   const markAllAsRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -166,10 +179,8 @@ export const NotificationBell = () => {
     }
   };
 
-  // Swipe handlers
-  const handleTouchStart = useCallback((e: React.TouchEvent, notificationId: string, isRead: boolean) => {
-    if (isRead) return;
-    
+  // Swipe handlers - bidirectional
+  const handleTouchStart = useCallback((e: React.TouchEvent, notificationId: string) => {
     setSwipeState({
       id: notificationId,
       startX: e.touches[0].clientX,
@@ -182,35 +193,41 @@ export const NotificationBell = () => {
     if (!swipeState) return;
     
     const currentX = e.touches[0].clientX;
-    const diff = currentX - swipeState.startX;
+    const diff = Math.abs(currentX - swipeState.startX);
     
-    // Only allow right swipe (positive diff) in RTL
-    if (diff < 0) {
-      setSwipeState({
-        ...swipeState,
-        currentX,
-        isSwiping: Math.abs(diff) > 10,
-      });
-    }
+    setSwipeState({
+      ...swipeState,
+      currentX,
+      isSwiping: diff > 10,
+    });
   }, [swipeState]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((notification: Notification) => {
     if (!swipeState) return;
     
-    const diff = swipeState.startX - swipeState.currentX;
+    const diff = swipeState.currentX - swipeState.startX;
     
-    if (diff > SWIPE_THRESHOLD) {
-      // Swipe threshold reached - mark as read
+    // In RTL: negative diff = swipe left (mark as read), positive diff = swipe right (delete)
+    if (diff < -SWIPE_THRESHOLD && !notification.is_read) {
       markAsRead(swipeState.id);
+    } else if (diff > SWIPE_THRESHOLD) {
+      deleteNotification(swipeState.id);
     }
     
     setSwipeState(null);
   }, [swipeState]);
 
-  const getSwipeOffset = (notificationId: string): number => {
-    if (!swipeState || swipeState.id !== notificationId) return 0;
-    const diff = swipeState.startX - swipeState.currentX;
-    return Math.max(0, Math.min(diff, 100));
+  const getSwipeOffset = (notificationId: string): { left: number; right: number } => {
+    if (!swipeState || swipeState.id !== notificationId) return { left: 0, right: 0 };
+    const diff = swipeState.currentX - swipeState.startX;
+    
+    if (diff < 0) {
+      // Swipe left (mark as read)
+      return { left: Math.min(Math.abs(diff), 100), right: 0 };
+    } else {
+      // Swipe right (delete)
+      return { left: 0, right: Math.min(diff, 100) };
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -299,23 +316,39 @@ export const NotificationBell = () => {
               {notifications.map((notification) => {
                 const swipeOffset = getSwipeOffset(notification.id);
                 const isSwipingThis = swipeState?.id === notification.id && swipeState.isSwiping;
+                const translateX = swipeOffset.right > 0 ? swipeOffset.right : -swipeOffset.left;
                 
                 return (
                   <div
                     key={notification.id}
                     className="relative overflow-hidden"
                   >
-                    {/* Swipe background indicator */}
-                    {!notification.is_read && (
+                    {/* Left swipe background - Mark as read (green) */}
+                    {!notification.is_read && swipeOffset.left > 0 && (
                       <div 
                         className={cn(
                           "absolute inset-y-0 left-0 flex items-center justify-center bg-green-500 transition-all",
-                          swipeOffset > SWIPE_THRESHOLD ? "bg-green-600" : ""
+                          swipeOffset.left > SWIPE_THRESHOLD ? "bg-green-600" : ""
                         )}
-                        style={{ width: `${swipeOffset}px` }}
+                        style={{ width: `${swipeOffset.left}px` }}
                       >
-                        {swipeOffset > 30 && (
+                        {swipeOffset.left > 30 && (
                           <Check className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Right swipe background - Delete (red) */}
+                    {swipeOffset.right > 0 && (
+                      <div 
+                        className={cn(
+                          "absolute inset-y-0 right-0 flex items-center justify-center bg-red-500 transition-all",
+                          swipeOffset.right > SWIPE_THRESHOLD ? "bg-red-600" : ""
+                        )}
+                        style={{ width: `${swipeOffset.right}px` }}
+                      >
+                        {swipeOffset.right > 30 && (
+                          <Trash2 className="h-5 w-5 text-white" />
                         )}
                       </div>
                     )}
@@ -327,13 +360,13 @@ export const NotificationBell = () => {
                         !notification.is_read ? "bg-primary/5" : ""
                       )}
                       style={{
-                        transform: `translateX(-${swipeOffset}px)`,
+                        transform: `translateX(${translateX}px)`,
                         transition: isSwipingThis ? 'none' : 'transform 0.2s ease-out'
                       }}
-                      onClick={() => handleNotificationClick(notification)}
-                      onTouchStart={(e) => handleTouchStart(e, notification.id, notification.is_read)}
+                      onClick={() => !swipeState?.isSwiping && handleNotificationClick(notification)}
+                      onTouchStart={(e) => handleTouchStart(e, notification.id)}
                       onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
+                      onTouchEnd={() => handleTouchEnd(notification)}
                     >
                       <div className="flex items-start gap-2">
                         {!notification.is_read && (
@@ -361,13 +394,6 @@ export const NotificationBell = () => {
                           </p>
                         </div>
                       </div>
-                      
-                      {/* Swipe hint for unread notifications */}
-                      {!notification.is_read && !isSwipingThis && (
-                        <div className="absolute left-1 top-1/2 -translate-y-1/2 text-xs text-muted-foreground opacity-40 pointer-events-none md:hidden">
-                          ←
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
@@ -377,11 +403,9 @@ export const NotificationBell = () => {
         </ScrollArea>
         
         {/* Mobile hint */}
-        {unreadCount > 0 && (
-          <div className="p-2 border-t text-center text-xs text-muted-foreground md:hidden">
-            החלק שמאלה לסימון כנקרא
-          </div>
-        )}
+        <div className="p-2 border-t text-center text-xs text-muted-foreground md:hidden">
+          החלק שמאלה לסימון כנקרא • החלק ימינה למחיקה
+        </div>
       </PopoverContent>
     </Popover>
   );
