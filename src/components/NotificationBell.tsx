@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, Trash2 } from "lucide-react";
+import { Bell, Check, Trash2, Plane, Calendar, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -14,6 +14,14 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+interface TravelRequestPreview {
+  destination_city: string;
+  destination_country: string;
+  start_date: string;
+  end_date: string;
+  estimated_total_ils: number | null;
+}
+
 interface Notification {
   id: string;
   type: string;
@@ -23,6 +31,7 @@ interface Notification {
   travel_request_id: string | null;
   is_read: boolean;
   created_at: string;
+  travel_request?: TravelRequestPreview | null;
 }
 
 interface SwipeState {
@@ -82,8 +91,40 @@ export const NotificationBell = () => {
       .limit(20);
 
     if (!error && data) {
-      setNotifications(data);
-      setUnreadCount(data.filter((n) => !n.is_read).length);
+      // Fetch travel request details for notifications that have travel_request_id
+      const travelRequestIds = data
+        .filter(n => n.travel_request_id)
+        .map(n => n.travel_request_id);
+      
+      let travelRequests: Record<string, TravelRequestPreview> = {};
+      
+      if (travelRequestIds.length > 0) {
+        const { data: travelData } = await supabase
+          .from("travel_requests")
+          .select("id, destination_city, destination_country, start_date, end_date, estimated_total_ils")
+          .in("id", travelRequestIds);
+        
+        if (travelData) {
+          travelRequests = travelData.reduce((acc, tr) => {
+            acc[tr.id] = {
+              destination_city: tr.destination_city,
+              destination_country: tr.destination_country,
+              start_date: tr.start_date,
+              end_date: tr.end_date,
+              estimated_total_ils: tr.estimated_total_ils,
+            };
+            return acc;
+          }, {} as Record<string, TravelRequestPreview>);
+        }
+      }
+      
+      const enrichedNotifications = data.map(n => ({
+        ...n,
+        travel_request: n.travel_request_id ? travelRequests[n.travel_request_id] || null : null,
+      }));
+      
+      setNotifications(enrichedNotifications);
+      setUnreadCount(enrichedNotifications.filter((n) => !n.is_read).length);
     }
   };
 
@@ -387,6 +428,31 @@ export const NotificationBell = () => {
                           <p className="text-xs text-muted-foreground line-clamp-2">
                             {notification.message}
                           </p>
+                          
+                          {/* Travel Request Preview */}
+                          {notification.travel_request && (
+                            <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs space-y-1">
+                              <div className="flex items-center gap-1.5 text-foreground">
+                                <Plane className="h-3 w-3 text-primary" />
+                                <span className="font-medium">
+                                  {notification.travel_request.destination_city}, {notification.travel_request.destination_country}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  {format(new Date(notification.travel_request.start_date), "d MMM", { locale: he })} - {format(new Date(notification.travel_request.end_date), "d MMM yyyy", { locale: he })}
+                                </span>
+                              </div>
+                              {notification.travel_request.estimated_total_ils && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <DollarSign className="h-3 w-3" />
+                                  <span>תקציב: ₪{notification.travel_request.estimated_total_ils.toLocaleString()}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           <p className="text-xs text-muted-foreground mt-1">
                             {format(new Date(notification.created_at), "dd/MM/yyyy HH:mm", {
                               locale: he,
