@@ -84,6 +84,28 @@ export default function TravelRequestsList() {
     if (!requestToDelete) return;
     
     try {
+      // Delete related records first
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('travel_request_id', requestToDelete);
+      
+      await supabase
+        .from('travel_request_approvals')
+        .delete()
+        .eq('travel_request_id', requestToDelete);
+      
+      await supabase
+        .from('travel_request_violations')
+        .delete()
+        .eq('travel_request_id', requestToDelete);
+      
+      await supabase
+        .from('travel_request_attachments')
+        .delete()
+        .eq('travel_request_id', requestToDelete);
+
+      // Now delete the travel request
       const { error } = await supabase
         .from('travel_requests')
         .delete()
