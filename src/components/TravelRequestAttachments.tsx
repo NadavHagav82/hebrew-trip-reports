@@ -51,8 +51,67 @@ export default function TravelRequestAttachments({
   const [newLinkNotes, setNewLinkNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('flights');
   const [isDragging, setIsDragging] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
-  const processFiles = (files: FileList | File[]) => {
+  // Compress image using Canvas API
+  const compressImage = async (file: File, maxWidth = 1920, quality = 0.8): Promise<File> => {
+    return new Promise((resolve) => {
+      // Only compress images
+      if (!file.type.startsWith('image/')) {
+        resolve(file);
+        return;
+      }
+
+      const img = new window.Image();
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        // Create canvas and draw resized image
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to blob
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) {
+              // If compression didn't help, use original
+              resolve(file);
+              return;
+            }
+            
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            
+            console.log(`Compressed ${file.name}: ${(file.size / 1024).toFixed(1)}KB → ${(compressedFile.size / 1024).toFixed(1)}KB`);
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const processFiles = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
       const maxSize = 10 * 1024 * 1024; // 10MB
@@ -69,8 +128,36 @@ export default function TravelRequestAttachments({
     });
     
     if (validFiles.length > 0) {
-      setPendingFiles(prev => [...prev, ...validFiles]);
-      toast.success(`${validFiles.length} קבצים נוספו`);
+      // Check if there are images to compress
+      const hasImages = validFiles.some(f => f.type.startsWith('image/'));
+      
+      if (hasImages) {
+        setCompressing(true);
+        toast.info('דוחס תמונות...');
+        
+        try {
+          const processedFiles = await Promise.all(
+            validFiles.map(file => compressImage(file))
+          );
+          setPendingFiles(prev => [...prev, ...processedFiles]);
+          
+          // Calculate savings
+          const originalSize = validFiles.reduce((sum, f) => sum + f.size, 0);
+          const compressedSize = processedFiles.reduce((sum, f) => sum + f.size, 0);
+          const savedPercent = Math.round((1 - compressedSize / originalSize) * 100);
+          
+          if (savedPercent > 5) {
+            toast.success(`${validFiles.length} קבצים נוספו (נחסכו ${savedPercent}%)`);
+          } else {
+            toast.success(`${validFiles.length} קבצים נוספו`);
+          }
+        } finally {
+          setCompressing(false);
+        }
+      } else {
+        setPendingFiles(prev => [...prev, ...validFiles]);
+        toast.success(`${validFiles.length} קבצים נוספו`);
+      }
     }
   };
 
