@@ -26,6 +26,7 @@ interface TravelRequestAttachmentsProps {
   travelRequestId: string | null;
   readOnly?: boolean;
   onAttachmentsChange?: (attachments: Attachment[]) => void;
+  onRequestSaveDraft?: () => Promise<string | null>;
 }
 
 type PendingFileItem = {
@@ -43,7 +44,8 @@ const CATEGORIES = [
 export default function TravelRequestAttachments({ 
   travelRequestId, 
   readOnly = false,
-  onAttachmentsChange 
+  onAttachmentsChange,
+  onRequestSaveDraft
 }: TravelRequestAttachmentsProps) {
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -131,44 +133,58 @@ export default function TravelRequestAttachments({
       }
       return true;
     });
-    
-    if (validFiles.length > 0) {
-      // Check if there are images to compress
-      const hasImages = validFiles.some(f => f.type.startsWith('image/'));
-      
-      if (hasImages) {
-        setCompressing(true);
-        toast.info('דוחס תמונות...');
-        
-        try {
-          const processedFiles = await Promise.all(
-            validFiles.map(file => compressImage(file))
-          );
-          setPendingFiles(prev => [
-            ...prev,
-            ...processedFiles.map((file) => ({ file, category: selectedCategory }))
-          ]);
-          
-          // Calculate savings
-          const originalSize = validFiles.reduce((sum, f) => sum + f.size, 0);
-          const compressedSize = processedFiles.reduce((sum, f) => sum + f.size, 0);
-          const savedPercent = Math.round((1 - compressedSize / originalSize) * 100);
-          
-          if (savedPercent > 5) {
-            toast.success(`${validFiles.length} קבצים נוספו (נחסכו ${savedPercent}%)`);
-          } else {
-            toast.success(`${validFiles.length} קבצים נוספו`);
-          }
-        } finally {
-          setCompressing(false);
+
+    if (validFiles.length === 0) return;
+
+    // Check if there are images to compress
+    const hasImages = validFiles.some(f => f.type.startsWith('image/'));
+    let processedFiles: File[] = validFiles;
+
+    if (hasImages) {
+      setCompressing(true);
+      toast.info('דוחס תמונות...');
+
+      try {
+        processedFiles = await Promise.all(validFiles.map(file => compressImage(file)));
+
+        // Calculate savings
+        const originalSize = validFiles.reduce((sum, f) => sum + f.size, 0);
+        const compressedSize = processedFiles.reduce((sum, f) => sum + f.size, 0);
+        const savedPercent = Math.round((1 - compressedSize / originalSize) * 100);
+
+        if (savedPercent > 5) {
+          toast.success(`${validFiles.length} קבצים נוספו (נחסכו ${savedPercent}%)`);
+        } else {
+          toast.success(`${validFiles.length} קבצים נוספו`);
         }
-      } else {
-        setPendingFiles(prev => [
-          ...prev,
-          ...validFiles.map((file) => ({ file, category: selectedCategory }))
-        ]);
-        toast.success(`${validFiles.length} קבצים נוספו`);
+      } finally {
+        setCompressing(false);
       }
+    } else {
+      toast.success(`${validFiles.length} קבצים נוספו`);
+    }
+
+    const items: PendingFileItem[] = processedFiles.map((file) => ({ file, category: selectedCategory }));
+
+    // Auto-upload if travelRequestId exists
+    if (travelRequestId && user) {
+      setUploading(true);
+      try {
+        for (const item of items) {
+          setUploadProgress({ fileName: item.file.name, progress: 0, total: items.length, current: items.indexOf(item) + 1 });
+          const attachmentData = await uploadSingleFile(item, travelRequestId);
+          if (attachmentData) {
+            setAttachments((prev) => [attachmentData, ...prev]);
+            toast.success(`הצרופה ${item.file.name} נשמרה`);
+          }
+        }
+      } finally {
+        setUploading(false);
+        setUploadProgress(null);
+      }
+    } else {
+      // No travelRequestId – keep them pending
+      setPendingFiles((prev) => [...prev, ...items]);
     }
   };
 
@@ -268,6 +284,71 @@ export default function TravelRequestAttachments({
     setPendingLinks(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Uploads single file immediately (uses current or provided requestId)
+  const uploadSingleFile = async (item: PendingFileItem, requestId: string) => {
+    if (!user) return null;
+
+    const file = item.file;
+    const fileExt = file.name.split('.').pop();
+    const storagePath = `${user.id}/${requestId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const uploadResult = await new Promise<{ error: Error | null }>((resolve) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress({ fileName: file.name, progress: percentComplete, total: 1, current: 1 });
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve({ error: null });
+        else resolve({ error: new Error(`Upload failed with status ${xhr.status}`) });
+      });
+
+      xhr.addEventListener('error', () => resolve({ error: new Error('Upload failed') }));
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${storagePath}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.send(file);
+    });
+
+    if (uploadResult.error) {
+      console.error('Upload error:', uploadResult.error);
+      toast.error(`שגיאה בהעלאת ${file.name}`);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage.from('travel-attachments').getPublicUrl(storagePath);
+
+    const { data: attachmentData, error: insertError } = await supabase
+      .from('travel_request_attachments')
+      .insert({
+        travel_request_id: requestId,
+        uploaded_by: user.id,
+        file_name: file.name,
+        file_url: urlData.publicUrl,
+        file_type: file.type,
+        file_size: file.size,
+        category: item.category,
+      })
+      .select()
+      .single();
+
+    if (insertError || !attachmentData) {
+      console.error('Insert error:', insertError);
+      toast.error('שגיאה בשמירת הצרופה');
+      return null;
+    }
+
+    return attachmentData;
+  };
+
   const savePendingFile = async (index: number) => {
     if (!user) return;
     if (!travelRequestId) {
@@ -282,67 +363,13 @@ export default function TravelRequestAttachments({
     setUploadProgress({ fileName: item.file.name, progress: 0, total: 1, current: 1 });
 
     try {
-      const file = item.file;
-      const fileExt = file.name.split('.').pop();
-      const storagePath = `${user.id}/${travelRequestId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const attachmentData = await uploadSingleFile(item, travelRequestId);
 
-      const uploadResult = await new Promise<{ error: Error | null }>((resolve) => {
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 100);
-            setUploadProgress({ fileName: file.name, progress: percentComplete, total: 1, current: 1 });
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve({ error: null });
-          else resolve({ error: new Error(`Upload failed with status ${xhr.status}`) });
-        });
-
-        xhr.addEventListener('error', () => resolve({ error: new Error('Upload failed') }));
-
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-        xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${storagePath}`);
-        xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
-        xhr.setRequestHeader('x-upsert', 'true');
-        xhr.send(file);
-      });
-
-      if (uploadResult.error) {
-        console.error('Upload error:', uploadResult.error);
-        toast.error(`שגיאה בהעלאת ${file.name}`);
-        return;
+      if (attachmentData) {
+        setAttachments((prev) => [attachmentData, ...prev]);
+        setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+        toast.success('הצרופה נשמרה');
       }
-
-      const { data: urlData } = supabase.storage.from('travel-attachments').getPublicUrl(storagePath);
-
-      const { data: attachmentData, error: insertError } = await supabase
-        .from('travel_request_attachments')
-        .insert({
-          travel_request_id: travelRequestId,
-          uploaded_by: user.id,
-          file_name: file.name,
-          file_url: urlData.publicUrl,
-          file_type: file.type,
-          file_size: file.size,
-          category: item.category,
-        })
-        .select()
-        .single();
-
-      if (insertError || !attachmentData) {
-        console.error('Insert error:', insertError);
-        toast.error('שגיאה בשמירת הצרופה');
-        return;
-      }
-
-      setAttachments((prev) => [attachmentData, ...prev]);
-      setPendingFiles((prev) => prev.filter((_, i) => i !== index));
-      toast.success('הצרופה נשמרה');
     } catch (error) {
       console.error('savePendingFile error:', error);
       toast.error('שגיאה בשמירת הצרופה');
@@ -734,21 +761,39 @@ export default function TravelRequestAttachments({
             {/* Pending Files - Show with clear visual feedback */}
             {pendingFiles.length > 0 && (
               <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <Label className="text-sm font-medium flex items-center gap-2">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs">
                       {pendingFiles.length}
                     </span>
                     קבצים ממתינים לשמירה
                   </Label>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setPendingFiles([])}
-                    className="text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    נקה הכל
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {!travelRequestId && onRequestSaveDraft && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={async () => {
+                          const newId = await onRequestSaveDraft();
+                          if (newId) {
+                            toast.info('טיוטה נשמרה – מעלה צרופות...');
+                          }
+                        }}
+                        className="text-xs"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        שמור טיוטה והעלה
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setPendingFiles([])}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      נקה הכל
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {pendingFiles.map((item, index) => {
@@ -791,15 +836,21 @@ export default function TravelRequestAttachments({
                             <p className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</p>
                             <span className="text-[10px] text-muted-foreground truncate">{getCategoryLabel(item.category)}</span>
                           </div>
-                          <Button
-                            onClick={() => void savePendingFile(index)}
-                            disabled={uploading}
-                            size="sm"
-                            className="w-full h-7 text-xs"
-                            variant="secondary"
-                          >
-                            שמור צרופה
-                          </Button>
+                          {travelRequestId ? (
+                            <Button
+                              onClick={() => void savePendingFile(index)}
+                              disabled={uploading}
+                              size="sm"
+                              className="w-full h-7 text-xs"
+                              variant="secondary"
+                            >
+                              שמור צרופה
+                            </Button>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground block text-center">
+                              שמור טיוטה כדי להעלות
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

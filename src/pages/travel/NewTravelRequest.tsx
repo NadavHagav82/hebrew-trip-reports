@@ -234,6 +234,69 @@ export default function NewTravelRequest() {
     }
   };
 
+  // Save as draft only (for attachments auto-upload) – returns requestId or null
+  const saveDraftForAttachments = async (): Promise<string | null> => {
+    if (!user || !organizationId) {
+      toast.error('שגיאה בטעינת נתונים');
+      return null;
+    }
+
+    if (!destinationCity || !destinationCountry || !startDate || !endDate || !purpose) {
+      toast.error('אנא מלא את כל השדות הנדרשים (יעד, תאריכים, מטרה) לפני שמירת טיוטה');
+      return null;
+    }
+
+    setLoading(true);
+    try {
+      if (savedRequestId) {
+        // Already have an id
+        return savedRequestId;
+      }
+
+      const { data: request, error: requestError } = await supabase
+        .from('travel_requests')
+        .insert({
+          organization_id: organizationId,
+          requested_by: user.id,
+          destination_city: destinationCity,
+          destination_country: destinationCountry,
+          start_date: startDate,
+          end_date: endDate,
+          nights: nights,
+          days: days,
+          purpose: purpose,
+          purpose_details: purposeDetails,
+          estimated_flights: estimatedFlights,
+          estimated_flights_currency: flightsCurrency as any,
+          estimated_accommodation_per_night: accommodationPerNight,
+          estimated_accommodation_currency: accommodationCurrency as any,
+          estimated_meals_per_day: mealsPerDay,
+          estimated_meals_currency: mealsCurrency as any,
+          estimated_transport: estimatedTransport,
+          estimated_transport_currency: transportCurrency as any,
+          estimated_other: estimatedOther,
+          estimated_other_currency: otherCurrency as any,
+          estimated_total_ils: estimatedTotal,
+          employee_notes: employeeNotes,
+          status: 'draft',
+        })
+        .select()
+        .single();
+
+      if (requestError) throw requestError;
+
+      setSavedRequestId(request.id);
+      toast.success('טיוטה נשמרה');
+      return request.id;
+    } catch (error) {
+      console.error('Error saving draft for attachments:', error);
+      toast.error('שגיאה בשמירת טיוטה');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async (submit: boolean = false) => {
     if (!user || !organizationId) {
       toast.error('שגיאה בטעינת נתונים');
@@ -745,6 +808,7 @@ export default function NewTravelRequest() {
         <TravelRequestAttachments 
           travelRequestId={savedRequestId} 
           readOnly={false}
+          onRequestSaveDraft={saveDraftForAttachments}
         />
 
         {/* Employee Notes */}
