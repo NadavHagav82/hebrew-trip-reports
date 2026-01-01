@@ -483,7 +483,19 @@ export default function PendingTravelApprovals() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              // If the page was opened directly (e.g. from a notification/new tab), history might be empty.
+              // In that case, navigate to a safe fallback.
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/dashboard');
+              }
+            }}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
