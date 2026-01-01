@@ -48,6 +48,57 @@ export default function TravelRequestAttachments({
   const [newLinkCategory, setNewLinkCategory] = useState('flights');
   const [newLinkNotes, setNewLinkNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('flights');
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const validFiles = fileArray.filter(file => {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        toast.error(`הקובץ ${file.name} גדול מדי (מקסימום 10MB)`);
+        return false;
+      }
+      const validTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats', 'application/vnd.ms-excel'];
+      if (!validTypes.some(type => file.type.startsWith(type))) {
+        toast.error(`סוג הקובץ ${file.name} אינו נתמך`);
+        return false;
+      }
+      return true;
+    });
+    
+    if (validFiles.length > 0) {
+      setPendingFiles(prev => [...prev, ...validFiles]);
+      toast.success(`${validFiles.length} קבצים נוספו`);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFiles(files);
+    }
+  };
 
   useEffect(() => {
     if (travelRequestId) {
@@ -81,17 +132,7 @@ export default function TravelRequestAttachments({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
-    const newFiles = Array.from(files).filter(file => {
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        toast.error(`הקובץ ${file.name} גדול מדי (מקסימום 10MB)`);
-        return false;
-      }
-      return true;
-    });
-
-    setPendingFiles(prev => [...prev, ...newFiles]);
+    processFiles(files);
     e.target.value = '';
   };
 
@@ -271,7 +312,7 @@ export default function TravelRequestAttachments({
       <CardContent className="space-y-4">
         {!readOnly && (
           <>
-            {/* File Upload */}
+            {/* File Upload with Drag & Drop */}
             <div className="space-y-2">
               <Label>העלאת קבצים (תמונות, PDF, מסמכים)</Label>
               <div className="flex gap-2">
@@ -287,10 +328,27 @@ export default function TravelRequestAttachments({
                     ))}
                   </SelectContent>
                 </Select>
-                <label className="flex-1">
-                  <div className="flex items-center gap-2 px-4 py-2 border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">לחץ לבחירת קבצים</span>
+                <label 
+                  className="flex-1"
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <div className={`flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-md cursor-pointer transition-all ${
+                    isDragging 
+                      ? 'border-primary bg-primary/10 scale-[1.02]' 
+                      : 'hover:border-primary hover:bg-muted/50'
+                  }`}>
+                    <Upload className={`h-8 w-8 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className="text-center">
+                      <span className={`text-sm font-medium ${isDragging ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {isDragging ? 'שחרר לכאן...' : 'גרור קבצים לכאן'}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        או לחץ לבחירת קבצים
+                      </p>
+                    </div>
                   </div>
                   <input
                     type="file"
