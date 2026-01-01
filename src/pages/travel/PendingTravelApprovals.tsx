@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Plane, Hotel, Utensils, Car, Calendar, MapPin, User, AlertTriangle, CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
+import { ArrowLeft, Plane, Hotel, Utensils, Car, Calendar, MapPin, User, AlertTriangle, CheckCircle, XCircle, Clock, FileText, History } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -487,19 +487,29 @@ export default function PendingTravelApprovals() {
     <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>חזרה לדשבורד</span>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">בקשות נסיעה ממתינות לאישור</h1>
+              <p className="text-muted-foreground">בקשות שמחכות להחלטתך</p>
+            </div>
+          </div>
           <Button
-            variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            variant="outline"
+            onClick={() => navigate('/travel/my-approval-history')}
             className="gap-2"
           >
-            <ArrowLeft className="h-5 w-5" />
-            <span>חזרה לדשבורד</span>
+            <History className="h-4 w-4" />
+            היסטוריית אישורים
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">בקשות נסיעה ממתינות לאישור</h1>
-            <p className="text-muted-foreground">בקשות שמחכות להחלטתך</p>
-          </div>
         </div>
 
         {/* Content */}
