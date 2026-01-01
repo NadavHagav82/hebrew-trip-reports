@@ -57,6 +57,7 @@ export const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [swipeState, setSwipeState] = useState<SwipeState | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   const playNotificationSound = () => {
@@ -205,12 +206,23 @@ export const NotificationBell = () => {
   const deleteNotification = async (notificationId: string) => {
     const notification = notifications.find(n => n.id === notificationId);
     
+    // Start exit animation
+    setDeletingIds(prev => new Set(prev).add(notificationId));
+    
+    // Wait for animation to complete
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     await supabase
       .from("notifications")
       .delete()
       .eq("id", notificationId);
 
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    setDeletingIds(prev => {
+      const next = new Set(prev);
+      next.delete(notificationId);
+      return next;
+    });
     
     if (notification && !notification.is_read) {
       setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -396,7 +408,13 @@ export const NotificationBell = () => {
                 return (
                   <div
                     key={notification.id}
-                    className="relative overflow-hidden"
+                    className={cn(
+                      "relative overflow-hidden transition-all duration-300",
+                      deletingIds.has(notification.id) && "opacity-0 translate-x-full max-h-0"
+                    )}
+                    style={{
+                      maxHeight: deletingIds.has(notification.id) ? 0 : 500,
+                    }}
                   >
                     {/* Left swipe background - Mark as read (green) */}
                     {!notification.is_read && swipeOffset.left > 0 && (
