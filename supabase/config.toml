@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.notify-travel-decision]
 verify_jwt = true
+
+[functions.notify-approval-skipped]
+verify_jwt = true

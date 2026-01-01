@@ -115,6 +115,7 @@ export type Database = {
           can_skip_if_approved_amount_under: number | null
           chain_id: string
           created_at: string
+          custom_message: string | null
           id: string
           is_required: boolean
           level_order: number
@@ -125,6 +126,7 @@ export type Database = {
           can_skip_if_approved_amount_under?: number | null
           chain_id: string
           created_at?: string
+          custom_message?: string | null
           id?: string
           is_required?: boolean
           level_order?: number
@@ -135,6 +137,7 @@ export type Database = {
           can_skip_if_approved_amount_under?: number | null
           chain_id?: string
           created_at?: string
+          custom_message?: string | null
           id?: string
           is_required?: boolean
           level_order?: number
