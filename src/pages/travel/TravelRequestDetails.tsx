@@ -79,6 +79,7 @@ interface Approval {
   };
   levelType?: string;
   wasSkipped?: boolean;
+  custom_message?: string | null;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: any }> = {
@@ -159,13 +160,23 @@ export default function TravelRequestDetails() {
           .from('profiles')
           .select('id, full_name')
           .in('id', approverIds);
+
+        // Fetch custom messages from approval chain levels
+        const { data: chainLevels } = await supabase
+          .from('approval_chain_levels')
+          .select('level_order, custom_message')
+          .not('custom_message', 'is', null);
         
-        const approvalsWithNames = approvalsData.map(a => ({
-          ...a,
-          approver: profiles?.find(p => p.id === a.approver_id)
-        }));
+        const approvalsWithDetails = approvalsData.map(a => {
+          const chainLevel = chainLevels?.find(cl => cl.level_order === a.approval_level);
+          return {
+            ...a,
+            approver: profiles?.find(p => p.id === a.approver_id),
+            custom_message: chainLevel?.custom_message || null
+          };
+        });
         
-        setApprovals(approvalsWithNames);
+        setApprovals(approvalsWithDetails);
         
         // Set pending approver for display
         const pendingApproval = approvalsData.find(a => a.status === 'pending');
@@ -696,6 +707,12 @@ export default function TravelRequestDetails() {
                           <div className="text-sm mt-2 p-3 bg-muted rounded-lg">
                             <p className="text-xs text-muted-foreground mb-1">הערות:</p>
                             <p>{approval.comments}</p>
+                          </div>
+                        )}
+                        {approval.custom_message && (
+                          <div className="text-sm mt-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                            <p className="text-xs text-primary font-medium mb-1">הודעה מותאמת לרמה זו:</p>
+                            <p className="text-foreground">{approval.custom_message}</p>
                           </div>
                         )}
                       </div>
