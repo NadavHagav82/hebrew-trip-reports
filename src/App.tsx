@@ -110,6 +110,7 @@ const App = () => (
             <Route path="/travel-requests/new" element={<NewTravelRequest />} />
             <Route path="/travel-requests/:id" element={<TravelRequestDetails />} />
             <Route path="/travel-requests/pending" element={<PendingTravelApprovals />} />
+            <Route path="/travel/pending-approvals" element={<PendingTravelApprovals />} />
             <Route path="/approved-travels" element={<ApprovedTravels />} />
             <Route path="/install" element={<InstallApp />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
