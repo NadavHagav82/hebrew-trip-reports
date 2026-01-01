@@ -307,19 +307,42 @@ export default function TravelRequestAttachments({
             {pendingFiles.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">קבצים ממתינים להעלאה:</Label>
-                <div className="space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {pendingFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      {getFileIcon(file.type)}
-                      <span className="flex-1 text-sm truncate">{file.name}</span>
-                      <span className="text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removePendingFile(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                    <div key={index} className="relative p-2 bg-muted/50 rounded-md">
+                      {file.type.startsWith('image/') ? (
+                        <div className="relative">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="w-full h-32 object-cover rounded-md"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 left-1 h-6 w-6"
+                            onClick={() => removePendingFile(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {getFileIcon(file.type)}
+                          <span className="flex-1 text-sm truncate">{file.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removePendingFile(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-muted-foreground truncate">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -397,8 +420,51 @@ export default function TravelRequestAttachments({
         {attachments.length > 0 && (
           <div className="space-y-2 pt-4 border-t">
             <Label>קבצים מצורפים:</Label>
+            
+            {/* Image Attachments Grid */}
+            {attachments.filter(a => a.file_type.startsWith('image/')).length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
+                {attachments.filter(a => a.file_type.startsWith('image/')).map(attachment => (
+                  <div key={attachment.id} className="relative group">
+                    <a
+                      href={attachment.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <img
+                        src={attachment.file_url}
+                        alt={attachment.file_name}
+                        className="w-full h-32 object-cover rounded-md border hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                    <div className="absolute top-1 right-1">
+                      <span className="text-xs bg-primary/90 text-primary-foreground px-2 py-0.5 rounded">
+                        {getCategoryLabel(attachment.category)}
+                      </span>
+                    </div>
+                    {!readOnly && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 left-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => deleteAttachment(attachment)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground truncate mt-1">{attachment.file_name}</p>
+                    {attachment.notes && (
+                      <p className="text-xs text-muted-foreground/70 truncate">{attachment.notes}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Non-image Attachments List */}
             <div className="space-y-2">
-              {attachments.map(attachment => (
+              {attachments.filter(a => !a.file_type.startsWith('image/')).map(attachment => (
                 <div
                   key={attachment.id}
                   className="flex items-center gap-2 p-3 bg-muted/30 rounded-md"
