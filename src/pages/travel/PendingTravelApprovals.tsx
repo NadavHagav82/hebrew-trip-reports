@@ -485,18 +485,11 @@ export default function PendingTravelApprovals() {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => {
-              // If the page was opened directly (e.g. from a notification/new tab), history might be empty.
-              // In that case, navigate to a safe fallback.
-              if (window.history.length > 1) {
-                navigate(-1);
-              } else {
-                navigate('/dashboard');
-              }
-            }}
+            onClick={() => navigate('/dashboard')}
+            className="gap-2"
           >
             <ArrowLeft className="h-5 w-5" />
+            <span>חזרה לדשבורד</span>
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">בקשות נסיעה ממתינות לאישור</h1>
