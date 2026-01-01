@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -68,9 +68,11 @@ interface PendingApproval {
 export default function PendingTravelApprovals() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialRequestId] = useState(() => searchParams.get('request'));
   
   // Dialog state
   const [selectedApproval, setSelectedApproval] = useState<PendingApproval | null>(null);
@@ -88,6 +90,18 @@ export default function PendingTravelApprovals() {
   useEffect(() => {
     loadPendingApprovals();
   }, [user]);
+
+  // Auto-open specific request from URL parameter
+  useEffect(() => {
+    if (initialRequestId && pendingApprovals.length > 0 && !dialogOpen) {
+      const approval = pendingApprovals.find(a => a.travel_request_id === initialRequestId);
+      if (approval) {
+        openApprovalDialog(approval);
+        // Clear the URL parameter after opening
+        setSearchParams({});
+      }
+    }
+  }, [initialRequestId, pendingApprovals]);
 
   const loadPendingApprovals = async () => {
     if (!user) return;
@@ -412,7 +426,8 @@ export default function PendingTravelApprovals() {
               user_id: requestedById,
               title: notificationTitle,
               message: notificationMessage,
-              type: decision === 'reject' ? 'travel_rejected' : 'travel_approved'
+              type: decision === 'reject' ? 'travel_rejected' : 'travel_approved',
+              travel_request_id: request.id
             });
 
           // Send email notification

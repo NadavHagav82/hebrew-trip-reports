@@ -154,6 +154,7 @@ serve(async (req) => {
       type: "travel_request_pending",
       title: "בקשת נסיעה חדשה לאישור",
       message: `${payload.requester_name} הגיש בקשה לנסיעה ל-${payload.destination}`,
+      travel_request_id: payload.travel_request_id,
     });
 
     if (notifError) {
