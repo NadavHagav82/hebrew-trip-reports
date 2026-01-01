@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 interface Attachment {
   id: string;
   file_name: string;
+  /** Stored value from DB: either storage path (preferred) or legacy URL */
   file_url: string;
   file_type: string;
   file_size: number;
@@ -21,6 +22,8 @@ interface Attachment {
   link_url: string | null;
   notes: string | null;
   uploaded_at: string;
+  /** Local-only: extracted storage path for private bucket items */
+  storage_path?: string;
 }
 
 interface TravelRequestAttachmentsProps {
@@ -64,6 +67,24 @@ export default function TravelRequestAttachments({
 
   // Get all image attachments for navigation
   const imageAttachments = attachments.filter(a => a.file_type.startsWith('image/'));
+
+  const extractStoragePath = (value: string) => {
+    // New format: value is already a path like "userId/requestId/file.ext"
+    if (!value.startsWith('http')) return value;
+
+    // Legacy public URL format includes "/travel-attachments/"
+    const parts = value.split('/travel-attachments/');
+    return parts.length > 1 ? parts[1] : null;
+  };
+
+  const createSignedUrl = async (storagePath: string) => {
+    const { data, error } = await supabase.storage
+      .from('travel-attachments')
+      .createSignedUrl(storagePath, 60 * 60 * 24); // 24h
+
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  };
 
   const openLightbox = (url: string, name: string, index: number) => {
     setLightboxImage({ url, name, index });
@@ -268,7 +289,26 @@ export default function TravelRequestAttachments({
       return;
     }
 
-    setAttachments(data || []);
+    const resolved = await Promise.all(
+      (data || []).map(async (row) => {
+        // Links are already public
+        if (row.file_type === 'link') return row as Attachment;
+
+        const storagePath = extractStoragePath(row.file_url);
+        if (!storagePath) return row as Attachment;
+
+        const signedUrl = await createSignedUrl(storagePath);
+        if (!signedUrl) return { ...(row as Attachment), storage_path: storagePath };
+
+        return {
+          ...(row as Attachment),
+          storage_path: storagePath,
+          file_url: signedUrl,
+        };
+      })
+    );
+
+    setAttachments(resolved);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,15 +398,14 @@ export default function TravelRequestAttachments({
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from('travel-attachments').getPublicUrl(storagePath);
-
     const { data: attachmentData, error: insertError } = await supabase
       .from('travel_request_attachments')
       .insert({
         travel_request_id: requestId,
         uploaded_by: user.id,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        // Store storage path in DB (bucket is private)
+        file_url: storagePath,
         file_type: file.type,
         file_size: file.size,
         category: item.category,
@@ -380,7 +419,13 @@ export default function TravelRequestAttachments({
       return null;
     }
 
-    return attachmentData;
+    const signedUrl = await createSignedUrl(storagePath);
+
+    return {
+      ...(attachmentData as Attachment),
+      storage_path: storagePath,
+      file_url: signedUrl || attachmentData.file_url,
+    };
   };
 
   const savePendingFile = async (index: number) => {
@@ -538,17 +583,14 @@ export default function TravelRequestAttachments({
           continue;
         }
 
-        const { data: urlData } = supabase.storage
-          .from('travel-attachments')
-          .getPublicUrl(fileName);
-
         const { data: attachmentData, error: insertError } = await supabase
           .from('travel_request_attachments')
           .insert({
             travel_request_id: requestId,
             uploaded_by: user.id,
             file_name: file.name,
-            file_url: urlData.publicUrl,
+            // Store storage path in DB (bucket is private)
+            file_url: fileName,
             file_type: file.type,
             file_size: file.size,
             category: item.category,
@@ -559,7 +601,12 @@ export default function TravelRequestAttachments({
         if (insertError) {
           console.error('Insert error:', insertError);
         } else if (attachmentData) {
-          uploadedAttachments.push(attachmentData);
+          const signedUrl = await createSignedUrl(fileName);
+          uploadedAttachments.push({
+            ...(attachmentData as Attachment),
+            storage_path: fileName,
+            file_url: signedUrl || attachmentData.file_url,
+          });
         }
 
         completedFiles++;
@@ -618,7 +665,7 @@ export default function TravelRequestAttachments({
   const deleteAttachment = async (attachment: Attachment) => {
     if (attachment.file_type !== 'link') {
       // Delete from storage
-      const path = attachment.file_url.split('/travel-attachments/')[1];
+      const path = attachment.storage_path || extractStoragePath(attachment.file_url);
       if (path) {
         await supabase.storage.from('travel-attachments').remove([path]);
       }
