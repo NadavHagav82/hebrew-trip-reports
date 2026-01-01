@@ -466,13 +466,21 @@ export default function TravelRequestAttachments({
               </span>
             )}
           </div>
-          {/* Save button when there are pending items and we have a requestId */}
-          {hasPendingItems && travelRequestId && !readOnly && (
-            <Button 
-              onClick={handleManualSave} 
+          {/* Save button when there are pending items */}
+          {hasPendingItems && !readOnly && (
+            <Button
+              onClick={() => {
+                if (!travelRequestId) {
+                  toast.info('כדי לשמור צרופות יש לשמור את הבקשה כטיוטה קודם');
+                  return;
+                }
+                void handleManualSave();
+              }}
               disabled={uploading}
               size="sm"
               className="gap-2"
+              variant={travelRequestId ? "default" : "outline"}
+              title={!travelRequestId ? 'שמור טיוטה כדי לאפשר שמירת צרופות' : undefined}
             >
               {uploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
