@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Plane, Hotel, Utensils, Car, AlertTriangle, CheckCircle, Send, Save } from 'lucide-react';
+import { ArrowLeft, Plane, Hotel, Utensils, Car, AlertTriangle, CheckCircle, Send, Save, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
 import TravelRequestAttachments from '@/components/TravelRequestAttachments';
@@ -32,6 +32,12 @@ interface PolicyViolation {
   overagePercentage: number;
 }
 
+interface Approver {
+  id: string;
+  full_name: string;
+  department: string;
+}
+
 const CURRENCIES = ['ILS', 'USD', 'EUR', 'GBP'];
 
 export default function NewTravelRequest() {
@@ -43,6 +49,9 @@ export default function NewTravelRequest() {
   const [loading, setLoading] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [policyRules, setPolicyRules] = useState<PolicyRule[]>([]);
+  const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [selectedApproverId, setSelectedApproverId] = useState<string>('');
+  const [defaultManagerId, setDefaultManagerId] = useState<string | null>(null);
   const [violations, setViolations] = useState<PolicyViolation[]>([]);
   
   // Form state
@@ -80,6 +89,7 @@ export default function NewTravelRequest() {
 
   useEffect(() => {
     loadOrganizationAndPolicy();
+    loadApprovers();
     if (editRequestId) {
       loadExistingRequest(editRequestId);
     }
@@ -95,15 +105,21 @@ export default function NewTravelRequest() {
     if (!user) return;
     
     try {
-      // Get user's organization
+      // Get user's organization and manager
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('organization_id, manager_id')
         .eq('id', user.id)
         .single();
       
       if (profile?.organization_id) {
         setOrganizationId(profile.organization_id);
+        
+        // Set default manager
+        if (profile.manager_id) {
+          setDefaultManagerId(profile.manager_id);
+          setSelectedApproverId(profile.manager_id);
+        }
         
         // Load policy rules
         const { data: rules } = await supabase
@@ -118,6 +134,25 @@ export default function NewTravelRequest() {
       }
     } catch (error) {
       console.error('Error loading organization:', error);
+    }
+  };
+
+  const loadApprovers = async () => {
+    if (!user) return;
+    
+    try {
+      // Load all managers in the organization
+      const { data: managers } = await supabase
+        .from('profiles')
+        .select('id, full_name, department')
+        .eq('is_manager', true)
+        .neq('id', user.id);
+      
+      if (managers) {
+        setApprovers(managers);
+      }
+    } catch (error) {
+      console.error('Error loading approvers:', error);
     }
   };
 
@@ -306,6 +341,12 @@ export default function NewTravelRequest() {
       return;
     }
 
+    // Validate approver selection when submitting
+    if (submit && !selectedApproverId) {
+      toast.error('אנא בחר מאשר לפני שליחת הבקשה');
+      return;
+    }
+
     // If there are violations without explanations when submitting
     if (submit && violations.length > 0) {
       const missingExplanations = violations.filter(v => !violationExplanations[v.category]);
@@ -416,55 +457,51 @@ export default function NewTravelRequest() {
           .insert(violationRecords);
       }
 
-      // If submitting, create approval record for manager and send notification
-      if (submit && requestId) {
+      // If submitting, create approval record for selected approver and send notification
+      if (submit && requestId && selectedApproverId) {
         const { data: userProfile } = await supabase
           .from('profiles')
-          .select('manager_id, full_name')
+          .select('full_name')
           .eq('id', user.id)
           .single();
 
-        if (userProfile?.manager_id) {
-          // Only insert approval record if it doesn't exist (for new submissions)
-          if (!editRequestId) {
-            await supabase
-              .from('travel_request_approvals')
-              .insert({
-                travel_request_id: requestId,
-                approver_id: userProfile.manager_id,
-                approval_level: 1
-              });
-          } else {
-            // For resubmissions, insert new approval record
-            await supabase
-              .from('travel_request_approvals')
-              .insert({
-                travel_request_id: requestId,
-                approver_id: userProfile.manager_id,
-                approval_level: 1
-              });
-          }
+        // Delete existing pending approvals for this request (for resubmissions)
+        if (editRequestId) {
+          await supabase
+            .from('travel_request_approvals')
+            .delete()
+            .eq('travel_request_id', requestId)
+            .eq('status', 'pending');
+        }
 
-          // Send email notification to manager
-          try {
-            await supabase.functions.invoke('notify-travel-request', {
-              body: {
-                travel_request_id: requestId,
-                approver_id: userProfile.manager_id,
-                requester_name: userProfile.full_name || 'עובד',
-                destination: `${destinationCity}, ${destinationCountry}`,
-                start_date: startDate,
-                end_date: endDate,
-                purpose: purpose,
-                estimated_total: estimatedTotal,
-                has_violations: violations.length > 0,
-                violation_count: violations.length
-              }
-            });
-          } catch (notifyError) {
-            console.error('Error sending notification:', notifyError);
-            // Don't fail the request if notification fails
-          }
+        // Insert approval record for selected approver
+        await supabase
+          .from('travel_request_approvals')
+          .insert({
+            travel_request_id: requestId,
+            approver_id: selectedApproverId,
+            approval_level: 1
+          });
+
+        // Send email notification to selected approver
+        try {
+          await supabase.functions.invoke('notify-travel-request', {
+            body: {
+              travel_request_id: requestId,
+              approver_id: selectedApproverId,
+              requester_name: userProfile?.full_name || 'עובד',
+              destination: `${destinationCity}, ${destinationCountry}`,
+              start_date: startDate,
+              end_date: endDate,
+              purpose: purpose,
+              estimated_total: estimatedTotal,
+              has_violations: violations.length > 0,
+              violation_count: violations.length
+            }
+          });
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError);
+          // Don't fail the request if notification fails
         }
       }
 
@@ -816,6 +853,57 @@ export default function NewTravelRequest() {
               value={employeeNotes}
               onChange={(e) => setEmployeeNotes(e.target.value)}
             />
+          </CardContent>
+        </Card>
+
+        {/* Approver Selection */}
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              בחירת מאשר
+            </CardTitle>
+            <CardDescription>
+              בחר למי לשלוח את הבקשה לאישור
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="approver">מאשר הבקשה *</Label>
+              <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
+                <SelectTrigger id="approver" className={!selectedApproverId ? "border-destructive" : ""}>
+                  <SelectValue placeholder="בחר מאשר..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {approvers.map((approver) => (
+                    <SelectItem key={approver.id} value={approver.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{approver.full_name}</span>
+                        {approver.department && (
+                          <span className="text-muted-foreground text-sm">({approver.department})</span>
+                        )}
+                        {approver.id === defaultManagerId && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            מנהל ישיר
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedApproverId && (
+                <p className="text-sm text-destructive">יש לבחור מאשר לפני שליחת הבקשה</p>
+              )}
+            </div>
+            {selectedApproverId && (
+              <Alert className="bg-primary/5 border-primary/20">
+                <UserCheck className="h-4 w-4" />
+                <AlertDescription>
+                  הבקשה תישלח ל: <strong>{approvers.find(a => a.id === selectedApproverId)?.full_name}</strong>
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
 
