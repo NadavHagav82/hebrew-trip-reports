@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Paperclip, Link2, Trash2, FileText, Image, ExternalLink, Upload, X, Loader2 } from 'lucide-react';
+import { Paperclip, Link2, Trash2, FileText, Image, ExternalLink, Upload, X, Loader2, Save, Plus, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Attachment {
@@ -445,19 +445,54 @@ export default function TravelRequestAttachments({
   (window as any).uploadTravelAttachments = uploadAllAttachments;
 
   const hasPendingItems = pendingFiles.length > 0 || pendingLinks.length > 0;
+  const totalPendingCount = pendingFiles.length + pendingLinks.length;
+
+  // Manual save function for when travelRequestId exists
+  const handleManualSave = async () => {
+    if (!travelRequestId || !hasPendingItems) return;
+    await uploadAllAttachments(travelRequestId);
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Paperclip className="h-5 w-5" />
-          צרופות ומסמכים
+    <Card className="border-2">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Paperclip className="h-5 w-5 text-primary" />
+            <span>צרופות ומסמכים</span>
+            {(attachments.length > 0 || hasPendingItems) && (
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {attachments.length + totalPendingCount}
+              </span>
+            )}
+          </div>
+          {/* Save button when there are pending items and we have a requestId */}
+          {hasPendingItems && travelRequestId && !readOnly && (
+            <Button 
+              onClick={handleManualSave} 
+              disabled={uploading}
+              size="sm"
+              className="gap-2"
+            >
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              שמור צרופות ({totalPendingCount})
+            </Button>
+          )}
         </CardTitle>
+        {!readOnly && (
+          <p className="text-xs text-muted-foreground">
+            הוסף קבצים, תמונות וקישורים לתמיכה בבקשה שלך
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Upload Progress Overlay */}
+        {/* Upload Progress */}
         {uploading && uploadProgress && (
-          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-pulse">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
               <span className="text-sm font-medium">
@@ -474,14 +509,28 @@ export default function TravelRequestAttachments({
           </div>
         )}
 
+        {/* Compressing indicator */}
+        {compressing && (
+          <div className="p-3 bg-muted/50 rounded-lg flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm">דוחס תמונות...</span>
+          </div>
+        )}
+
         {!readOnly && !uploading && (
           <>
-            {/* File Upload with Drag & Drop */}
-            <div className="space-y-2">
-              <Label>העלאת קבצים (תמונות, PDF, מסמכים)</Label>
-              <div className="flex gap-2">
+            {/* Upload Section Header */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Plus className="h-4 w-4 text-primary" />
+                <span>הוסף קבצים</span>
+              </div>
+              
+              {/* Category Selection */}
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap">קטגוריה:</Label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -492,78 +541,97 @@ export default function TravelRequestAttachments({
                     ))}
                   </SelectContent>
                 </Select>
-                <label 
-                  className="flex-1"
-                  onDragEnter={handleDragEnter}
-                  onDragLeave={handleDragLeave}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                >
-                  <div className={`flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-md cursor-pointer transition-all ${
-                    isDragging 
-                      ? 'border-primary bg-primary/10 scale-[1.02]' 
-                      : 'hover:border-primary hover:bg-muted/50'
-                  }`}>
-                    <Upload className={`h-8 w-8 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <div className="text-center">
-                      <span className={`text-sm font-medium ${isDragging ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {isDragging ? 'שחרר לכאן...' : 'גרור קבצים לכאן'}
-                      </span>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        או לחץ לבחירת קבצים
-                      </p>
-                    </div>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-                    onChange={handleFileSelect}
-                  />
-                </label>
               </div>
+
+              {/* Drag & Drop Zone */}
+              <label 
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className="block cursor-pointer"
+              >
+                <div className={`flex flex-col items-center justify-center gap-3 px-4 py-8 border-2 border-dashed rounded-lg transition-all ${
+                  isDragging 
+                    ? 'border-primary bg-primary/10 scale-[1.01]' 
+                    : 'border-muted-foreground/30 hover:border-primary hover:bg-muted/50'
+                }`}>
+                  <div className={`p-3 rounded-full ${isDragging ? 'bg-primary/20' : 'bg-muted'}`}>
+                    <Upload className={`h-6 w-6 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div className="text-center">
+                    <span className={`text-sm font-medium block ${isDragging ? 'text-primary' : 'text-foreground'}`}>
+                      {isDragging ? 'שחרר לכאן...' : 'גרור קבצים לכאן'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      או לחץ לבחירת קבצים (תמונות, PDF, מסמכים)
+                    </span>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={handleFileSelect}
+                />
+              </label>
             </div>
 
-            {/* Pending Files */}
+            {/* Pending Files - Show with clear visual feedback */}
             {pendingFiles.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">קבצים ממתינים להעלאה:</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="space-y-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs">
+                      {pendingFiles.length}
+                    </span>
+                    קבצים ממתינים לשמירה
+                  </Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setPendingFiles([])}
+                    className="text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    נקה הכל
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {pendingFiles.map((file, index) => (
-                    <div key={index} className="relative p-2 bg-muted/50 rounded-md">
+                    <div key={index} className="relative group bg-background rounded-lg border overflow-hidden">
                       {file.type.startsWith('image/') ? (
-                        <div className="relative">
+                        <>
                           <img
                             src={URL.createObjectURL(file)}
                             alt={file.name}
-                            className="w-full h-32 object-cover rounded-md"
+                            className="w-full h-24 object-cover"
                           />
                           <Button
                             variant="destructive"
                             size="icon"
-                            className="absolute top-1 left-1 h-6 w-6"
+                            className="absolute top-1 left-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removePendingFile(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="h-24 flex flex-col items-center justify-center p-2 relative">
+                          {getFileIcon(file.type)}
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 left-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => removePendingFile(index)}
                           >
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          {getFileIcon(file.type)}
-                          <span className="flex-1 text-sm truncate">{file.name}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removePendingFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
                       )}
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-muted-foreground truncate">{file.name}</span>
-                        <span className="text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
+                      <div className="p-1.5 border-t bg-muted/30">
+                        <p className="text-xs truncate">{file.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
                   ))}
@@ -571,58 +639,74 @@ export default function TravelRequestAttachments({
               </div>
             )}
 
-            {/* Add Link */}
-            <div className="space-y-2 pt-4 border-t">
-              <Label>הוספת קישור (Expedia, Booking, Google Flights וכו')</Label>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                <Select value={newLinkCategory} onValueChange={setNewLinkCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="https://..."
-                  value={newLinkUrl}
-                  onChange={(e) => setNewLinkUrl(e.target.value)}
-                  className="md:col-span-2"
-                />
-                <Button variant="outline" onClick={addLink}>
-                  <Link2 className="h-4 w-4 ml-2" />
-                  הוסף
-                </Button>
+            {/* Add Link Section */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Link2 className="h-4 w-4 text-primary" />
+                <span>הוסף קישור</span>
               </div>
-              <Input
-                placeholder="הערה (אופציונלי)"
-                value={newLinkNotes}
-                onChange={(e) => setNewLinkNotes(e.target.value)}
-              />
+              <p className="text-xs text-muted-foreground">
+                הדבק קישורים מאתרי הזמנות (Booking, Expedia, Google Flights וכו')
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex gap-2">
+                  <Select value={newLinkCategory} onValueChange={setNewLinkCategory}>
+                    <SelectTrigger className="w-28 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(cat => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="https://..."
+                    value={newLinkUrl}
+                    onChange={(e) => setNewLinkUrl(e.target.value)}
+                    className="flex-1 h-9"
+                  />
+                  <Button variant="secondary" onClick={addLink} size="sm" className="h-9">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {newLinkUrl && (
+                  <Input
+                    placeholder="הערה (אופציונלי)"
+                    value={newLinkNotes}
+                    onChange={(e) => setNewLinkNotes(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                )}
+              </div>
             </div>
 
             {/* Pending Links */}
             {pendingLinks.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">קישורים ממתינים:</Label>
+              <div className="space-y-2 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-xs">
+                    {pendingLinks.length}
+                  </span>
+                  קישורים ממתינים לשמירה
+                </Label>
                 <div className="space-y-1">
                   {pendingLinks.map((link, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      <Link2 className="h-4 w-4" />
-                      <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">
+                    <div key={index} className="flex items-center gap-2 p-2 bg-background rounded-md border">
+                      <Link2 className="h-4 w-4 text-blue-500 shrink-0" />
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded shrink-0">
                         {getCategoryLabel(link.category)}
                       </span>
                       <span className="flex-1 text-sm truncate">{link.url}</span>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
                         onClick={() => removePendingLink(index)}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   ))}
@@ -630,10 +714,29 @@ export default function TravelRequestAttachments({
               </div>
             )}
 
-            {hasPendingItems && !travelRequestId && (
-              <p className="text-sm text-muted-foreground">
-                * הקבצים והקישורים יישמרו לאחר שמירת הבקשה
-              </p>
+            {/* Status message */}
+            {hasPendingItems && (
+              <div className={`p-3 rounded-lg flex items-center gap-2 ${
+                travelRequestId 
+                  ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' 
+                  : 'bg-muted border'
+              }`}>
+                {travelRequestId ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-700 dark:text-green-300">
+                      לחץ על "שמור צרופות" בראש הכרטיס להעלאה
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      הקבצים יישמרו אוטומטית בשמירת הבקשה
+                    </span>
+                  </>
+                )}
+              </div>
             )}
           </>
         )}
