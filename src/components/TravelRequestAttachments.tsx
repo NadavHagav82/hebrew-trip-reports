@@ -28,6 +28,11 @@ interface TravelRequestAttachmentsProps {
   onAttachmentsChange?: (attachments: Attachment[]) => void;
 }
 
+type PendingFileItem = {
+  file: File;
+  category: string;
+};
+
 const CATEGORIES = [
   { value: 'flights', label: 'טיסות' },
   { value: 'accommodation', label: 'לינה' },
@@ -42,7 +47,7 @@ export default function TravelRequestAttachments({
 }: TravelRequestAttachmentsProps) {
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFileItem[]>([]);
   const [pendingLinks, setPendingLinks] = useState<{ url: string; category: string; notes: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ fileName: string; progress: number; total: number; current: number } | null>(null);
@@ -139,7 +144,10 @@ export default function TravelRequestAttachments({
           const processedFiles = await Promise.all(
             validFiles.map(file => compressImage(file))
           );
-          setPendingFiles(prev => [...prev, ...processedFiles]);
+          setPendingFiles(prev => [
+            ...prev,
+            ...processedFiles.map((file) => ({ file, category: selectedCategory }))
+          ]);
           
           // Calculate savings
           const originalSize = validFiles.reduce((sum, f) => sum + f.size, 0);
@@ -155,7 +163,10 @@ export default function TravelRequestAttachments({
           setCompressing(false);
         }
       } else {
-        setPendingFiles(prev => [...prev, ...validFiles]);
+        setPendingFiles(prev => [
+          ...prev,
+          ...validFiles.map((file) => ({ file, category: selectedCategory }))
+        ]);
         toast.success(`${validFiles.length} קבצים נוספו`);
       }
     }
@@ -257,6 +268,138 @@ export default function TravelRequestAttachments({
     setPendingLinks(prev => prev.filter((_, i) => i !== index));
   };
 
+  const savePendingFile = async (index: number) => {
+    if (!user) return;
+    if (!travelRequestId) {
+      toast.info('כדי לשמור צרופות יש לשמור את הבקשה כטיוטה קודם');
+      return;
+    }
+
+    const item = pendingFiles[index];
+    if (!item) return;
+
+    setUploading(true);
+    setUploadProgress({ fileName: item.file.name, progress: 0, total: 1, current: 1 });
+
+    try {
+      const file = item.file;
+      const fileExt = file.name.split('.').pop();
+      const storagePath = `${user.id}/${travelRequestId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const uploadResult = await new Promise<{ error: Error | null }>((resolve) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress({ fileName: file.name, progress: percentComplete, total: 1, current: 1 });
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve({ error: null });
+          else resolve({ error: new Error(`Upload failed with status ${xhr.status}`) });
+        });
+
+        xhr.addEventListener('error', () => resolve({ error: new Error('Upload failed') }));
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+        xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${storagePath}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+        xhr.setRequestHeader('x-upsert', 'true');
+        xhr.send(file);
+      });
+
+      if (uploadResult.error) {
+        console.error('Upload error:', uploadResult.error);
+        toast.error(`שגיאה בהעלאת ${file.name}`);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from('travel-attachments').getPublicUrl(storagePath);
+
+      const { data: attachmentData, error: insertError } = await supabase
+        .from('travel_request_attachments')
+        .insert({
+          travel_request_id: travelRequestId,
+          uploaded_by: user.id,
+          file_name: file.name,
+          file_url: urlData.publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+          category: item.category,
+        })
+        .select()
+        .single();
+
+      if (insertError || !attachmentData) {
+        console.error('Insert error:', insertError);
+        toast.error('שגיאה בשמירת הצרופה');
+        return;
+      }
+
+      setAttachments((prev) => [attachmentData, ...prev]);
+      setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+      toast.success('הצרופה נשמרה');
+    } catch (error) {
+      console.error('savePendingFile error:', error);
+      toast.error('שגיאה בשמירת הצרופה');
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const savePendingLink = async (index: number) => {
+    if (!user) return;
+    if (!travelRequestId) {
+      toast.info('כדי לשמור צרופות יש לשמור את הבקשה כטיוטה קודם');
+      return;
+    }
+
+    const link = pendingLinks[index];
+    if (!link) return;
+
+    setUploading(true);
+    setUploadProgress({ fileName: new URL(link.url).hostname, progress: 100, total: 1, current: 1 });
+
+    try {
+      const { data: linkData, error: linkError } = await supabase
+        .from('travel_request_attachments')
+        .insert({
+          travel_request_id: travelRequestId,
+          uploaded_by: user.id,
+          file_name: new URL(link.url).hostname,
+          file_url: link.url,
+          file_type: 'link',
+          file_size: 0,
+          category: link.category,
+          link_url: link.url,
+          notes: link.notes || null,
+        })
+        .select()
+        .single();
+
+      if (linkError || !linkData) {
+        console.error('Link insert error:', linkError);
+        toast.error('שגיאה בשמירת הקישור');
+        return;
+      }
+
+      setAttachments((prev) => [linkData, ...prev]);
+      setPendingLinks((prev) => prev.filter((_, i) => i !== index));
+      toast.success('הקישור נשמר');
+    } catch (error) {
+      console.error('savePendingLink error:', error);
+      toast.error('שגיאה בשמירת הקישור');
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
   const uploadAllAttachments = async (requestId: string) => {
     if (!user) return;
 
@@ -268,7 +411,9 @@ export default function TravelRequestAttachments({
     try {
       // Upload files with progress tracking
       for (let i = 0; i < pendingFiles.length; i++) {
-        const file = pendingFiles[i];
+        const item = pendingFiles[i];
+        const file = item.file;
+
         setUploadProgress({
           fileName: file.name,
           progress: 0,
@@ -282,7 +427,7 @@ export default function TravelRequestAttachments({
         // Use XMLHttpRequest for progress tracking
         const uploadResult = await new Promise<{ error: Error | null }>((resolve) => {
           const xhr = new XMLHttpRequest();
-          
+
           xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
               const percentComplete = Math.round((event.loaded / event.total) * 100);
@@ -310,7 +455,7 @@ export default function TravelRequestAttachments({
           // Get the Supabase storage URL
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
           const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          
+
           xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${fileName}`);
           xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
           xhr.setRequestHeader('x-upsert', 'true');
@@ -336,7 +481,7 @@ export default function TravelRequestAttachments({
             file_url: urlData.publicUrl,
             file_type: file.type,
             file_size: file.size,
-            category: selectedCategory,
+            category: item.category,
           })
           .select()
           .single();
@@ -346,7 +491,7 @@ export default function TravelRequestAttachments({
         } else if (attachmentData) {
           uploadedAttachments.push(attachmentData);
         }
-        
+
         completedFiles++;
       }
 
@@ -606,43 +751,59 @@ export default function TravelRequestAttachments({
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {pendingFiles.map((file, index) => (
-                    <div key={index} className="relative group bg-background rounded-lg border overflow-hidden">
-                      {file.type.startsWith('image/') ? (
-                        <>
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="w-full h-24 object-cover"
-                          />
+                  {pendingFiles.map((item, index) => {
+                    const file = item.file;
+                    return (
+                      <div key={index} className="relative group bg-background rounded-lg border overflow-hidden">
+                        {file.type.startsWith('image/') ? (
+                          <>
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="w-full h-24 object-cover"
+                              loading="lazy"
+                            />
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-1 left-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removePendingFile(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="h-24 flex flex-col items-center justify-center p-2 relative">
+                            {getFileIcon(file.type)}
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-1 left-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removePendingFile(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        <div className="p-1.5 border-t bg-muted/30 space-y-1">
+                          <p className="text-xs truncate">{file.name}</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</p>
+                            <span className="text-[10px] text-muted-foreground truncate">{getCategoryLabel(item.category)}</span>
+                          </div>
                           <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 left-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removePendingFile(index)}
+                            onClick={() => void savePendingFile(index)}
+                            disabled={uploading}
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            variant="secondary"
                           >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </>
-                      ) : (
-                        <div className="h-24 flex flex-col items-center justify-center p-2 relative">
-                          {getFileIcon(file.type)}
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 left-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removePendingFile(index)}
-                          >
-                            <X className="h-3 w-3" />
+                            שמור צרופה
                           </Button>
                         </div>
-                      )}
-                      <div className="p-1.5 border-t bg-muted/30">
-                        <p className="text-xs truncate">{file.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -709,6 +870,15 @@ export default function TravelRequestAttachments({
                       </span>
                       <span className="flex-1 text-sm truncate">{link.url}</span>
                       <Button
+                        onClick={() => void savePendingLink(index)}
+                        disabled={uploading}
+                        size="sm"
+                        className="h-8 text-xs shrink-0"
+                        variant="secondary"
+                      >
+                        שמור קישור
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 shrink-0"
@@ -733,14 +903,14 @@ export default function TravelRequestAttachments({
                   <>
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <span className="text-sm text-green-700 dark:text-green-300">
-                      לחץ על "שמור צרופות" בראש הכרטיס להעלאה
+                      שמור כל צרופה בנפרד בכפתורי "שמור" ברשימות למעלה
                     </span>
                   </>
                 ) : (
                   <>
                     <Loader2 className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      הקבצים יישמרו אוטומטית בשמירת הבקשה
+                      כדי לשמור צרופות יש לשמור את הבקשה כטיוטה קודם
                     </span>
                   </>
                 )}
