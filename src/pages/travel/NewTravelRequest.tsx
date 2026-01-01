@@ -38,6 +38,21 @@ interface Approver {
   department: string;
 }
 
+interface ApprovalChainLevel {
+  id: string;
+  level_order: number;
+  level_type: 'direct_manager' | 'org_admin' | 'accounting_manager' | 'specific_user';
+  specific_user_id: string | null;
+  is_required: boolean;
+  can_skip_if_approved_amount_under: number | null;
+}
+
+interface ApprovalChainConfig {
+  id: string;
+  name: string;
+  levels: ApprovalChainLevel[];
+}
+
 const CURRENCIES = ['ILS', 'USD', 'EUR', 'GBP'];
 
 export default function NewTravelRequest() {
@@ -52,6 +67,9 @@ export default function NewTravelRequest() {
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [selectedApproverId, setSelectedApproverId] = useState<string>('');
   const [defaultManagerId, setDefaultManagerId] = useState<string | null>(null);
+  const [approvalChain, setApprovalChain] = useState<ApprovalChainConfig | null>(null);
+  const [userGradeId, setUserGradeId] = useState<string | null>(null);
+  const [useApprovalChain, setUseApprovalChain] = useState(false);
   const [violations, setViolations] = useState<PolicyViolation[]>([]);
   
   // Form state
@@ -105,15 +123,16 @@ export default function NewTravelRequest() {
     if (!user) return;
     
     try {
-      // Get user's organization and manager
+      // Get user's organization, manager and grade
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id, manager_id')
+        .select('organization_id, manager_id, grade_id')
         .eq('id', user.id)
         .single();
       
       if (profile?.organization_id) {
         setOrganizationId(profile.organization_id);
+        setUserGradeId(profile.grade_id);
         
         // Set default manager
         if (profile.manager_id) {
@@ -131,9 +150,86 @@ export default function NewTravelRequest() {
         if (rules) {
           setPolicyRules(rules);
         }
+
+        // Load approval chains for this organization
+        await loadApprovalChain(profile.organization_id, profile.grade_id);
       }
     } catch (error) {
       console.error('Error loading organization:', error);
+    }
+  };
+
+  const loadApprovalChain = async (orgId: string, gradeId: string | null) => {
+    try {
+      // First check if there's a chain assigned to this grade
+      let chainId: string | null = null;
+      
+      if (gradeId) {
+        const { data: gradeAssignment } = await supabase
+          .from('grade_chain_assignments')
+          .select('chain_id')
+          .eq('organization_id', orgId)
+          .eq('grade_id', gradeId)
+          .maybeSingle();
+        
+        if (gradeAssignment?.chain_id) {
+          chainId = gradeAssignment.chain_id;
+        }
+      }
+      
+      // If no grade-specific chain, look for default chain
+      if (!chainId) {
+        const { data: defaultChain } = await supabase
+          .from('approval_chain_configs')
+          .select('id')
+          .eq('organization_id', orgId)
+          .eq('is_active', true)
+          .eq('is_default', true)
+          .maybeSingle();
+        
+        if (defaultChain?.id) {
+          chainId = defaultChain.id;
+        }
+      }
+      
+      // If still no chain, check if there's any active chain
+      if (!chainId) {
+        const { data: anyChain } = await supabase
+          .from('approval_chain_configs')
+          .select('id')
+          .eq('organization_id', orgId)
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        
+        chainId = anyChain?.id || null;
+      }
+      
+      if (chainId) {
+        // Load the chain with its levels
+        const { data: chain } = await supabase
+          .from('approval_chain_configs')
+          .select('id, name')
+          .eq('id', chainId)
+          .single();
+        
+        const { data: levels } = await supabase
+          .from('approval_chain_levels')
+          .select('*')
+          .eq('chain_id', chainId)
+          .order('level_order', { ascending: true });
+        
+        if (chain && levels && levels.length > 0) {
+          setApprovalChain({
+            id: chain.id,
+            name: chain.name,
+            levels: levels as ApprovalChainLevel[]
+          });
+          setUseApprovalChain(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading approval chain:', error);
     }
   };
 
@@ -341,8 +437,8 @@ export default function NewTravelRequest() {
       return;
     }
 
-    // Validate approver selection when submitting
-    if (submit && !selectedApproverId) {
+    // Validate approver selection when submitting (only if not using approval chain)
+    if (submit && !useApprovalChain && !selectedApproverId) {
       toast.error('אנא בחר מאשר לפני שליחת הבקשה');
       return;
     }
@@ -457,11 +553,11 @@ export default function NewTravelRequest() {
           .insert(violationRecords);
       }
 
-      // If submitting, create approval record for selected approver and send notification
-      if (submit && requestId && selectedApproverId) {
+      // If submitting, create approval records based on approval chain or selected approver
+      if (submit && requestId) {
         const { data: userProfile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, manager_id')
           .eq('id', user.id)
           .single();
 
@@ -474,34 +570,105 @@ export default function NewTravelRequest() {
             .eq('status', 'pending');
         }
 
-        // Insert approval record for selected approver
-        await supabase
-          .from('travel_request_approvals')
-          .insert({
-            travel_request_id: requestId,
-            approver_id: selectedApproverId,
-            approval_level: 1
-          });
+        let firstApproverId: string | null = null;
 
-        // Send email notification to selected approver
-        try {
-          await supabase.functions.invoke('notify-travel-request', {
-            body: {
+        if (useApprovalChain && approvalChain && approvalChain.levels.length > 0) {
+          // Create approval records for each level in the chain
+          for (const level of approvalChain.levels) {
+            // Skip levels that can be skipped based on amount
+            if (level.can_skip_if_approved_amount_under && estimatedTotal < level.can_skip_if_approved_amount_under) {
+              continue;
+            }
+
+            let approverId: string | null = null;
+
+            // Determine approver based on level type
+            switch (level.level_type) {
+              case 'direct_manager':
+                approverId = userProfile?.manager_id || defaultManagerId;
+                break;
+              case 'org_admin':
+                // Find org admin in same organization
+                const { data: orgAdmin } = await supabase
+                  .from('user_roles')
+                  .select('user_id')
+                  .eq('role', 'org_admin')
+                  .limit(1)
+                  .maybeSingle();
+                if (orgAdmin) {
+                  const { data: adminProfile } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('id', orgAdmin.user_id)
+                    .eq('organization_id', organizationId)
+                    .maybeSingle();
+                  approverId = adminProfile?.id || null;
+                }
+                break;
+              case 'accounting_manager':
+                // Find accounting manager
+                const { data: accountingManager } = await supabase
+                  .from('user_roles')
+                  .select('user_id')
+                  .eq('role', 'accounting_manager')
+                  .limit(1)
+                  .maybeSingle();
+                approverId = accountingManager?.user_id || null;
+                break;
+              case 'specific_user':
+                approverId = level.specific_user_id;
+                break;
+            }
+
+            if (approverId) {
+              // Set first approver for notification
+              if (!firstApproverId) {
+                firstApproverId = approverId;
+              }
+
+              await supabase
+                .from('travel_request_approvals')
+                .insert({
+                  travel_request_id: requestId,
+                  approver_id: approverId,
+                  approval_level: level.level_order,
+                  status: level.level_order === 1 ? 'pending' : 'pending' // All start as pending, handled by approval flow
+                });
+            }
+          }
+        } else if (selectedApproverId) {
+          // Fallback to manual approver selection
+          firstApproverId = selectedApproverId;
+          await supabase
+            .from('travel_request_approvals')
+            .insert({
               travel_request_id: requestId,
               approver_id: selectedApproverId,
-              requester_name: userProfile?.full_name || 'עובד',
-              destination: `${destinationCity}, ${destinationCountry}`,
-              start_date: startDate,
-              end_date: endDate,
-              purpose: purpose,
-              estimated_total: estimatedTotal,
-              has_violations: violations.length > 0,
-              violation_count: violations.length
-            }
-          });
-        } catch (notifyError) {
-          console.error('Error sending notification:', notifyError);
-          // Don't fail the request if notification fails
+              approval_level: 1
+            });
+        }
+
+        // Send email notification to first approver
+        if (firstApproverId) {
+          try {
+            await supabase.functions.invoke('notify-travel-request', {
+              body: {
+                travel_request_id: requestId,
+                approver_id: firstApproverId,
+                requester_name: userProfile?.full_name || 'עובד',
+                destination: `${destinationCity}, ${destinationCountry}`,
+                start_date: startDate,
+                end_date: endDate,
+                purpose: purpose,
+                estimated_total: estimatedTotal,
+                has_violations: violations.length > 0,
+                violation_count: violations.length
+              }
+            });
+          } catch (notifyError) {
+            console.error('Error sending notification:', notifyError);
+            // Don't fail the request if notification fails
+          }
         }
       }
 
@@ -856,53 +1023,92 @@ export default function NewTravelRequest() {
           </CardContent>
         </Card>
 
-        {/* Approver Selection */}
+        {/* Approver Selection / Approval Chain Display */}
         <Card className="border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
-              בחירת מאשר
+              {useApprovalChain ? 'שרשרת אישורים' : 'בחירת מאשר'}
             </CardTitle>
             <CardDescription>
-              בחר למי לשלוח את הבקשה לאישור
+              {useApprovalChain 
+                ? `הבקשה תעבור דרך שרשרת האישורים: ${approvalChain?.name || 'ברירת מחדל'}`
+                : 'בחר למי לשלוח את הבקשה לאישור'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="approver">מאשר הבקשה *</Label>
-              <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
-                <SelectTrigger id="approver" className={!selectedApproverId ? "border-destructive" : ""}>
-                  <SelectValue placeholder="בחר מאשר..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {approvers.map((approver) => (
-                    <SelectItem key={approver.id} value={approver.id}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{approver.full_name}</span>
-                        {approver.department && (
-                          <span className="text-muted-foreground text-sm">({approver.department})</span>
-                        )}
-                        {approver.id === defaultManagerId && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            מנהל ישיר
+            {useApprovalChain && approvalChain ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {approvalChain.levels.map((level, idx) => (
+                    <div key={level.id} className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-full text-sm">
+                        <span className="font-medium">{level.level_order}.</span>
+                        <span>
+                          {level.level_type === 'direct_manager' && 'מנהל ישיר'}
+                          {level.level_type === 'org_admin' && 'מנהל ארגון'}
+                          {level.level_type === 'accounting_manager' && 'הנהלת חשבונות'}
+                          {level.level_type === 'specific_user' && 'משתמש מוגדר'}
+                        </span>
+                        {level.can_skip_if_approved_amount_under && (
+                          <span className="text-xs text-muted-foreground">
+                            (ניתן לדלג מתחת ל-₪{level.can_skip_if_approved_amount_under})
                           </span>
                         )}
                       </div>
-                    </SelectItem>
+                      {idx < approvalChain.levels.length - 1 && (
+                        <span className="text-muted-foreground">→</span>
+                      )}
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-              {!selectedApproverId && (
-                <p className="text-sm text-destructive">יש לבחור מאשר לפני שליחת הבקשה</p>
-              )}
-            </div>
-            {selectedApproverId && (
-              <Alert className="bg-primary/5 border-primary/20">
-                <UserCheck className="h-4 w-4" />
-                <AlertDescription>
-                  הבקשה תישלח ל: <strong>{approvers.find(a => a.id === selectedApproverId)?.full_name}</strong>
-                </AlertDescription>
-              </Alert>
+                </div>
+                <Alert className="bg-primary/5 border-primary/20">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    הבקשה תעבור לכל המאשרים בשרשרת בהתאם להגדרות הארגון
+                  </AlertDescription>
+                </Alert>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="approver">מאשר הבקשה *</Label>
+                  <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
+                    <SelectTrigger id="approver" className={!selectedApproverId ? "border-destructive" : ""}>
+                      <SelectValue placeholder="בחר מאשר..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {approvers.map((approver) => (
+                        <SelectItem key={approver.id} value={approver.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{approver.full_name}</span>
+                            {approver.department && (
+                              <span className="text-muted-foreground text-sm">({approver.department})</span>
+                            )}
+                            {approver.id === defaultManagerId && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                מנהל ישיר
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!selectedApproverId && (
+                    <p className="text-sm text-destructive">יש לבחור מאשר לפני שליחת הבקשה</p>
+                  )}
+                </div>
+                {selectedApproverId && (
+                  <Alert className="bg-primary/5 border-primary/20">
+                    <UserCheck className="h-4 w-4" />
+                    <AlertDescription>
+                      הבקשה תישלח ל: <strong>{approvers.find(a => a.id === selectedApproverId)?.full_name}</strong>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

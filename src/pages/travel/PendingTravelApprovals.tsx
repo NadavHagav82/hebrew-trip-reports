@@ -181,66 +181,59 @@ export default function PendingTravelApprovals() {
     setDialogOpen(true);
   };
 
-  // Determine required approval levels based on violations
-  const getRequiredApprovalLevels = (violations: Violation[] | undefined): number => {
-    if (!violations || violations.length === 0) return 1; // Just direct manager
+  // Get all approval levels for a request from the database
+  const getApprovalLevelsForRequest = async (travelRequestId: string): Promise<number> => {
+    const { data: approvals } = await supabase
+      .from('travel_request_approvals')
+      .select('approval_level')
+      .eq('travel_request_id', travelRequestId)
+      .order('approval_level', { ascending: false })
+      .limit(1);
     
-    const maxOverage = Math.max(...violations.map(v => v.overage_percentage));
-    
-    if (maxOverage > 30) return 3;      // Manager + Department Head + CFO/Org Admin
-    if (maxOverage > 15) return 2;      // Manager + Department Head
-    return 1;                           // Just direct manager
+    return approvals?.[0]?.approval_level || 1;
   };
 
-  // Get next level approver
-  const getNextLevelApprover = async (currentLevel: number, requesterId: string): Promise<string | null> => {
-    try {
-      // Get the requester's manager chain
-      const { data: requesterProfile } = await supabase
-        .from('profiles')
-        .select('manager_id, organization_id')
-        .eq('id', requesterId)
-        .single();
-      
-      if (!requesterProfile?.manager_id) return null;
-      
-      if (currentLevel === 1) {
-        // Need level 2 - get manager's manager (department head)
-        const { data: managerProfile } = await supabase
-          .from('profiles')
-          .select('manager_id')
-          .eq('id', requesterProfile.manager_id)
-          .single();
-        
-        return managerProfile?.manager_id || null;
-      }
-      
-      if (currentLevel === 2) {
-        // Need level 3 - get org admin or accounting manager
-        const { data: orgAdmins } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .in('role', ['org_admin', 'accounting_manager'])
-          .limit(1);
-        
-        if (orgAdmins && orgAdmins.length > 0) {
-          // Verify the org admin is in the same organization
-          const { data: adminProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', orgAdmins[0].user_id)
-            .eq('organization_id', requesterProfile.organization_id)
-            .single();
-          
-          return adminProfile?.id || null;
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error getting next level approver:', error);
-      return null;
+  // Check if all previous levels are approved
+  const arePreviousLevelsApproved = async (travelRequestId: string, currentLevel: number): Promise<boolean> => {
+    if (currentLevel === 1) return true;
+    
+    const { data: previousApprovals } = await supabase
+      .from('travel_request_approvals')
+      .select('status')
+      .eq('travel_request_id', travelRequestId)
+      .lt('approval_level', currentLevel);
+    
+    return previousApprovals?.every(a => a.status === 'approved') ?? false;
+  };
+
+  // Get next pending approval for the request
+  const getNextPendingApprover = async (travelRequestId: string, currentLevel: number): Promise<{ approverId: string; level: number } | null> => {
+    const { data: nextApproval } = await supabase
+      .from('travel_request_approvals')
+      .select('approver_id, approval_level')
+      .eq('travel_request_id', travelRequestId)
+      .eq('status', 'pending')
+      .gt('approval_level', currentLevel)
+      .order('approval_level', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    
+    if (nextApproval) {
+      return { approverId: nextApproval.approver_id, level: nextApproval.approval_level };
     }
+    return null;
+  };
+
+  // Check if this is the final approval level
+  const isFinalApprovalLevel = async (travelRequestId: string, currentLevel: number): Promise<boolean> => {
+    const { data: higherLevelApprovals, error } = await supabase
+      .from('travel_request_approvals')
+      .select('id')
+      .eq('travel_request_id', travelRequestId)
+      .gt('approval_level', currentLevel)
+      .limit(1);
+    
+    return !higherLevelApprovals || higherLevelApprovals.length === 0;
   };
 
   const handleApprovalDecision = async () => {
@@ -290,26 +283,16 @@ export default function PendingTravelApprovals() {
         newStatus = 'rejected';
         isFinalApproval = true;
       } else {
-        // Check if there are violations requiring additional approval levels
-        const requiredLevels = getRequiredApprovalLevels(selectedApproval.violations);
-        const currentLevel = selectedApproval.approval_level;
+        // Check if there are more approval levels
+        const isLastLevel = await isFinalApprovalLevel(request.id, selectedApproval.approval_level);
         
-        if (currentLevel < requiredLevels) {
-          // Need additional approval - find next level approver
-          const nextApprover = await getNextLevelApprover(currentLevel, (request as any).requested_by);
+        if (!isLastLevel) {
+          // There are more levels - notify next approver
+          const nextApprover = await getNextPendingApprover(request.id, selectedApproval.approval_level);
           
           if (nextApprover) {
-            // Create next level approval record
-            await supabase
-              .from('travel_request_approvals')
-              .insert({
-                travel_request_id: request.id,
-                approver_id: nextApprover,
-                approval_level: currentLevel + 1
-              });
-            
             // Update request's current approval level
-            requestUpdate.current_approval_level = currentLevel + 1;
+            requestUpdate.current_approval_level = nextApprover.level;
             newStatus = 'pending_approval';
             
             // Send notification to next approver
@@ -323,7 +306,7 @@ export default function PendingTravelApprovals() {
               await supabase.functions.invoke('notify-travel-request', {
                 body: {
                   travel_request_id: request.id,
-                  approver_id: nextApprover,
+                  approver_id: nextApprover.approverId,
                   requester_name: requesterProfile?.full_name || 'עובד',
                   destination: `${request.destination_city}, ${request.destination_country}`,
                   start_date: request.start_date,
@@ -338,9 +321,9 @@ export default function PendingTravelApprovals() {
               console.error('Error notifying next approver:', notifyError);
             }
             
-            toast.info(`אושר ברמה ${currentLevel}. הבקשה נשלחה למאשר ברמה ${currentLevel + 1}`);
+            toast.info(`אושר ברמה ${selectedApproval.approval_level}. הבקשה נשלחה למאשר ברמה ${nextApprover.level}`);
           } else {
-            // No next level approver found - this is final approval
+            // No more approvers, this is final
             isFinalApproval = true;
           }
         } else {
