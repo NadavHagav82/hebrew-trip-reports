@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Bell } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Bell, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -25,18 +25,26 @@ interface Notification {
   created_at: string;
 }
 
+interface SwipeState {
+  id: string;
+  startX: number;
+  currentX: number;
+  isSwiping: boolean;
+}
+
+const SWIPE_THRESHOLD = 80;
+
 export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const [swipeState, setSwipeState] = useState<SwipeState | null>(null);
   const navigate = useNavigate();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Play notification sound
   const playNotificationSound = () => {
     try {
-      // Create a simple beep sound using Web Audio API
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -84,7 +92,6 @@ export const NotificationBell = () => {
   useEffect(() => {
     fetchNotifications();
 
-    // Subscribe to realtime notifications
     const channel = supabase
       .channel("notifications-realtime")
       .on(
@@ -141,28 +148,69 @@ export const NotificationBell = () => {
       markAsRead(notification.id);
     }
     
-    // Navigate based on notification type
     if (notification.type === 'travel_request_pending' && notification.travel_request_id) {
-      // Manager needs to approve specific travel request
       navigate(`/travel/pending-approvals?request=${notification.travel_request_id}`);
       setOpen(false);
     } else if (notification.type === 'travel_request_pending') {
-      // Fallback to all pending approvals
       navigate('/travel/pending-approvals');
       setOpen(false);
     } else if ((notification.type === 'travel_approved' || notification.type === 'travel_rejected') && notification.travel_request_id) {
-      // Employee viewing their specific travel request result
       navigate(`/travel-requests/${notification.travel_request_id}`);
       setOpen(false);
     } else if (notification.type === 'travel_approved' || notification.type === 'travel_rejected') {
-      // Fallback to travel requests list
       navigate('/travel-requests');
       setOpen(false);
     } else if (notification.report_id) {
-      // Expense report notifications
       navigate(`/report/${notification.report_id}`);
       setOpen(false);
     }
+  };
+
+  // Swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent, notificationId: string, isRead: boolean) => {
+    if (isRead) return;
+    
+    setSwipeState({
+      id: notificationId,
+      startX: e.touches[0].clientX,
+      currentX: e.touches[0].clientX,
+      isSwiping: false,
+    });
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!swipeState) return;
+    
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - swipeState.startX;
+    
+    // Only allow right swipe (positive diff) in RTL
+    if (diff < 0) {
+      setSwipeState({
+        ...swipeState,
+        currentX,
+        isSwiping: Math.abs(diff) > 10,
+      });
+    }
+  }, [swipeState]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!swipeState) return;
+    
+    const diff = swipeState.startX - swipeState.currentX;
+    
+    if (diff > SWIPE_THRESHOLD) {
+      // Swipe threshold reached - mark as read
+      markAsRead(swipeState.id);
+    }
+    
+    setSwipeState(null);
+  }, [swipeState]);
+
+  const getSwipeOffset = (notificationId: string): number => {
+    if (!swipeState || swipeState.id !== notificationId) return 0;
+    const diff = swipeState.startX - swipeState.currentX;
+    return Math.max(0, Math.min(diff, 100));
   };
 
   const getTypeColor = (type: string) => {
@@ -247,46 +295,93 @@ export const NotificationBell = () => {
               אין התראות
             </div>
           ) : (
-            <div className="divide-y">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
-                    !notification.is_read ? "bg-primary/5" : ""
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start gap-2">
+            <div className="divide-y overflow-hidden">
+              {notifications.map((notification) => {
+                const swipeOffset = getSwipeOffset(notification.id);
+                const isSwipingThis = swipeState?.id === notification.id && swipeState.isSwiping;
+                
+                return (
+                  <div
+                    key={notification.id}
+                    className="relative overflow-hidden"
+                  >
+                    {/* Swipe background indicator */}
                     {!notification.is_read && (
-                      <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs ${getTypeColor(notification.type)}`}
-                        >
-                          {getTypeLabel(notification.type)}
-                        </Badge>
+                      <div 
+                        className={cn(
+                          "absolute inset-y-0 left-0 flex items-center justify-center bg-green-500 transition-all",
+                          swipeOffset > SWIPE_THRESHOLD ? "bg-green-600" : ""
+                        )}
+                        style={{ width: `${swipeOffset}px` }}
+                      >
+                        {swipeOffset > 30 && (
+                          <Check className="h-5 w-5 text-white" />
+                        )}
                       </div>
-                      <p className="font-medium text-sm truncate">
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(notification.created_at), "dd/MM/yyyy HH:mm", {
-                          locale: he,
-                        })}
-                      </p>
+                    )}
+                    
+                    {/* Notification content */}
+                    <div
+                      className={cn(
+                        "p-3 cursor-pointer hover:bg-muted/50 transition-all bg-background relative",
+                        !notification.is_read ? "bg-primary/5" : ""
+                      )}
+                      style={{
+                        transform: `translateX(-${swipeOffset}px)`,
+                        transition: isSwipingThis ? 'none' : 'transform 0.2s ease-out'
+                      }}
+                      onClick={() => handleNotificationClick(notification)}
+                      onTouchStart={(e) => handleTouchStart(e, notification.id, notification.is_read)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      <div className="flex items-start gap-2">
+                        {!notification.is_read && (
+                          <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge
+                              variant="secondary"
+                              className={`text-xs ${getTypeColor(notification.type)}`}
+                            >
+                              {getTypeLabel(notification.type)}
+                            </Badge>
+                          </div>
+                          <p className="font-medium text-sm truncate">
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(notification.created_at), "dd/MM/yyyy HH:mm", {
+                              locale: he,
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Swipe hint for unread notifications */}
+                      {!notification.is_read && !isSwipingThis && (
+                        <div className="absolute left-1 top-1/2 -translate-y-1/2 text-xs text-muted-foreground opacity-40 pointer-events-none md:hidden">
+                          ←
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>
+        
+        {/* Mobile hint */}
+        {unreadCount > 0 && (
+          <div className="p-2 border-t text-center text-xs text-muted-foreground md:hidden">
+            החלק שמאלה לסימון כנקרא
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
