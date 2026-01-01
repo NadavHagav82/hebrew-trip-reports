@@ -628,6 +628,7 @@ export type Database = {
           message: string
           report_id: string | null
           title: string
+          travel_request_id: string | null
           type: string
           user_id: string
         }
@@ -638,6 +639,7 @@ export type Database = {
           message: string
           report_id?: string | null
           title: string
+          travel_request_id?: string | null
           type: string
           user_id: string
         }
@@ -648,6 +650,7 @@ export type Database = {
           message?: string
           report_id?: string | null
           title?: string
+          travel_request_id?: string | null
           type?: string
           user_id?: string
         }
@@ -657,6 +660,13 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_travel_request_id_fkey"
+            columns: ["travel_request_id"]
+            isOneToOne: false
+            referencedRelation: "travel_requests"
             referencedColumns: ["id"]
           },
           {

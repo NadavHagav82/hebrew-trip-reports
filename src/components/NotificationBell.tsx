@@ -20,6 +20,7 @@ interface Notification {
   title: string;
   message: string;
   report_id: string | null;
+  travel_request_id: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -141,12 +142,20 @@ export const NotificationBell = () => {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'travel_request_pending') {
-      // Manager needs to approve travel request
+    if (notification.type === 'travel_request_pending' && notification.travel_request_id) {
+      // Manager needs to approve specific travel request
+      navigate(`/travel/pending-approvals?request=${notification.travel_request_id}`);
+      setOpen(false);
+    } else if (notification.type === 'travel_request_pending') {
+      // Fallback to all pending approvals
       navigate('/travel/pending-approvals');
       setOpen(false);
+    } else if ((notification.type === 'travel_approved' || notification.type === 'travel_rejected') && notification.travel_request_id) {
+      // Employee viewing their specific travel request result
+      navigate(`/travel-requests/${notification.travel_request_id}`);
+      setOpen(false);
     } else if (notification.type === 'travel_approved' || notification.type === 'travel_rejected') {
-      // Employee viewing their travel request result
+      // Fallback to travel requests list
       navigate('/travel-requests');
       setOpen(false);
     } else if (notification.report_id) {
