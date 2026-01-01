@@ -201,7 +201,7 @@ serve(async (req) => {
     };
 
     // Send email
-    const { error: emailError } = await resend.emails.send({
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: "Travel System <onboarding@resend.dev>",
       to: [employeeProfile.email],
       subject: subjects[payload.decision],
@@ -210,10 +210,22 @@ serve(async (req) => {
 
     if (emailError) {
       console.error("Error sending email:", emailError);
-      throw emailError;
+      // Don't throw - return a soft failure so the approval process continues
+      // This is expected when using Resend in testing mode without a verified domain
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          warning: "Email notification could not be sent - Resend domain not verified",
+          details: emailError.message || "Email service limitation"
+        }),
+        {
+          status: 200, // Return 200 so the approval flow doesn't fail
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    console.log("Decision notification sent successfully");
+    console.log("Decision notification sent successfully:", emailData);
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -225,10 +237,15 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error in notify-travel-decision:", errorMessage);
+    // Return 200 with warning instead of 500 to not break the approval flow
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        success: false, 
+        warning: "Email notification failed",
+        error: errorMessage 
+      }),
       {
-        status: 500,
+        status: 200, // Don't fail the entire approval just because email failed
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
