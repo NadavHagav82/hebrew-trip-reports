@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, Trash2, Plane, Calendar, DollarSign, MapPin, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Bell, Check, Trash2, Plane, Calendar, DollarSign, MapPin, CheckCircle2, XCircle, Clock, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -51,6 +51,8 @@ interface SwipeState {
 
 const SWIPE_THRESHOLD = 80;
 
+type NotificationFilter = 'all' | 'travel' | 'reports';
+
 export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -58,7 +60,19 @@ export const NotificationBell = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [swipeState, setSwipeState] = useState<SwipeState | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<NotificationFilter>('all');
   const navigate = useNavigate();
+
+  const filteredNotifications = notifications.filter(n => {
+    if (filter === 'all') return true;
+    if (filter === 'travel') {
+      return ['travel_approved', 'travel_rejected', 'travel_request_pending'].includes(n.type);
+    }
+    if (filter === 'reports') {
+      return ['report_approved', 'report_rejected', 'expense_approved', 'expense_rejected'].includes(n.type);
+    }
+    return true;
+  });
 
   const playNotificationSound = () => {
     try {
@@ -382,25 +396,57 @@ export const NotificationBell = () => {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b">
           <h4 className="font-semibold">התראות</h4>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="text-xs"
-            >
-              סמן הכל כנקרא
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={markAllAsRead}
+                className="text-xs"
+              >
+                סמן הכל כנקרא
+              </Button>
+            )}
+          </div>
         </div>
-        <ScrollArea className="h-[300px]">
-          {notifications.length === 0 ? (
+        
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1 p-2 border-b bg-muted/30">
+          <Button
+            variant={filter === 'all' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter('all')}
+            className="text-xs h-7 px-2"
+          >
+            הכל
+          </Button>
+          <Button
+            variant={filter === 'travel' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter('travel')}
+            className="text-xs h-7 px-2 gap-1"
+          >
+            <Plane className="h-3 w-3" />
+            נסיעות
+          </Button>
+          <Button
+            variant={filter === 'reports' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter('reports')}
+            className="text-xs h-7 px-2 gap-1"
+          >
+            <MapPin className="h-3 w-3" />
+            דוחות
+          </Button>
+        </div>
+        <ScrollArea className="h-[280px]">
+          {filteredNotifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              אין התראות
+              {filter === 'all' ? 'אין התראות' : `אין התראות ${filter === 'travel' ? 'נסיעות' : 'דוחות'}`}
             </div>
           ) : (
             <div className="divide-y overflow-hidden">
-              {notifications.map((notification) => {
+              {filteredNotifications.map((notification) => {
                 const swipeOffset = getSwipeOffset(notification.id);
                 const isSwipingThis = swipeState?.id === notification.id && swipeState.isSwiping;
                 const translateX = swipeOffset.right > 0 ? swipeOffset.right : -swipeOffset.left;
