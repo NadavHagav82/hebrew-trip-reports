@@ -139,7 +139,18 @@ export const NotificationBell = () => {
     if (!notification.is_read) {
       markAsRead(notification.id);
     }
-    if (notification.report_id) {
+    
+    // Navigate based on notification type
+    if (notification.type === 'travel_request_pending') {
+      // Manager needs to approve travel request
+      navigate('/travel/pending-approvals');
+      setOpen(false);
+    } else if (notification.type === 'travel_approved' || notification.type === 'travel_rejected') {
+      // Employee viewing their travel request result
+      navigate('/travel-requests');
+      setOpen(false);
+    } else if (notification.report_id) {
+      // Expense report notifications
       navigate(`/report/${notification.report_id}`);
       setOpen(false);
     }
@@ -148,13 +159,17 @@ export const NotificationBell = () => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "report_approved":
+      case "travel_approved":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "report_rejected":
+      case "travel_rejected":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       case "expense_rejected":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
       case "expense_approved":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "travel_request_pending":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -163,13 +178,19 @@ export const NotificationBell = () => {
   const getTypeLabel = (type: string) => {
     switch (type) {
       case "report_approved":
-        return "אושר";
+        return "דוח אושר";
       case "report_rejected":
-        return "נדחה";
+        return "דוח נדחה";
       case "expense_rejected":
         return "הוצאה נדחתה";
       case "expense_approved":
         return "הוצאה אושרה";
+      case "travel_request_pending":
+        return "ממתין לאישור";
+      case "travel_approved":
+        return "נסיעה אושרה";
+      case "travel_rejected":
+        return "נסיעה נדחתה";
       default:
         return "התראה";
     }
