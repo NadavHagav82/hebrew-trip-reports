@@ -318,6 +318,15 @@ export default function TravelRequestAttachments({
     const fileExt = file.name.split('.').pop();
     const storagePath = `${user.id}/${requestId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
+    // Get current session token for authenticated upload
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    
+    if (!accessToken) {
+      toast.error('יש להתחבר מחדש כדי להעלות קבצים');
+      return null;
+    }
+
     const uploadResult = await new Promise<{ error: Error | null }>((resolve) => {
       const xhr = new XMLHttpRequest();
 
@@ -336,10 +345,9 @@ export default function TravelRequestAttachments({
       xhr.addEventListener('error', () => resolve({ error: new Error('Upload failed') }));
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${storagePath}`);
-      xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
       xhr.setRequestHeader('x-upsert', 'true');
       xhr.send(file);
     });
@@ -462,6 +470,16 @@ export default function TravelRequestAttachments({
     let completedFiles = 0;
 
     try {
+      // Get current session token for authenticated upload
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        toast.error('יש להתחבר מחדש כדי להעלות קבצים');
+        setUploading(false);
+        return;
+      }
+
       // Upload files with progress tracking
       for (let i = 0; i < pendingFiles.length; i++) {
         const item = pendingFiles[i];
@@ -507,10 +525,9 @@ export default function TravelRequestAttachments({
 
           // Get the Supabase storage URL
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
           xhr.open('POST', `${supabaseUrl}/storage/v1/object/travel-attachments/${fileName}`);
-          xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+          xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
           xhr.setRequestHeader('x-upsert', 'true');
           xhr.send(file);
         });
