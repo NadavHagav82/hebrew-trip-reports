@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Paperclip, Link2, Trash2, FileText, Image, ExternalLink, Upload, X, Loader2, Save, Plus, CheckCircle2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Paperclip, Link2, Trash2, FileText, Image, ExternalLink, Upload, X, Loader2, Save, Plus, CheckCircle2, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Attachment {
@@ -59,6 +60,31 @@ export default function TravelRequestAttachments({
   const [selectedCategory, setSelectedCategory] = useState('flights');
   const [isDragging, setIsDragging] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string; index: number } | null>(null);
+
+  // Get all image attachments for navigation
+  const imageAttachments = attachments.filter(a => a.file_type.startsWith('image/'));
+
+  const openLightbox = (url: string, name: string, index: number) => {
+    setLightboxImage({ url, name, index });
+  };
+
+  const closeLightbox = () => {
+    setLightboxImage(null);
+  };
+
+  const navigateLightbox = (direction: 'prev' | 'next') => {
+    if (!lightboxImage || imageAttachments.length <= 1) return;
+    const currentIndex = lightboxImage.index;
+    let newIndex: number;
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % imageAttachments.length;
+    } else {
+      newIndex = (currentIndex - 1 + imageAttachments.length) % imageAttachments.length;
+    }
+    const newAttachment = imageAttachments[newIndex];
+    setLightboxImage({ url: newAttachment.file_url, name: newAttachment.file_name, index: newIndex });
+  };
 
   // Compress image using Canvas API
   const compressImage = async (file: File, maxWidth = 1920, quality = 0.8): Promise<File> => {
@@ -976,22 +1002,24 @@ export default function TravelRequestAttachments({
             <Label>קבצים מצורפים:</Label>
             
             {/* Image Attachments Grid */}
-            {attachments.filter(a => a.file_type.startsWith('image/')).length > 0 && (
+            {imageAttachments.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
-                {attachments.filter(a => a.file_type.startsWith('image/')).map(attachment => (
+                {imageAttachments.map((attachment, index) => (
                   <div key={attachment.id} className="relative group">
-                    <a
-                      href={attachment.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
+                    <button
+                      type="button"
+                      onClick={() => openLightbox(attachment.file_url, attachment.file_name, index)}
+                      className="block w-full text-left focus:outline-none focus:ring-2 focus:ring-primary rounded-md"
                     >
                       <img
                         src={attachment.file_url}
                         alt={attachment.file_name}
-                        className="w-full h-32 object-cover rounded-md border hover:opacity-90 transition-opacity"
+                        className="w-full h-32 object-cover rounded-md border hover:opacity-90 transition-opacity cursor-zoom-in"
                       />
-                    </a>
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-md">
+                        <ZoomIn className="h-6 w-6 text-white drop-shadow-lg" />
+                      </div>
+                    </button>
                     <div className="absolute top-1 right-1">
                       <span className="text-xs bg-primary/90 text-primary-foreground px-2 py-0.5 rounded">
                         {getCategoryLabel(attachment.category)}
@@ -1002,7 +1030,10 @@ export default function TravelRequestAttachments({
                         variant="destructive"
                         size="icon"
                         className="absolute top-1 left-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => deleteAttachment(attachment)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteAttachment(attachment);
+                        }}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -1079,6 +1110,65 @@ export default function TravelRequestAttachments({
           </p>
         )}
       </CardContent>
+
+      {/* Lightbox Dialog */}
+      <Dialog open={!!lightboxImage} onOpenChange={(open) => !open && closeLightbox()}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
+          <DialogTitle className="sr-only">{lightboxImage?.name || 'תמונה מוגדלת'}</DialogTitle>
+          {lightboxImage && (
+            <div className="relative flex items-center justify-center w-full h-full min-h-[60vh]">
+              {/* Close button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 z-10 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                onClick={closeLightbox}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+
+              {/* Navigation buttons */}
+              {imageAttachments.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                    onClick={() => navigateLightbox('next')}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                    onClick={() => navigateLightbox('prev')}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                </>
+              )}
+
+              {/* Image */}
+              <img
+                src={lightboxImage.url}
+                alt={lightboxImage.name}
+                className="max-w-full max-h-[85vh] object-contain"
+              />
+
+              {/* Image info */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <p className="text-white text-sm text-center truncate">{lightboxImage.name}</p>
+                {imageAttachments.length > 1 && (
+                  <p className="text-white/70 text-xs text-center mt-1">
+                    {lightboxImage.index + 1} / {imageAttachments.length}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
