@@ -66,6 +66,91 @@ export type Database = {
           },
         ]
       }
+      approval_chain_configs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_chain_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_chain_levels: {
+        Row: {
+          can_skip_if_approved_amount_under: number | null
+          chain_id: string
+          created_at: string
+          id: string
+          is_required: boolean
+          level_order: number
+          level_type: Database["public"]["Enums"]["approval_level_type"]
+          specific_user_id: string | null
+        }
+        Insert: {
+          can_skip_if_approved_amount_under?: number | null
+          chain_id: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          level_order?: number
+          level_type: Database["public"]["Enums"]["approval_level_type"]
+          specific_user_id?: string | null
+        }
+        Update: {
+          can_skip_if_approved_amount_under?: number | null
+          chain_id?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          level_order?: number
+          level_type?: Database["public"]["Enums"]["approval_level_type"]
+          specific_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_chain_levels_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "approval_chain_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approved_travels: {
         Row: {
           approval_number: string
@@ -450,6 +535,58 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles_limited"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grade_chain_assignments: {
+        Row: {
+          chain_id: string
+          created_at: string
+          grade_id: string | null
+          id: string
+          max_amount: number | null
+          min_amount: number | null
+          organization_id: string
+        }
+        Insert: {
+          chain_id: string
+          created_at?: string
+          grade_id?: string | null
+          id?: string
+          max_amount?: number | null
+          min_amount?: number | null
+          organization_id: string
+        }
+        Update: {
+          chain_id?: string
+          created_at?: string
+          grade_id?: string | null
+          id?: string
+          max_amount?: number | null
+          min_amount?: number | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_chain_assignments_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "approval_chain_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grade_chain_assignments_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "employee_grades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grade_chain_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1734,6 +1871,11 @@ export type Database = {
         | "user"
         | "accounting_manager"
         | "org_admin"
+      approval_level_type:
+        | "direct_manager"
+        | "org_admin"
+        | "accounting_manager"
+        | "specific_user"
       approval_status: "pending" | "approved" | "rejected" | "skipped"
       destination_type: "domestic" | "international" | "all"
       expense_approval_status: "pending" | "approved" | "rejected"
@@ -1942,6 +2084,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "user", "accounting_manager", "org_admin"],
+      approval_level_type: [
+        "direct_manager",
+        "org_admin",
+        "accounting_manager",
+        "specific_user",
+      ],
       approval_status: ["pending", "approved", "rejected", "skipped"],
       destination_type: ["domestic", "international", "all"],
       expense_approval_status: ["pending", "approved", "rejected"],
