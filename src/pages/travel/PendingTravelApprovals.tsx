@@ -504,9 +504,25 @@ export default function PendingTravelApprovals() {
           </div>
         ) : pendingApprovals.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center">
-              <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
-              <p className="text-muted-foreground">אין בקשות ממתינות לאישורך</p>
+            <CardContent className="py-12 text-center space-y-4">
+              <CheckCircle className="h-12 w-12 mx-auto text-primary mb-1" />
+              {initialRequestId ? (
+                <>
+                  <p className="text-muted-foreground">
+                    הבקשה מההתראה כבר טופלה או שאינה ממתינה לאישורך.
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button variant="outline" onClick={() => navigate(`/travel-requests/${initialRequestId}`)}>
+                      צפה בפרטי הבקשה
+                    </Button>
+                    <Button variant="ghost" onClick={() => navigate('/travel-requests')}>
+                      כל בקשות הנסיעה
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground">אין בקשות ממתינות לאישורך</p>
+              )}
             </CardContent>
           </Card>
         ) : (
