@@ -401,7 +401,12 @@ export default function PendingTravelApprovals() {
         .update(requestUpdate)
         .eq('id', request.id);
 
-      if (requestError) throw requestError;
+      if (requestError) {
+        console.error('Error updating travel request status:', requestError);
+        throw requestError;
+      }
+      
+      console.log('Travel request updated successfully:', { id: request.id, newStatus, requestUpdate });
 
       // Send notification and email to employee if this is a final decision
       if (isFinalApproval) {
