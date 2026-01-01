@@ -128,28 +128,39 @@ serve(async (req) => {
     </html>
     `;
 
-    // Send email
-    const { error: emailError } = await resend.emails.send({
-      from: "Travel System <onboarding@resend.dev>",
-      to: [approverProfile.email],
-      subject: `🔔 בקשת נסיעה חדשה לאישור - ${payload.destination}`,
-      html: emailHtml,
-    });
+    // Send email (non-blocking - continue even if email fails)
+    let emailSent = false;
+    try {
+      const { error: emailError } = await resend.emails.send({
+        from: "Travel System <onboarding@resend.dev>",
+        to: [approverProfile.email],
+        subject: `🔔 בקשת נסיעה חדשה לאישור - ${payload.destination}`,
+        html: emailHtml,
+      });
 
-    if (emailError) {
-      console.error("Error sending email:", emailError);
-      throw emailError;
+      if (emailError) {
+        console.error("Error sending email (non-blocking):", emailError);
+      } else {
+        emailSent = true;
+        console.log("Email sent successfully");
+      }
+    } catch (emailErr) {
+      console.error("Email sending failed (non-blocking):", emailErr);
     }
 
-    // Create in-app notification
-    await supabase.from("notifications").insert({
+    // Create in-app notification (this is the important part)
+    const { error: notifError } = await supabase.from("notifications").insert({
       user_id: payload.approver_id,
       type: "travel_request_pending",
       title: "בקשת נסיעה חדשה לאישור",
       message: `${payload.requester_name} הגיש בקשה לנסיעה ל-${payload.destination}`,
     });
 
-    console.log("Notification sent successfully");
+    if (notifError) {
+      console.error("Error creating notification:", notifError);
+    }
+
+    console.log("Notification process completed. Email sent:", emailSent);
 
     return new Response(
       JSON.stringify({ success: true }),
