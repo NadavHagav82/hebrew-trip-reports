@@ -62,6 +62,7 @@ export const NotificationBell = () => {
   const [swipeState, setSwipeState] = useState<SwipeState | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<NotificationFilter>('all');
+  const [actionableApprovalRequestIds, setActionableApprovalRequestIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   const filteredNotifications = notifications.filter(n => {
@@ -114,69 +115,87 @@ export const NotificationBell = () => {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (!error && data) {
-      // Fetch travel request details for notifications that have travel_request_id
-      const travelRequestIds = data
-        .filter(n => n.travel_request_id)
-        .map(n => n.travel_request_id);
-      
-      // Fetch report details for notifications that have report_id
-      const reportIds = data
-        .filter(n => n.report_id)
-        .map(n => n.report_id);
-      
-      let travelRequests: Record<string, TravelRequestPreview> = {};
-      let reports: Record<string, ReportPreview> = {};
-      
-      if (travelRequestIds.length > 0) {
-        const { data: travelData } = await supabase
-          .from("travel_requests")
-          .select("id, destination_city, destination_country, start_date, end_date, estimated_total_ils, status")
-          .in("id", travelRequestIds);
-        
-        if (travelData) {
-          travelRequests = travelData.reduce((acc, tr) => {
-            acc[tr.id] = {
-              destination_city: tr.destination_city,
-              destination_country: tr.destination_country,
-              start_date: tr.start_date,
-              end_date: tr.end_date,
-              estimated_total_ils: tr.estimated_total_ils,
-              status: tr.status,
-            };
-            return acc;
-          }, {} as Record<string, TravelRequestPreview>);
-        }
-      }
-      
-      if (reportIds.length > 0) {
-        const { data: reportData } = await supabase
-          .from("reports")
-          .select("id, trip_destination, trip_start_date, trip_end_date, total_amount_ils")
-          .in("id", reportIds);
-        
-        if (reportData) {
-          reports = reportData.reduce((acc, r) => {
-            acc[r.id] = {
-              trip_destination: r.trip_destination,
-              trip_start_date: r.trip_start_date,
-              trip_end_date: r.trip_end_date,
-              total_amount_ils: r.total_amount_ils,
-            };
-            return acc;
-          }, {} as Record<string, ReportPreview>);
-        }
-      }
-      
-      const enrichedNotifications = data.map(n => ({
-        ...n,
-        travel_request: n.travel_request_id ? travelRequests[n.travel_request_id] || null : null,
-        report: n.report_id ? reports[n.report_id] || null : null,
-      }));
-      
-      setNotifications(enrichedNotifications);
-      setUnreadCount(enrichedNotifications.filter((n) => !n.is_read).length);
+    if (error || !data) return;
+
+    // Fetch travel request details for notifications that have travel_request_id
+    const travelRequestIds = data
+      .filter(n => n.travel_request_id)
+      .map(n => n.travel_request_id)
+      .filter(Boolean) as string[];
+
+    // Fetch report details for notifications that have report_id
+    const reportIds = data
+      .filter(n => n.report_id)
+      .map(n => n.report_id)
+      .filter(Boolean) as string[];
+
+    // Figure out which travel requests are actionable approvals for the CURRENT user
+    // (prevents employee from being routed into the approver screen for already-handled / not-their-approval requests)
+    if (travelRequestIds.length > 0) {
+      const { data: pendingApprovals } = await supabase
+        .from('travel_request_approvals')
+        .select('travel_request_id')
+        .eq('approver_id', user.id)
+        .eq('status', 'pending')
+        .in('travel_request_id', travelRequestIds);
+
+      const set = new Set((pendingApprovals || []).map(a => a.travel_request_id));
+      setActionableApprovalRequestIds(set);
+    } else {
+      setActionableApprovalRequestIds(new Set());
     }
+
+    let travelRequests: Record<string, TravelRequestPreview> = {};
+    let reports: Record<string, ReportPreview> = {};
+
+    if (travelRequestIds.length > 0) {
+      const { data: travelData } = await supabase
+        .from("travel_requests")
+        .select("id, destination_city, destination_country, start_date, end_date, estimated_total_ils, status")
+        .in("id", travelRequestIds);
+
+      if (travelData) {
+        travelRequests = travelData.reduce((acc, tr) => {
+          acc[tr.id] = {
+            destination_city: tr.destination_city,
+            destination_country: tr.destination_country,
+            start_date: tr.start_date,
+            end_date: tr.end_date,
+            estimated_total_ils: tr.estimated_total_ils,
+            status: tr.status,
+          };
+          return acc;
+        }, {} as Record<string, TravelRequestPreview>);
+      }
+    }
+
+    if (reportIds.length > 0) {
+      const { data: reportData } = await supabase
+        .from("reports")
+        .select("id, trip_destination, trip_start_date, trip_end_date, total_amount_ils")
+        .in("id", reportIds);
+
+      if (reportData) {
+        reports = reportData.reduce((acc, r) => {
+          acc[r.id] = {
+            trip_destination: r.trip_destination,
+            trip_start_date: r.trip_start_date,
+            trip_end_date: r.trip_end_date,
+            total_amount_ils: r.total_amount_ils,
+          };
+          return acc;
+        }, {} as Record<string, ReportPreview>);
+      }
+    }
+
+    const enrichedNotifications = data.map(n => ({
+      ...n,
+      travel_request: n.travel_request_id ? travelRequests[n.travel_request_id] || null : null,
+      report: n.report_id ? reports[n.report_id] || null : null,
+    }));
+
+    setNotifications(enrichedNotifications);
+    setUnreadCount(enrichedNotifications.filter((n) => !n.is_read).length);
   };
 
   useEffect(() => {
@@ -263,20 +282,40 @@ export const NotificationBell = () => {
     if (!notification.is_read) {
       markAsRead(notification.id);
     }
-    
-    if (notification.type === 'travel_request_pending' && notification.travel_request_id) {
-      navigate(`/travel/pending-approvals?request=${notification.travel_request_id}`);
+
+    const travelRequestId = notification.travel_request_id || undefined;
+    const isActionableApproval = !!travelRequestId && actionableApprovalRequestIds.has(travelRequestId);
+
+    // Travel approvals: only route to the approver screen when THIS user still has a pending approval
+    if (notification.type === 'travel_request_pending' && travelRequestId) {
+      if (isActionableApproval) {
+        navigate(`/travel/pending-approvals?request=${travelRequestId}`);
+      } else {
+        navigate(`/travel-requests/${travelRequestId}`);
+      }
       setOpen(false);
-    } else if (notification.type === 'travel_request_pending') {
+      return;
+    }
+
+    if (notification.type === 'travel_request_pending') {
       navigate('/travel/pending-approvals');
       setOpen(false);
-    } else if ((notification.type === 'travel_approved' || notification.type === 'travel_rejected') && notification.travel_request_id) {
-      navigate(`/travel-requests/${notification.travel_request_id}`);
+      return;
+    }
+
+    if ((notification.type === 'travel_approved' || notification.type === 'travel_rejected') && travelRequestId) {
+      navigate(`/travel-requests/${travelRequestId}`);
       setOpen(false);
-    } else if (notification.type === 'travel_approved' || notification.type === 'travel_rejected') {
+      return;
+    }
+
+    if (notification.type === 'travel_approved' || notification.type === 'travel_rejected') {
       navigate('/travel-requests');
       setOpen(false);
-    } else if (notification.report_id) {
+      return;
+    }
+
+    if (notification.report_id) {
       navigate(`/report/${notification.report_id}`);
       setOpen(false);
     }
