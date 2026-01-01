@@ -20,6 +20,7 @@ interface TravelRequestPreview {
   start_date: string;
   end_date: string;
   estimated_total_ils: number | null;
+  status: string;
 }
 
 interface ReportPreview {
@@ -130,7 +131,7 @@ export const NotificationBell = () => {
       if (travelRequestIds.length > 0) {
         const { data: travelData } = await supabase
           .from("travel_requests")
-          .select("id, destination_city, destination_country, start_date, end_date, estimated_total_ils")
+          .select("id, destination_city, destination_country, start_date, end_date, estimated_total_ils, status")
           .in("id", travelRequestIds);
         
         if (travelData) {
@@ -141,6 +142,7 @@ export const NotificationBell = () => {
               start_date: tr.start_date,
               end_date: tr.end_date,
               estimated_total_ils: tr.estimated_total_ils,
+              status: tr.status,
             };
             return acc;
           }, {} as Record<string, TravelRequestPreview>);
@@ -537,23 +539,41 @@ export const NotificationBell = () => {
                                     {notification.travel_request.destination_city}, {notification.travel_request.destination_country}
                                   </span>
                                 </div>
-                                {/* Status Icon */}
-                                {notification.type === 'travel_approved' && (
+                                {/* Current Status - shows real-time status */}
+                                {notification.travel_request.status === 'approved' && (
                                   <div className="flex items-center gap-1 text-green-600">
                                     <CheckCircle2 className="h-4 w-4" />
-                                    <span className="text-[10px] font-medium">מאושר</span>
+                                    <span className="text-[10px] font-medium">אושר</span>
                                   </div>
                                 )}
-                                {notification.type === 'travel_rejected' && (
+                                {notification.travel_request.status === 'partially_approved' && (
+                                  <div className="flex items-center gap-1 text-blue-600">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">אושר חלקית</span>
+                                  </div>
+                                )}
+                                {notification.travel_request.status === 'rejected' && (
                                   <div className="flex items-center gap-1 text-red-600">
                                     <XCircle className="h-4 w-4" />
                                     <span className="text-[10px] font-medium">נדחה</span>
                                   </div>
                                 )}
-                                {notification.type === 'travel_request_pending' && (
+                                {notification.travel_request.status === 'pending_approval' && (
                                   <div className="flex items-center gap-1 text-amber-600">
                                     <Clock className="h-4 w-4" />
-                                    <span className="text-[10px] font-medium">ממתין</span>
+                                    <span className="text-[10px] font-medium">ממתין לאישור</span>
+                                  </div>
+                                )}
+                                {notification.travel_request.status === 'cancelled' && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <XCircle className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">בוטל</span>
+                                  </div>
+                                )}
+                                {notification.travel_request.status === 'draft' && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">טיוטה</span>
                                   </div>
                                 )}
                               </div>
