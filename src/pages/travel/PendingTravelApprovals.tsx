@@ -618,7 +618,6 @@ export default function PendingTravelApprovals() {
           </div>
         )}
 
-        {/* Approval Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
             <DialogHeader>
@@ -626,12 +625,19 @@ export default function PendingTravelApprovals() {
                 <Plane className="h-5 w-5" />
                 אישור בקשת נסיעה
               </DialogTitle>
-              <DialogDescription>
-                {selectedApproval?.request?.destination_city}, {selectedApproval?.request?.destination_country}
-              </DialogDescription>
+              {selectedApproval?.request && (
+                <DialogDescription>
+                  {selectedApproval.request.destination_city}, {selectedApproval.request.destination_country}
+                </DialogDescription>
+              )}
             </DialogHeader>
 
-            {selectedApproval?.request && (
+            {!selectedApproval?.request ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">טוען פרטי הבקשה...</p>
+              </div>
+            ) : (
               <div className="space-y-6">
                 {/* Custom Message from Approval Chain */}
                 {selectedApproval.custom_message && (
