@@ -553,13 +553,25 @@ export const NotificationBell = () => {
                           <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center justify-between gap-2 mb-1">
                             <Badge
                               variant="secondary"
                               className={`text-xs ${getTypeColor(notification.type)}`}
                             >
                               {getTypeLabel(notification.type)}
                             </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-50 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                              title="מחק התראה"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                           <p className="font-medium text-sm truncate">
                             {notification.title}
