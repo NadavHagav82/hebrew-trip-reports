@@ -254,8 +254,18 @@ export default function TravelRequestsList() {
           <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
               <AlertDialogTitle>האם למחוק את הבקשה?</AlertDialogTitle>
-              <AlertDialogDescription>
-                פעולה זו לא ניתנת לביטול. הבקשה תימחק לצמיתות.
+              <AlertDialogDescription className="space-y-2">
+                <span className="block">פעולה זו לא ניתנת לביטול. הבקשה תימחק לצמיתות.</span>
+                {requestToDelete && requests.find(r => r.id === requestToDelete)?.status === 'approved' && (
+                  <span className="block text-orange-600 dark:text-orange-400 font-medium">
+                    ⚠️ שים לב: בקשה זו כבר אושרה. מחיקתה תגרום לאובדן האישור לצמיתות!
+                  </span>
+                )}
+                {requestToDelete && requests.find(r => r.id === requestToDelete)?.status === 'partially_approved' && (
+                  <span className="block text-orange-600 dark:text-orange-400 font-medium">
+                    ⚠️ שים לב: בקשה זו אושרה חלקית. מחיקתה תגרום לאובדן האישור לצמיתות!
+                  </span>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">
