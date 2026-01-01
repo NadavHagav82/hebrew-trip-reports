@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, Trash2, Plane, Calendar, DollarSign, FileText, MapPin } from "lucide-react";
+import { Bell, Check, Trash2, Plane, Calendar, DollarSign, MapPin, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -466,11 +466,32 @@ export const NotificationBell = () => {
                           {/* Travel Request Preview */}
                           {notification.travel_request && (
                             <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs space-y-1">
-                              <div className="flex items-center gap-1.5 text-foreground">
-                                <Plane className="h-3 w-3 text-primary" />
-                                <span className="font-medium">
-                                  {notification.travel_request.destination_city}, {notification.travel_request.destination_country}
-                                </span>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 text-foreground">
+                                  <Plane className="h-3 w-3 text-primary" />
+                                  <span className="font-medium">
+                                    {notification.travel_request.destination_city}, {notification.travel_request.destination_country}
+                                  </span>
+                                </div>
+                                {/* Status Icon */}
+                                {notification.type === 'travel_approved' && (
+                                  <div className="flex items-center gap-1 text-green-600">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">מאושר</span>
+                                  </div>
+                                )}
+                                {notification.type === 'travel_rejected' && (
+                                  <div className="flex items-center gap-1 text-red-600">
+                                    <XCircle className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">נדחה</span>
+                                  </div>
+                                )}
+                                {notification.type === 'travel_request_pending' && (
+                                  <div className="flex items-center gap-1 text-amber-600">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">ממתין</span>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex items-center gap-1.5 text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
@@ -490,11 +511,41 @@ export const NotificationBell = () => {
                           {/* Report Preview */}
                           {notification.report && (
                             <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs space-y-1">
-                              <div className="flex items-center gap-1.5 text-foreground">
-                                <MapPin className="h-3 w-3 text-primary" />
-                                <span className="font-medium">
-                                  {notification.report.trip_destination}
-                                </span>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 text-foreground">
+                                  <MapPin className="h-3 w-3 text-primary" />
+                                  <span className="font-medium">
+                                    {notification.report.trip_destination}
+                                  </span>
+                                </div>
+                                {/* Status Icon */}
+                                {notification.type === 'report_approved' && (
+                                  <div className="flex items-center gap-1 text-green-600">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">מאושר</span>
+                                  </div>
+                                )}
+                                {notification.type === 'report_rejected' && (
+                                  <div className="flex items-center gap-1 text-red-600">
+                                    <XCircle className="h-4 w-4" />
+                                    <span className="text-[10px] font-medium">נדחה</span>
+                                  </div>
+                                )}
+                                {(notification.type === 'expense_approved' || notification.type === 'expense_rejected') && (
+                                  <div className={cn(
+                                    "flex items-center gap-1",
+                                    notification.type === 'expense_approved' ? "text-blue-600" : "text-orange-600"
+                                  )}>
+                                    {notification.type === 'expense_approved' ? (
+                                      <CheckCircle2 className="h-4 w-4" />
+                                    ) : (
+                                      <XCircle className="h-4 w-4" />
+                                    )}
+                                    <span className="text-[10px] font-medium">
+                                      {notification.type === 'expense_approved' ? 'הוצאה אושרה' : 'הוצאה נדחתה'}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex items-center gap-1.5 text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
