@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, Trash2, Plane, Calendar, DollarSign } from "lucide-react";
+import { Bell, Check, Trash2, Plane, Calendar, DollarSign, FileText, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -22,6 +22,13 @@ interface TravelRequestPreview {
   estimated_total_ils: number | null;
 }
 
+interface ReportPreview {
+  trip_destination: string;
+  trip_start_date: string;
+  trip_end_date: string;
+  total_amount_ils: number | null;
+}
+
 interface Notification {
   id: string;
   type: string;
@@ -32,6 +39,7 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   travel_request?: TravelRequestPreview | null;
+  report?: ReportPreview | null;
 }
 
 interface SwipeState {
@@ -96,7 +104,13 @@ export const NotificationBell = () => {
         .filter(n => n.travel_request_id)
         .map(n => n.travel_request_id);
       
+      // Fetch report details for notifications that have report_id
+      const reportIds = data
+        .filter(n => n.report_id)
+        .map(n => n.report_id);
+      
       let travelRequests: Record<string, TravelRequestPreview> = {};
+      let reports: Record<string, ReportPreview> = {};
       
       if (travelRequestIds.length > 0) {
         const { data: travelData } = await supabase
@@ -118,9 +132,29 @@ export const NotificationBell = () => {
         }
       }
       
+      if (reportIds.length > 0) {
+        const { data: reportData } = await supabase
+          .from("reports")
+          .select("id, trip_destination, trip_start_date, trip_end_date, total_amount_ils")
+          .in("id", reportIds);
+        
+        if (reportData) {
+          reports = reportData.reduce((acc, r) => {
+            acc[r.id] = {
+              trip_destination: r.trip_destination,
+              trip_start_date: r.trip_start_date,
+              trip_end_date: r.trip_end_date,
+              total_amount_ils: r.total_amount_ils,
+            };
+            return acc;
+          }, {} as Record<string, ReportPreview>);
+        }
+      }
+      
       const enrichedNotifications = data.map(n => ({
         ...n,
         travel_request: n.travel_request_id ? travelRequests[n.travel_request_id] || null : null,
+        report: n.report_id ? reports[n.report_id] || null : null,
       }));
       
       setNotifications(enrichedNotifications);
@@ -448,6 +482,30 @@ export const NotificationBell = () => {
                                 <div className="flex items-center gap-1.5 text-muted-foreground">
                                   <DollarSign className="h-3 w-3" />
                                   <span>תקציב: ₪{notification.travel_request.estimated_total_ils.toLocaleString()}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Report Preview */}
+                          {notification.report && (
+                            <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs space-y-1">
+                              <div className="flex items-center gap-1.5 text-foreground">
+                                <MapPin className="h-3 w-3 text-primary" />
+                                <span className="font-medium">
+                                  {notification.report.trip_destination}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  {format(new Date(notification.report.trip_start_date), "d MMM", { locale: he })} - {format(new Date(notification.report.trip_end_date), "d MMM yyyy", { locale: he })}
+                                </span>
+                              </div>
+                              {notification.report.total_amount_ils && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <DollarSign className="h-3 w-3" />
+                                  <span>סה"כ: ₪{notification.report.total_amount_ils.toLocaleString()}</span>
                                 </div>
                               )}
                             </div>
