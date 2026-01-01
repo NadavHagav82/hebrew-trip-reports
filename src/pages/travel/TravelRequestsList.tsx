@@ -228,19 +228,17 @@ export default function TravelRequestsList() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {['draft', 'pending_approval', 'rejected', 'cancelled'].includes(request.status) && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                setRequestToDelete(request.id);
-                                setDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setRequestToDelete(request.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
