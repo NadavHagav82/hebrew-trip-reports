@@ -991,7 +991,8 @@ export default function NewReport() {
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
             notes: reportNotes,
-            daily_allowance: includeDailyAllowance ? dailyAllowance : null,
+            daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
+            allowance_days: allowanceType === 'custom' ? customAllowanceDays : (allowanceType === 'full' ? calculateTripDuration() : null),
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed' || newStatus === 'pending_approval') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -1020,7 +1021,8 @@ export default function NewReport() {
             trip_end_date: tripEndDate,
             trip_purpose: tripPurpose,
             notes: reportNotes,
-            daily_allowance: includeDailyAllowance ? dailyAllowance : null,
+            daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
+            allowance_days: allowanceType === 'custom' ? customAllowanceDays : (allowanceType === 'full' ? calculateTripDuration() : null),
             status: newStatus,
             submitted_at: (newStatus === 'open' || newStatus === 'closed' || newStatus === 'pending_approval') ? new Date().toISOString() : null,
             total_amount_ils: calculateGrandTotal(),
@@ -1372,27 +1374,30 @@ export default function NewReport() {
                 </div>
 
                 {/* Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Option 1: Include */}
+                <div className="space-y-3">
+                  {/* Option 1: Full days */}
                   <div
-                    onClick={() => setIncludeDailyAllowance(true)}
+                    onClick={() => {
+                      setAllowanceType('full');
+                      setIncludeDailyAllowance(true);
+                    }}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                      includeDailyAllowance === true
+                      allowanceType === 'full'
                         ? 'border-primary bg-primary/10 shadow-md'
                         : 'border-border hover:border-primary/50 hover:bg-muted/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
-                        includeDailyAllowance === true
+                        allowanceType === 'full'
                           ? 'border-primary bg-primary'
                           : 'border-muted-foreground/50'
                       }`}>
-                        {includeDailyAllowance === true && (
+                        {allowanceType === 'full' && (
                           <Check className="w-3 h-3 text-white" />
                         )}
                       </div>
-                      <span className="font-semibold text-sm">הוסף אש״ל יומי לדוח</span>
+                      <span className="font-semibold text-sm">הוסף אש״ל לכל ימי הנסיעה ({calculateTripDuration()} ימים)</span>
                     </div>
                     <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border mr-8">
                       <span className="text-sm text-muted-foreground">$</span>
@@ -1412,22 +1417,88 @@ export default function NewReport() {
                     </div>
                   </div>
 
-                  {/* Option 2: Don't include */}
+                  {/* Option 2: Custom days */}
                   <div
-                    onClick={() => setIncludeDailyAllowance(false)}
+                    onClick={() => {
+                      setAllowanceType('custom');
+                      setIncludeDailyAllowance(true);
+                    }}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      allowanceType === 'custom'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
+                        allowanceType === 'custom'
+                          ? 'border-primary bg-primary'
+                          : 'border-muted-foreground/50'
+                      }`}>
+                        {allowanceType === 'custom' && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <span className="font-semibold text-sm">הוסף אש״ל למספר ימים ספציפי</span>
+                    </div>
+                    {allowanceType === 'custom' && (
+                      <div className="flex flex-wrap items-center gap-2 mr-8">
+                        <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border">
+                          <span className="text-sm text-muted-foreground">$</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={dailyAllowance}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setDailyAllowance(Number(e.target.value));
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-20 h-8 text-center border-0 bg-transparent p-0 font-bold text-lg"
+                          />
+                          <span className="text-sm text-muted-foreground">ליום</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">×</span>
+                        <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border">
+                          <Input
+                            type="number"
+                            min="1"
+                            max={calculateTripDuration()}
+                            value={customAllowanceDays}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              const val = Number(e.target.value);
+                              setCustomAllowanceDays(Math.min(Math.max(1, val), calculateTripDuration()));
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-16 h-8 text-center border-0 bg-transparent p-0 font-bold text-lg"
+                          />
+                          <span className="text-sm text-muted-foreground">ימים</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Option 3: No allowance */}
+                  <div
+                    onClick={() => {
+                      setAllowanceType('none');
+                      setIncludeDailyAllowance(false);
+                    }}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center ${
-                      includeDailyAllowance === false
+                      allowanceType === 'none'
                         ? 'border-muted-foreground bg-muted/50'
                         : 'border-border hover:border-muted-foreground/50 hover:bg-muted/30'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
-                        includeDailyAllowance === false
+                        allowanceType === 'none'
                           ? 'border-muted-foreground bg-muted-foreground'
                           : 'border-muted-foreground/50'
                       }`}>
-                        {includeDailyAllowance === false && (
+                        {allowanceType === 'none' && (
                           <Check className="w-3 h-3 text-white" />
                         )}
                       </div>
@@ -1437,14 +1508,14 @@ export default function NewReport() {
                 </div>
 
                 {/* Total calculation */}
-                {includeDailyAllowance === true && calculateTripDuration() > 0 && (
+                {(allowanceType === 'full' || allowanceType === 'custom') && calculateTripDuration() > 0 && (
                   <div className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        סה״כ אש״ל לתקופה ({calculateTripDuration()} ימים)
+                        סה״כ אש״ל לתקופה ({allowanceType === 'full' ? calculateTripDuration() : customAllowanceDays} ימים)
                       </span>
                       <span className="text-2xl font-black text-blue-700 dark:text-blue-300">
-                        ${(dailyAllowance * calculateTripDuration()).toLocaleString()}
+                        ${(dailyAllowance * (allowanceType === 'full' ? calculateTripDuration() : customAllowanceDays)).toLocaleString()}
                       </span>
                     </div>
                   </div>
