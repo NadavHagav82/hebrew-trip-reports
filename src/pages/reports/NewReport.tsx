@@ -2258,9 +2258,6 @@ export default function NewReport() {
                               <PopoverContent className="w-auto p-0" align="start">
                                 <CalendarPicker
                                   mode="single"
-                                  captionLayout="dropdown-buttons"
-                                  fromYear={2020}
-                                  toYear={new Date().getFullYear() + 1}
                                   selected={(() => {
                                     if (!expense.expense_date) return undefined;
                                     const d = parseISO(expense.expense_date);
