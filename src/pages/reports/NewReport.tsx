@@ -214,6 +214,8 @@ export default function NewReport() {
   const [tripDestination, setTripDestination] = useState('');
   const [dailyAllowance, setDailyAllowance] = useState(100);
   const [includeDailyAllowance, setIncludeDailyAllowance] = useState<boolean | null>(null);
+  const [allowanceType, setAllowanceType] = useState<'full' | 'custom' | 'none' | null>(null); // full = all days, custom = manual days, none = no allowance
+  const [customAllowanceDays, setCustomAllowanceDays] = useState<number>(1);
   const [tripStartDate, setTripStartDate] = useState('');
   const [tripEndDate, setTripEndDate] = useState('');
   const [tripPurpose, setTripPurpose] = useState('');
@@ -319,7 +321,22 @@ export default function NewReport() {
       setReportNotes(report.notes || '');
       // Set daily allowance decision based on existing data
       if (report.daily_allowance !== null && report.daily_allowance !== undefined) {
-        setIncludeDailyAllowance(report.daily_allowance > 0);
+        if (report.daily_allowance > 0) {
+          setIncludeDailyAllowance(true);
+          // Determine if it was full days or custom days
+          const tripDays = (() => {
+            const start = new Date(report.trip_start_date);
+            const end = new Date(report.trip_end_date);
+            const diffTime = Math.abs(end.getTime() - start.getTime());
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          })();
+          // We can't know for sure if it was custom, so default to full
+          setAllowanceType('full');
+          setCustomAllowanceDays(tripDays);
+        } else {
+          setIncludeDailyAllowance(false);
+          setAllowanceType('none');
+        }
       }
       setDailyAllowance(report.daily_allowance || 100);
 
@@ -837,7 +854,7 @@ export default function NewReport() {
     }
 
     // Validate daily allowance decision
-    if (closeReport && includeDailyAllowance === null) {
+    if (closeReport && allowanceType === null) {
       toast({
         title: '⚠️ נדרשת החלטה לגבי אש״ל',
         description: 'יש לבחור האם להוסיף את האש״ל לדוח או לא',
