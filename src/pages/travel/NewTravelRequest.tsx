@@ -416,6 +416,13 @@ export default function NewTravelRequest() {
       if (requestError) throw requestError;
 
       setSavedRequestId(request.id);
+      
+      // Upload pending attachments
+      const uploadFn = (window as any).uploadTravelAttachments;
+      if (uploadFn) {
+        await uploadFn(request.id);
+      }
+      
       toast.success('טיוטה נשמרה');
       return request.id;
     } catch (error) {
