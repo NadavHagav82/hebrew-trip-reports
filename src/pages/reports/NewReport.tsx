@@ -33,7 +33,8 @@ interface ReceiptFile {
 }
 
 interface Expense {
-  id: string;
+  id: string; // Local ID for UI tracking
+  dbId?: string; // Database ID (UUID) - undefined for new expenses
   expense_date: string;
   category: 'flights' | 'accommodation' | 'food' | 'transportation' | 'miscellaneous';
   description: string;
@@ -272,6 +273,9 @@ export default function NewReport() {
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasUnsavedChanges = useRef(false);
+  
+  // Track deleted expense DB IDs for auto-save sync
+  const deletedExpenseDbIds = useRef<Set<string>>(new Set());
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -306,7 +310,7 @@ export default function NewReport() {
     }
   };
 
-  // Auto-save function - saves report as draft
+  // Auto-save function - saves report and expenses as draft
   const autoSaveReport = useCallback(async () => {
     // Don't auto-save if no user or missing required fields
     if (!user || !tripDestination.trim() || !tripStartDate || !tripEndDate) {
@@ -320,8 +324,9 @@ export default function NewReport() {
 
     try {
       setAutoSaving(true);
+      let currentReportId = reportId;
 
-      if (reportId) {
+      if (currentReportId) {
         // Update existing report
         const { error } = await supabase
           .from('reports')
@@ -338,9 +343,10 @@ export default function NewReport() {
               const diffTime = Math.abs(end.getTime() - start.getTime());
               return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             })() : null),
+            total_amount_ils: expenses.reduce((sum, exp) => sum + exp.amount_in_ils, 0),
             updated_at: new Date().toISOString(),
           })
-          .eq('id', reportId);
+          .eq('id', currentReportId);
 
         if (error) throw error;
       } else {
@@ -369,11 +375,73 @@ export default function NewReport() {
         if (error) throw error;
         
         // Set the report ID for future updates
+        currentReportId = newReport.id;
         setReportId(newReport.id);
         setIsEditMode(true);
         
         // Update URL without full navigation
         window.history.replaceState(null, '', `/reports/${newReport.id}/edit`);
+      }
+
+      // Auto-save expenses if we have a report ID
+      if (currentReportId) {
+        // Delete removed expenses from DB
+        if (deletedExpenseDbIds.current.size > 0) {
+          const idsToDelete = Array.from(deletedExpenseDbIds.current);
+          await supabase
+            .from('expenses')
+            .delete()
+            .in('id', idsToDelete);
+          deletedExpenseDbIds.current.clear();
+        }
+
+        // Save/update expenses (only those with minimum data)
+        for (const exp of expenses) {
+          // Only auto-save expenses that have at least some data
+          const hasMinimumData = exp.expense_date || exp.description || exp.amount > 0;
+          if (!hasMinimumData) continue;
+
+          if (exp.dbId) {
+            // Update existing expense
+            await supabase
+              .from('expenses')
+              .update({
+                expense_date: exp.expense_date || new Date().toISOString().split('T')[0],
+                category: exp.category,
+                description: exp.description,
+                amount: exp.amount,
+                currency: exp.currency as any,
+                amount_in_ils: exp.amount_in_ils,
+                notes: exp.notes || null,
+                payment_method: exp.payment_method as any || 'out_of_pocket',
+              })
+              .eq('id', exp.dbId);
+          } else {
+            // Insert new expense
+            const { data: newExpense, error: expenseError } = await supabase
+              .from('expenses')
+              .insert({
+                report_id: currentReportId,
+                expense_date: exp.expense_date || new Date().toISOString().split('T')[0],
+                category: exp.category,
+                description: exp.description || 'הוצאה חדשה',
+                amount: exp.amount,
+                currency: exp.currency as any,
+                amount_in_ils: exp.amount_in_ils,
+                notes: exp.notes || null,
+                payment_method: exp.payment_method as any || 'out_of_pocket',
+              })
+              .select()
+              .single();
+
+            if (!expenseError && newExpense) {
+              // Update local expense with DB ID
+              setExpenses(prev => prev.map(e => 
+                e.id === exp.id ? { ...e, dbId: newExpense.id } : e
+              ));
+            }
+          }
+        }
       }
 
       setLastAutoSave(new Date());
@@ -384,7 +452,7 @@ export default function NewReport() {
     } finally {
       setAutoSaving(false);
     }
-  }, [user, tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, reportId, autoSaving, loading]);
+  }, [user, tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, reportId, autoSaving, loading, expenses]);
 
   // Debounced auto-save - triggers 3 seconds after last change
   const triggerAutoSave = useCallback(() => {
@@ -399,7 +467,7 @@ export default function NewReport() {
     }, 3000); // 3 second debounce
   }, [autoSaveReport]);
 
-  // Auto-save when form fields change
+  // Auto-save when form fields or expenses change
   useEffect(() => {
     // Only trigger auto-save if we have minimum required data
     if (tripDestination.trim() && tripStartDate && tripEndDate) {
@@ -411,7 +479,7 @@ export default function NewReport() {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays]);
+  }, [tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, expenses]);
 
   // Save on page unload
   useEffect(() => {
@@ -489,9 +557,10 @@ export default function NewReport() {
 
       if (expensesError) throw expensesError;
 
-      // Transform expenses to local format
+      // Transform expenses to local format - keep DB ID for sync
       const transformedExpenses: Expense[] = expensesData.map(exp => ({
-        id: exp.id,
+        id: exp.id, // Use DB ID as local ID for existing expenses
+        dbId: exp.id, // Store DB ID for updates
         expense_date: exp.expense_date,
         category: exp.category,
         description: exp.description,
@@ -559,6 +628,10 @@ export default function NewReport() {
       expense.receipts.forEach(receipt => {
         URL.revokeObjectURL(receipt.preview);
       });
+      // Track DB ID for deletion during auto-save
+      if (expense.dbId) {
+        deletedExpenseDbIds.current.add(expense.dbId);
+      }
     }
     setExpenses(expenses.filter(exp => exp.id !== id));
     setSavedExpenses(prev => {
@@ -566,6 +639,8 @@ export default function NewReport() {
       newSet.delete(id);
       return newSet;
     });
+    // Trigger auto-save to sync deletion
+    triggerAutoSave();
   };
 
   // Check for duplicate expenses
@@ -1225,6 +1300,9 @@ export default function NewReport() {
           }
         }
       }
+
+      // Clear deleted expense tracking since we've done a full save
+      deletedExpenseDbIds.current.clear();
 
       // Create history record
       const isPendingForManager = closeReport && newStatus === 'pending_approval';
