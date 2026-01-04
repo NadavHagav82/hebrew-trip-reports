@@ -473,7 +473,7 @@ export default function NewReport() {
     }
   }, [user, tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, reportId, autoSaving, loading, expenses]);
 
-  // Debounced auto-save - triggers 3 seconds after last change
+  // Debounced auto-save - triggers 1.5 seconds after last change
   const triggerAutoSave = useCallback(() => {
     hasUnsavedChanges.current = true;
     
@@ -483,7 +483,7 @@ export default function NewReport() {
     
     autoSaveTimeoutRef.current = setTimeout(() => {
       autoSaveReport();
-    }, 3000); // 3 second debounce
+    }, 1500); // 1.5 second debounce for faster auto-save
   }, [autoSaveReport]);
 
   // Auto-save when form fields or expenses change
@@ -1880,26 +1880,12 @@ export default function NewReport() {
                 הוצאות
               </CardTitle>
               <div className="flex items-center gap-2">
-                {/* Save Now Button */}
-                {pendingSaveExpenses.size > 0 && (
-                  <Button 
-                    onClick={() => autoSaveReport()}
-                    disabled={autoSaving}
-                    className="bg-amber-500 hover:bg-amber-600 text-white border-amber-400 border rounded-xl shadow-md"
-                    size="sm"
-                  >
-                    {autoSaving ? (
-                      <>
-                        <Clock className="w-4 h-4 ml-2 animate-spin" />
-                        שומר...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 ml-2" />
-                        שמור עכשיו ({pendingSaveExpenses.size})
-                      </>
-                    )}
-                  </Button>
+                {/* Auto-saving indicator */}
+                {autoSaving && (
+                  <div className="flex items-center gap-2 text-white/80 text-sm">
+                    <Clock className="w-4 h-4 animate-spin" />
+                    <span>שומר...</span>
+                  </div>
                 )}
                 <Button 
                   onClick={addExpense} 
