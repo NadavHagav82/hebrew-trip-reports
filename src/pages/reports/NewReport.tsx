@@ -1518,7 +1518,7 @@ export default function NewReport() {
       </div>
 
       {/* Header */}
-      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-10 shadow-sm">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 fixed top-0 inset-x-0 z-50 shadow-sm">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
@@ -1590,7 +1590,7 @@ export default function NewReport() {
         </div>
       </header>
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl relative z-10">
+      <main className="container mx-auto px-3 sm:px-4 pt-24 pb-4 sm:pt-28 sm:pb-8 max-w-5xl relative z-10">
         {/* Trip Details */}
         <Card className="mb-6 shadow-xl border-t-4 border-t-blue-500 overflow-hidden">
           <CardHeader className="pb-4 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">

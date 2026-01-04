@@ -305,7 +305,7 @@ export default function ReimbursementSummary() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
+      <header className="bg-card border-b fixed top-0 inset-x-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ export default function ReimbursementSummary() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8" dir="rtl">
+      <main className="container mx-auto px-4 pt-24 pb-8" dir="rtl">
         {/* Filters */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">

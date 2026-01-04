@@ -234,7 +234,7 @@ export default function ManageUsersRoles() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10">
+      <header className="bg-card border-b fixed top-0 inset-x-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -254,7 +254,7 @@ export default function ManageUsersRoles() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8" dir="rtl">
+      <main className="container mx-auto px-4 pt-24 pb-8" dir="rtl">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>

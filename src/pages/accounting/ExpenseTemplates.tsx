@@ -60,7 +60,7 @@ export default function ExpenseTemplates() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-10">
+      <header className="bg-card border-b fixed top-0 inset-x-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -80,7 +80,7 @@ export default function ExpenseTemplates() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-24 pb-8">
         <ExpenseTemplatesManager />
       </main>
     </div>
