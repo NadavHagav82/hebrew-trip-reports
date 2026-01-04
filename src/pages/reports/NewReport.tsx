@@ -2290,6 +2290,9 @@ export default function NewReport() {
                                   initialFocus
                                   className="p-3 pointer-events-auto"
                                 />
+                                <p className="text-xs text-muted-foreground px-3 pb-2 text-center">
+                                  השתמשו בחצים כדי לנווט בין חודשים
+                                </p>
                               </PopoverContent>
                             </Popover>
                             
