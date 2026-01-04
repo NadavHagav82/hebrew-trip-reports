@@ -988,6 +988,87 @@ export type Database = {
           },
         ]
       }
+      receipt_analysis_logs: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          expense_id: string | null
+          extracted_amount: number | null
+          extracted_category: string | null
+          extracted_currency: string | null
+          extracted_date: string | null
+          extracted_description: string | null
+          id: string
+          image_file_name: string | null
+          image_file_size: number | null
+          raw_ai_response: Json | null
+          report_id: string | null
+          trip_destination: string | null
+          user_corrected_amount: number | null
+          user_corrected_currency: string | null
+          user_corrected_date: string | null
+          user_id: string
+          user_swapped_day_month: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          expense_id?: string | null
+          extracted_amount?: number | null
+          extracted_category?: string | null
+          extracted_currency?: string | null
+          extracted_date?: string | null
+          extracted_description?: string | null
+          id?: string
+          image_file_name?: string | null
+          image_file_size?: number | null
+          raw_ai_response?: Json | null
+          report_id?: string | null
+          trip_destination?: string | null
+          user_corrected_amount?: number | null
+          user_corrected_currency?: string | null
+          user_corrected_date?: string | null
+          user_id: string
+          user_swapped_day_month?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          expense_id?: string | null
+          extracted_amount?: number | null
+          extracted_category?: string | null
+          extracted_currency?: string | null
+          extracted_date?: string | null
+          extracted_description?: string | null
+          id?: string
+          image_file_name?: string | null
+          image_file_size?: number | null
+          raw_ai_response?: Json | null
+          report_id?: string | null
+          trip_destination?: string | null
+          user_corrected_amount?: number | null
+          user_corrected_currency?: string | null
+          user_corrected_date?: string | null
+          user_id?: string
+          user_swapped_day_month?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_analysis_logs_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_analysis_logs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receipts: {
         Row: {
           expense_id: string
