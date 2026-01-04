@@ -2293,92 +2293,87 @@ export default function NewReport() {
                               </Popover>
                             </div>
                             
-                            {/* Swap day/month button - always show for ambiguous dates */}
-                            {expense.expense_date && (() => {
+                            {/* Swap day/month button - show for receipt-detected dates (disabled when not ambiguous) */}
+                            {expense.expense_date && expense.dateFromReceipt && (() => {
                               try {
                                 const d = parseISO(expense.expense_date);
                                 if (!isValid(d)) return null;
                                 const day = d.getDate();
                                 const month = d.getMonth() + 1;
-                                // Only show if both day and month are <= 12 (ambiguous)
-                                if (day <= 12 && month <= 12 && day !== month) {
-                                  const swappedDate = new Date(d.getFullYear(), day - 1, month);
-                                  return (
-                                    <div className="flex flex-col items-center gap-1">
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="shrink-0 border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                                        title={`החלף יום/חודש: ${format(d, 'dd/MM/yyyy')} ⇄ ${format(swappedDate, 'dd/MM/yyyy')}`}
-                                        onClick={async () => {
-                                          if (isValid(swappedDate)) {
-                                            const newDateStr = format(swappedDate, 'yyyy-MM-dd');
-                                            setExpenses(expenses.map(exp => {
-                                              if (exp.id === expense.id) {
-                                                return {
-                                                  ...exp,
-                                                  expense_date: newDateStr,
-                                                };
-                                              }
-                                              return exp;
-                                            }));
-                                            setPendingSaveExpenses(prev => new Set(prev).add(expense.id));
-                                            
-                                            if (expense.analysisLogId && user) {
-                                              try {
-                                                await supabase
-                                                  .from('receipt_analysis_logs')
-                                                  .update({
-                                                    user_swapped_day_month: true,
-                                                    user_corrected_date: newDateStr,
-                                                  })
-                                                  .eq('id', expense.analysisLogId);
-                                              } catch (err) {
-                                                console.error('Failed to log date swap:', err);
-                                              }
-                                            }
-                                            
-                                            toast({
-                                              title: 'התאריך הוחלף',
-                                              description: `${format(d, 'dd/MM/yyyy')} → ${format(swappedDate, 'dd/MM/yyyy')}`,
-                                            });
+                                const canSwap = day <= 12 && month <= 12 && day !== month;
+                                const swappedDate = canSwap
+                                  ? new Date(d.getFullYear(), day - 1, month)
+                                  : null;
+
+                                const disabledReason = day === month
+                                  ? 'היום והחודש זהים'
+                                  : 'החלפה זמינה רק כשיום וחודש ≤ 12';
+
+                                return (
+                                  <div className="flex flex-col items-center gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={!canSwap}
+                                      className="shrink-0 border-amber-400 hover:bg-amber-50 disabled:opacity-50 disabled:hover:bg-transparent dark:hover:bg-amber-950/30"
+                                      title={canSwap && swappedDate
+                                        ? `החלף יום/חודש: ${format(d, 'dd/MM/yyyy')} ⇄ ${format(swappedDate, 'dd/MM/yyyy')}`
+                                        : `לא ניתן להחליף: ${disabledReason}`
+                                      }
+                                      onClick={async () => {
+                                        if (!canSwap || !swappedDate || !isValid(swappedDate)) return;
+
+                                        const newDateStr = format(swappedDate, 'yyyy-MM-dd');
+                                        setExpenses(expenses.map(exp => {
+                                          if (exp.id === expense.id) {
+                                            return {
+                                              ...exp,
+                                              expense_date: newDateStr,
+                                            };
                                           }
-                                        }}
-                                      >
-                                        <ArrowLeftRight className="h-4 w-4 text-amber-600" />
-                                      </Button>
-                                      <span className="text-[10px] text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                                        החלף יום/חודש
-                                      </span>
-                                    </div>
-                                  );
-                                }
-                                return null;
+                                          return exp;
+                                        }));
+                                        setPendingSaveExpenses(prev => new Set(prev).add(expense.id));
+
+                                        if (expense.analysisLogId && user) {
+                                          try {
+                                            await supabase
+                                              .from('receipt_analysis_logs')
+                                              .update({
+                                                user_swapped_day_month: true,
+                                                user_corrected_date: newDateStr,
+                                              })
+                                              .eq('id', expense.analysisLogId);
+                                          } catch (err) {
+                                            console.error('Failed to log date swap:', err);
+                                          }
+                                        }
+
+                                        toast({
+                                          title: 'התאריך הוחלף',
+                                          description: `${format(d, 'dd/MM/yyyy')} → ${format(swappedDate, 'dd/MM/yyyy')}`,
+                                        });
+                                      }}
+                                    >
+                                      <ArrowLeftRight className="h-4 w-4 text-amber-600" />
+                                    </Button>
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                      החלף יום/חודש
+                                    </span>
+                                  </div>
+                                );
                               } catch {
                                 return null;
                               }
                             })()}
                           </div>
                           {/* Date swap explanation */}
-                          {expense.expense_date && (() => {
-                            try {
-                              const d = parseISO(expense.expense_date);
-                              if (!isValid(d)) return null;
-                              const day = d.getDate();
-                              const month = d.getMonth() + 1;
-                              if (day <= 12 && month <= 12 && day !== month) {
-                                return (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    💡 פורמט תאריך לא נכון? לחץ על החצים להחלפת יום ↔ חודש
-                                  </p>
-                                );
-                              }
-                              return null;
-                            } catch {
-                              return null;
-                            }
-                          })()}
+                          {expense.expense_date && expense.dateFromReceipt && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              החלפת יום/חודש זמינה רק כשיום וחודש ≤ 12
+                            </p>
+                          )}
                         </div>
 
                         <div>
