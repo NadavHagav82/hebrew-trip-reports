@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -266,6 +266,12 @@ export default function NewReport() {
   const [shakingFields, setShakingFields] = useState<{[expenseId: string]: string[]}>({});
   const [savedExpenses, setSavedExpenses] = useState<Set<string>>(new Set());
   const [duplicateWarning, setDuplicateWarning] = useState<{ expenseId: string; duplicates: Expense[]; reason: string } | null>(null);
+  
+  // Auto-save state
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasUnsavedChanges = useRef(false);
 
   // Load existing report if in edit mode
   useEffect(() => {
@@ -299,6 +305,131 @@ export default function NewReport() {
       // Keep default rates on error
     }
   };
+
+  // Auto-save function - saves report as draft
+  const autoSaveReport = useCallback(async () => {
+    // Don't auto-save if no user or missing required fields
+    if (!user || !tripDestination.trim() || !tripStartDate || !tripEndDate) {
+      return;
+    }
+
+    // Don't auto-save if already saving
+    if (autoSaving || loading) {
+      return;
+    }
+
+    try {
+      setAutoSaving(true);
+
+      if (reportId) {
+        // Update existing report
+        const { error } = await supabase
+          .from('reports')
+          .update({
+            trip_destination: tripDestination,
+            trip_start_date: tripStartDate,
+            trip_end_date: tripEndDate,
+            trip_purpose: tripPurpose,
+            notes: reportNotes,
+            daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
+            allowance_days: allowanceType === 'custom' ? customAllowanceDays : (allowanceType === 'full' ? (() => {
+              const start = new Date(tripStartDate);
+              const end = new Date(tripEndDate);
+              const diffTime = Math.abs(end.getTime() - start.getTime());
+              return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            })() : null),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', reportId);
+
+        if (error) throw error;
+      } else {
+        // Create new draft report
+        const { data: newReport, error } = await supabase
+          .from('reports')
+          .insert({
+            user_id: user.id,
+            trip_destination: tripDestination,
+            trip_start_date: tripStartDate,
+            trip_end_date: tripEndDate,
+            trip_purpose: tripPurpose || 'טיוטה',
+            notes: reportNotes,
+            daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
+            allowance_days: allowanceType === 'custom' ? customAllowanceDays : (allowanceType === 'full' ? (() => {
+              const start = new Date(tripStartDate);
+              const end = new Date(tripEndDate);
+              const diffTime = Math.abs(end.getTime() - start.getTime());
+              return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            })() : null),
+            status: 'draft',
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        // Set the report ID for future updates
+        setReportId(newReport.id);
+        setIsEditMode(true);
+        
+        // Update URL without full navigation
+        window.history.replaceState(null, '', `/reports/${newReport.id}/edit`);
+      }
+
+      setLastAutoSave(new Date());
+      hasUnsavedChanges.current = false;
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      // Don't show error toast for auto-save failures - just log it
+    } finally {
+      setAutoSaving(false);
+    }
+  }, [user, tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, reportId, autoSaving, loading]);
+
+  // Debounced auto-save - triggers 3 seconds after last change
+  const triggerAutoSave = useCallback(() => {
+    hasUnsavedChanges.current = true;
+    
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveReport();
+    }, 3000); // 3 second debounce
+  }, [autoSaveReport]);
+
+  // Auto-save when form fields change
+  useEffect(() => {
+    // Only trigger auto-save if we have minimum required data
+    if (tripDestination.trim() && tripStartDate && tripEndDate) {
+      triggerAutoSave();
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays]);
+
+  // Save on page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges.current && tripDestination.trim() && tripStartDate && tripEndDate) {
+        // Try to save immediately
+        autoSaveReport();
+        
+        // Show browser warning
+        e.preventDefault();
+        e.returnValue = 'יש לך שינויים שלא נשמרו. האם אתה בטוח שברצונך לצאת?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [autoSaveReport, tripDestination, tripStartDate, tripEndDate]);
 
   const loadReport = async (reportId: string) => {
     try {
@@ -1254,6 +1385,19 @@ export default function NewReport() {
                 <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
                   {isEditMode ? 'עריכת דוח' : 'דוח נסיעה חדש'}
                 </h1>
+                {/* Auto-save indicator */}
+                {autoSaving && (
+                  <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                    שומר...
+                  </span>
+                )}
+                {lastAutoSave && !autoSaving && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    נשמר כטיוטה
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto sm:mr-auto">
