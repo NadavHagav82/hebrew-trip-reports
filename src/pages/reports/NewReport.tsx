@@ -2154,6 +2154,17 @@ export default function NewReport() {
                                           ✨ אישור וניתוח
                                         </Button>
                                       )}
+                                      {!savedExpenses.has(expense.id) && (
+                                        <Button
+                                          type="button"
+                                          size="default"
+                                          className="bg-green-600 hover:bg-green-700"
+                                          onClick={() => saveExpense(expense.id)}
+                                        >
+                                          <Save className="w-4 h-4 ml-1" />
+                                          שמור הוצאה
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -2258,9 +2269,6 @@ export default function NewReport() {
                               <PopoverContent className="w-auto p-0" align="start">
                                 <CalendarPicker
                                   mode="single"
-                                  captionLayout="dropdown-buttons"
-                                  fromYear={2020}
-                                  toYear={new Date().getFullYear() + 1}
                                   selected={(() => {
                                     if (!expense.expense_date) return undefined;
                                     const d = parseISO(expense.expense_date);
