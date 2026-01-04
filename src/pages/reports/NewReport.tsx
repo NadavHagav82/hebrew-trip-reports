@@ -1616,16 +1616,27 @@ export default function NewReport() {
                         <span className="text-sm text-muted-foreground">×</span>
                         <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border">
                           <Input
-                            type="number"
-                            min="1"
-                            max={calculateTripDuration()}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={customAllowanceDays}
                             onChange={(e) => {
                               e.stopPropagation();
-                              const val = Number(e.target.value);
-                              setCustomAllowanceDays(Math.min(Math.max(1, val), calculateTripDuration()));
+                              const rawValue = e.target.value;
+                              // Allow empty or numeric input while typing
+                              if (rawValue === '' || /^\d+$/.test(rawValue)) {
+                                const val = rawValue === '' ? 0 : parseInt(rawValue, 10);
+                                setCustomAllowanceDays(val);
+                              }
+                            }}
+                            onBlur={(e) => {
+                              // Validate and clamp on blur
+                              const val = parseInt(e.target.value, 10) || 1;
+                              const maxDays = calculateTripDuration();
+                              setCustomAllowanceDays(Math.min(Math.max(1, val), maxDays));
                             }}
                             onClick={(e) => e.stopPropagation()}
+                            onFocus={(e) => e.target.select()}
                             className="w-16 h-8 text-center border-0 bg-transparent p-0 font-bold text-lg"
                           />
                           <span className="text-sm text-muted-foreground">ימים</span>
