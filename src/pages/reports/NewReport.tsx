@@ -2240,72 +2240,72 @@ export default function NewReport() {
                             )}
                           </div>
 
-                          <div className="flex gap-2">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className={`flex-1 justify-between font-normal ${
-                                    !expense.expense_date
-                                      ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20'
-                                      : ''
-                                  }`}
-                                >
-                                  <span>
-                                    {(() => {
-                                      if (!expense.expense_date) return 'בחר תאריך';
-                                      try {
-                                        const d = parseISO(expense.expense_date);
-                                        return isValid(d) ? format(d, 'dd/MM/yyyy') : expense.expense_date;
-                                      } catch {
-                                        return expense.expense_date;
-                                      }
+                          <div className="flex gap-2 items-start">
+                            <div className="flex-1">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={`w-full justify-between font-normal ${
+                                      !expense.expense_date
+                                        ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20'
+                                        : ''
+                                    }`}
+                                  >
+                                    <span>
+                                      {(() => {
+                                        if (!expense.expense_date) return 'בחר תאריך';
+                                        try {
+                                          const d = parseISO(expense.expense_date);
+                                          return isValid(d) ? format(d, 'dd/MM/yyyy') : expense.expense_date;
+                                        } catch {
+                                          return expense.expense_date;
+                                        }
+                                      })()}
+                                    </span>
+                                    <Calendar className="h-4 w-4 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <CalendarPicker
+                                    mode="single"
+                                    selected={(() => {
+                                      if (!expense.expense_date) return undefined;
+                                      const d = parseISO(expense.expense_date);
+                                      return isValid(d) ? d : undefined;
                                     })()}
-                                  </span>
-                                  <Calendar className="h-4 w-4 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <CalendarPicker
-                                  mode="single"
-                                  selected={(() => {
-                                    if (!expense.expense_date) return undefined;
-                                    const d = parseISO(expense.expense_date);
-                                    return isValid(d) ? d : undefined;
-                                  })()}
-                                  onSelect={(d) => {
-                                    // Mark as manually edited when user picks date
-                                    setExpenses(expenses.map(exp => {
-                                      if (exp.id === expense.id) {
-                                        return {
-                                          ...exp,
-                                          expense_date: d ? format(d, 'yyyy-MM-dd') : '',
-                                          dateFromReceipt: false, // User edited manually
-                                        };
+                                    onSelect={(d) => {
+                                      setExpenses(expenses.map(exp => {
+                                        if (exp.id === expense.id) {
+                                          return {
+                                            ...exp,
+                                            expense_date: d ? format(d, 'yyyy-MM-dd') : '',
+                                            dateFromReceipt: false,
+                                          };
+                                        }
+                                        return exp;
+                                      }));
+                                      if (d) {
+                                        setPendingSaveExpenses(prev => new Set(prev).add(expense.id));
                                       }
-                                      return exp;
-                                    }));
-                                    // Mark as pending save
-                                    if (d) {
-                                      setPendingSaveExpenses(prev => new Set(prev).add(expense.id));
-                                    }
-                                  }}
-                                  disabled={(d) => {
-                                    const min = tripStartDate ? parseISO(tripStartDate) : null;
-                                    const max = tripEndDate ? parseISO(tripEndDate) : null;
-                                    if (min && isValid(min) && d < min) return true;
-                                    if (max && isValid(max) && d > max) return true;
-                                    return false;
-                                  }}
-                                  initialFocus
-                                  className="p-3 pointer-events-auto"
-                                />
-                              </PopoverContent>
-                            </Popover>
+                                    }}
+                                    disabled={(d) => {
+                                      const min = tripStartDate ? parseISO(tripStartDate) : null;
+                                      const max = tripEndDate ? parseISO(tripEndDate) : null;
+                                      if (min && isValid(min) && d < min) return true;
+                                      if (max && isValid(max) && d > max) return true;
+                                      return false;
+                                    }}
+                                    initialFocus
+                                    className="p-3 pointer-events-auto"
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
                             
-                            {/* Swap day/month button - only show for ambiguous dates */}
-                            {expense.expense_date && expense.dateFromReceipt && (() => {
+                            {/* Swap day/month button - always show for ambiguous dates */}
+                            {expense.expense_date && (() => {
                               try {
                                 const d = parseISO(expense.expense_date);
                                 if (!isValid(d)) return null;
@@ -2313,53 +2313,56 @@ export default function NewReport() {
                                 const month = d.getMonth() + 1;
                                 // Only show if both day and month are <= 12 (ambiguous)
                                 if (day <= 12 && month <= 12 && day !== month) {
+                                  const swappedDate = new Date(d.getFullYear(), day - 1, month);
                                   return (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      className="shrink-0 border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                                      title={`החלף יום/חודש: ${format(d, 'dd/MM/yyyy')} ⇄ ${format(new Date(d.getFullYear(), day - 1, month), 'dd/MM/yyyy')}`}
-                                      onClick={async () => {
-                                        // Swap day and month
-                                        const swappedDate = new Date(d.getFullYear(), day - 1, month);
-                                        if (isValid(swappedDate)) {
-                                          const newDateStr = format(swappedDate, 'yyyy-MM-dd');
-                                          setExpenses(expenses.map(exp => {
-                                            if (exp.id === expense.id) {
-                                              return {
-                                                ...exp,
-                                                expense_date: newDateStr,
-                                              };
+                                    <div className="flex flex-col items-center gap-1">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="shrink-0 border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                        title={`החלף יום/חודש: ${format(d, 'dd/MM/yyyy')} ⇄ ${format(swappedDate, 'dd/MM/yyyy')}`}
+                                        onClick={async () => {
+                                          if (isValid(swappedDate)) {
+                                            const newDateStr = format(swappedDate, 'yyyy-MM-dd');
+                                            setExpenses(expenses.map(exp => {
+                                              if (exp.id === expense.id) {
+                                                return {
+                                                  ...exp,
+                                                  expense_date: newDateStr,
+                                                };
+                                              }
+                                              return exp;
+                                            }));
+                                            setPendingSaveExpenses(prev => new Set(prev).add(expense.id));
+                                            
+                                            if (expense.analysisLogId && user) {
+                                              try {
+                                                await supabase
+                                                  .from('receipt_analysis_logs')
+                                                  .update({
+                                                    user_swapped_day_month: true,
+                                                    user_corrected_date: newDateStr,
+                                                  })
+                                                  .eq('id', expense.analysisLogId);
+                                              } catch (err) {
+                                                console.error('Failed to log date swap:', err);
+                                              }
                                             }
-                                            return exp;
-                                          }));
-                                          setPendingSaveExpenses(prev => new Set(prev).add(expense.id));
-                                          
-                                          // Log the swap to the database
-                                          if (expense.analysisLogId && user) {
-                                            try {
-                                              await supabase
-                                                .from('receipt_analysis_logs')
-                                                .update({
-                                                  user_swapped_day_month: true,
-                                                  user_corrected_date: newDateStr,
-                                                })
-                                                .eq('id', expense.analysisLogId);
-                                            } catch (err) {
-                                              console.error('Failed to log date swap:', err);
-                                            }
+                                            
+                                            toast({
+                                              title: 'התאריך הוחלף',
+                                              description: `${format(d, 'dd/MM/yyyy')} → ${format(swappedDate, 'dd/MM/yyyy')}`,
+                                            });
                                           }
-                                          
-                                          toast({
-                                            title: 'התאריך הוחלף',
-                                            description: `${format(d, 'dd/MM/yyyy')} → ${format(swappedDate, 'dd/MM/yyyy')}`,
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      <ArrowLeftRight className="h-4 w-4 text-amber-600" />
-                                    </Button>
+                                        }}
+                                      >
+                                        <ArrowLeftRight className="h-4 w-4 text-amber-600" />
+                                      </Button>
+                                      <span className="text-[10px] text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                        החלף יום/חודש
+                                      </span>
+                                    </div>
                                   );
                                 }
                                 return null;
@@ -2368,6 +2371,25 @@ export default function NewReport() {
                               }
                             })()}
                           </div>
+                          {/* Date swap explanation */}
+                          {expense.expense_date && (() => {
+                            try {
+                              const d = parseISO(expense.expense_date);
+                              if (!isValid(d)) return null;
+                              const day = d.getDate();
+                              const month = d.getMonth() + 1;
+                              if (day <= 12 && month <= 12 && day !== month) {
+                                return (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    💡 פורמט תאריך לא נכון? לחץ על החצים להחלפת יום ↔ חודש
+                                  </p>
+                                );
+                              }
+                              return null;
+                            } catch {
+                              return null;
+                            }
+                          })()}
                         </div>
 
                         <div>
