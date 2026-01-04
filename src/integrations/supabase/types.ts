@@ -1939,6 +1939,7 @@ export type Database = {
       generate_travel_approval_number: { Args: never; Returns: string }
       get_org_id_for_policy: { Args: { _user_id: string }; Returns: string }
       get_team_user_ids: { Args: { _manager_id: string }; Returns: string[] }
+      get_user_manager_id: { Args: { _user_id: string }; Returns: string }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
