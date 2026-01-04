@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isValid } from 'date-fns';
-import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff, ArrowLeftRight, Sparkles, Edit3 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff, ArrowLeftRight, Sparkles, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -2290,8 +2290,10 @@ export default function NewReport() {
                                   initialFocus
                                   className="p-3 pointer-events-auto"
                                 />
-                                <p className="text-xs text-muted-foreground px-3 pb-2 text-center">
+                                <p className="text-xs text-muted-foreground px-3 pb-2 text-center flex items-center justify-center gap-1">
+                                  <ChevronRight className="h-3 w-3" />
                                   השתמשו בחצים כדי לנווט בין חודשים
+                                  <ChevronLeft className="h-3 w-3" />
                                 </p>
                               </PopoverContent>
                             </Popover>
