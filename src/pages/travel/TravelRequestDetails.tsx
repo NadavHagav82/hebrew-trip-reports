@@ -128,14 +128,20 @@ export default function TravelRequestDetails() {
     
     setLoading(true);
     try {
-      // Load request
+      // Load request (may be unavailable due to permissions)
       const { data: requestData, error: requestError } = await supabase
         .from('travel_requests')
         .select('*')
         .eq('id', id)
-        .single();
-      
+        .maybeSingle();
+
       if (requestError) throw requestError;
+      if (!requestData) {
+        toast.error('אין לך הרשאה לצפות בבקשה זו או שהיא לא קיימת');
+        navigate('/travel-requests');
+        return;
+      }
+
       setRequest(requestData);
 
       // Load violations
