@@ -825,7 +825,11 @@ export default function NewReport() {
   };
 
   const handleFileSelect = async (expenseId: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
+    console.log('handleFileSelect called with expenseId:', expenseId, 'files:', files?.length);
+    if (!files || files.length === 0) {
+      console.log('No files selected, returning early');
+      return;
+    }
 
     const maxSize = 10 * 1024 * 1024; // 10MB
     let allFiles: File[] = [];
@@ -882,29 +886,42 @@ export default function NewReport() {
       }
     }
 
-    if (allFiles.length === 0) return;
+    if (allFiles.length === 0) {
+      console.log('No valid files after processing, returning');
+      return;
+    }
 
+    console.log('Creating receipts for', allFiles.length, 'files');
     const newReceipts: ReceiptFile[] = allFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
       uploading: false,
     }));
 
-    setExpenses(expenses.map(exp => {
-      if (exp.id === expenseId) {
-        const totalReceipts = exp.receipts.length + newReceipts.length;
-        if (totalReceipts > 10) {
-          toast({
-            title: 'יותר מדי קבצים',
-            description: 'מקסימום 10 קבלות לכל הוצאה',
-            variant: 'destructive',
-          });
-          return exp;
+    console.log('Current expenses count:', expenses.length);
+    console.log('Looking for expense with id:', expenseId);
+    const targetExpense = expenses.find(exp => exp.id === expenseId);
+    console.log('Found target expense:', targetExpense ? 'yes' : 'no');
+
+    setExpenses(prevExpenses => {
+      console.log('setExpenses called, prevExpenses count:', prevExpenses.length);
+      return prevExpenses.map(exp => {
+        if (exp.id === expenseId) {
+          const totalReceipts = exp.receipts.length + newReceipts.length;
+          if (totalReceipts > 10) {
+            toast({
+              title: 'יותר מדי קבצים',
+              description: 'מקסימום 10 קבלות לכל הוצאה',
+              variant: 'destructive',
+            });
+            return exp;
+          }
+          console.log('Adding receipts to expense', exp.id);
+          return { ...exp, receipts: [...exp.receipts, ...newReceipts] };
         }
-        return { ...exp, receipts: [...exp.receipts, ...newReceipts] };
-      }
-      return exp;
-    }));
+        return exp;
+      });
+    });
   };
 
   const removeReceipt = (expenseId: string, receiptIndex: number) => {
