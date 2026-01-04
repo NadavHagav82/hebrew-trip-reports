@@ -1144,6 +1144,11 @@ export default function TravelRequestAttachments({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-primary hover:underline flex items-center gap-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(attachment.link_url || attachment.file_url, '_blank', 'noopener,noreferrer');
+                        }}
                       >
                         {attachment.file_name}
                         <ExternalLink className="h-3 w-3" />
