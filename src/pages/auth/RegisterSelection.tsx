@@ -60,46 +60,6 @@ export default function RegisterSelection() {
             </CardContent>
           </Card>
 
-          {/* Independent User Registration */}
-          <Card className="cursor-pointer hover:border-green-500 transition-all hover:shadow-lg group">
-            <CardHeader className="text-center space-y-4">
-              <div className="flex justify-center">
-                <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                  <User className="w-10 h-10 text-green-600" />
-                </div>
-              </div>
-              <div>
-                <CardTitle className="text-xl">משתמש עצמאי</CardTitle>
-                <CardDescription className="text-sm mt-2">
-                  אני עצמאי ושולח דוחות ישירות להנה"ח
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">•</span>
-                  <span>דוחות ללא צורך באישור מנהל</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">•</span>
-                  <span>גישה מלאה לסטטיסטיקות</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">•</span>
-                  <span>שליחה ישירה להנהלת חשבונות</span>
-                </li>
-              </ul>
-              <Button 
-                className="w-full bg-green-600 hover:bg-green-700" 
-                size="lg"
-                onClick={() => navigate('/auth/register/independent')}
-              >
-                המשך כעצמאי
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Manager Registration */}
           <Card className="cursor-pointer hover:border-primary transition-all hover:shadow-lg group">
             <CardHeader className="text-center space-y-4">
@@ -137,6 +97,46 @@ export default function RegisterSelection() {
                 onClick={() => navigate('/auth/register/manager')}
               >
                 המשך כמנהל
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Independent User Registration */}
+          <Card className="cursor-pointer hover:border-green-500 transition-all hover:shadow-lg group">
+            <CardHeader className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                  <User className="w-10 h-10 text-green-600" />
+                </div>
+              </div>
+              <div>
+                <CardTitle className="text-xl">משתמש עצמאי</CardTitle>
+                <CardDescription className="text-sm mt-2">
+                  אני עצמאי ושולח דוחות ישירות להנה"ח
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">•</span>
+                  <span>דוחות ללא צורך באישור מנהל</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">•</span>
+                  <span>גישה מלאה לסטטיסטיקות</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">•</span>
+                  <span>שליחה ישירה להנהלת חשבונות</span>
+                </li>
+              </ul>
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700" 
+                size="lg"
+                onClick={() => navigate('/auth/register/independent')}
+              >
+                המשך כעצמאי
               </Button>
             </CardContent>
           </Card>
