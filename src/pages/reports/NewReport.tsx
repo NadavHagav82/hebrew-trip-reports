@@ -1819,13 +1819,36 @@ export default function NewReport() {
                 </div>
                 הוצאות
               </CardTitle>
-              <Button 
-                onClick={addExpense} 
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 border rounded-xl shadow-md"
-              >
-                <Plus className="w-4 h-4 ml-2" />
-                הוסף הוצאה
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Save Now Button */}
+                {pendingSaveExpenses.size > 0 && (
+                  <Button 
+                    onClick={() => autoSaveReport()}
+                    disabled={autoSaving}
+                    className="bg-amber-500 hover:bg-amber-600 text-white border-amber-400 border rounded-xl shadow-md"
+                    size="sm"
+                  >
+                    {autoSaving ? (
+                      <>
+                        <Clock className="w-4 h-4 ml-2 animate-spin" />
+                        שומר...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 ml-2" />
+                        שמור עכשיו ({pendingSaveExpenses.size})
+                      </>
+                    )}
+                  </Button>
+                )}
+                <Button 
+                  onClick={addExpense} 
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30 border rounded-xl shadow-md"
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  הוסף הוצאה
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
