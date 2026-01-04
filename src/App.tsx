@@ -38,6 +38,7 @@ import ReimbursementSummary from "./pages/accounting/ReimbursementSummary";
 import ExpenseAnalytics from "./pages/analytics/ExpenseAnalytics";
 import ExpenseTemplates from "./pages/accounting/ExpenseTemplates";
 import BootstrapTokenManagement from "./pages/accounting/BootstrapTokenManagement";
+import AIAccuracyAnalytics from "./pages/accounting/AIAccuracyAnalytics";
 import OrgAdminDashboard from "./pages/orgadmin/OrgAdminDashboard";
 import InvitationCodesManagement from "./pages/orgadmin/InvitationCodesManagement";
 import OrgUsersManagement from "./pages/orgadmin/OrgUsersManagement";
@@ -100,6 +101,7 @@ const App = () => (
             <Route path="/accounting/users" element={<ManageUsers />} />
             <Route path="/accounting/templates" element={<ExpenseTemplates />} />
             <Route path="/accounting/bootstrap-tokens" element={<BootstrapTokenManagement />} />
+            <Route path="/accounting/ai-analytics" element={<AIAccuracyAnalytics />} />
             <Route path="/analytics" element={<ExpenseAnalytics />} />
             <Route path="/orgadmin" element={<OrgAdminDashboard />} />
             <Route path="/orgadmin/invitation-codes" element={<InvitationCodesManagement />} />
