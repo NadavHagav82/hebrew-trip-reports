@@ -10,9 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2183,14 +2185,59 @@ export default function NewReport() {
                           <Label className={!expense.expense_date ? 'text-orange-600 dark:text-orange-400' : ''}>
                             תאריך * {!expense.expense_date && <span className="text-xs font-normal">(חובה)</span>}
                           </Label>
-                          <Input
-                            type="date"
-                            value={expense.expense_date}
-                            onChange={(e) => updateExpense(expense.id, 'expense_date', e.target.value)}
-                            min={tripStartDate}
-                            max={tripEndDate}
-                            className={!expense.expense_date ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20' : ''}
-                          />
+
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className={`w-full justify-between font-normal ${
+                                  !expense.expense_date
+                                    ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-400/20'
+                                    : ''
+                                }`}
+                              >
+                                <span>
+                                  {(() => {
+                                    if (!expense.expense_date) return 'בחר תאריך';
+                                    try {
+                                      const d = parseISO(expense.expense_date);
+                                      return isValid(d) ? format(d, 'dd/MM/yyyy') : expense.expense_date;
+                                    } catch {
+                                      return expense.expense_date;
+                                    }
+                                  })()}
+                                </span>
+                                <Calendar className="h-4 w-4 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarPicker
+                                mode="single"
+                                selected={(() => {
+                                  if (!expense.expense_date) return undefined;
+                                  const d = parseISO(expense.expense_date);
+                                  return isValid(d) ? d : undefined;
+                                })()}
+                                onSelect={(d) =>
+                                  updateExpense(
+                                    expense.id,
+                                    'expense_date',
+                                    d ? format(d, 'yyyy-MM-dd') : ''
+                                  )
+                                }
+                                disabled={(d) => {
+                                  const min = tripStartDate ? parseISO(tripStartDate) : null;
+                                  const max = tripEndDate ? parseISO(tripEndDate) : null;
+                                  if (min && isValid(min) && d < min) return true;
+                                  if (max && isValid(max) && d > max) return true;
+                                  return false;
+                                }}
+                                initialFocus
+                                className="p-3 pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
 
                         <div>
