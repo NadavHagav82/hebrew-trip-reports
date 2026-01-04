@@ -863,13 +863,19 @@ export default function NewReport() {
         }
       } else {
         // Check if it's a valid image type
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
-        if (validTypes.includes(file.type)) {
+        // Include webp and allow empty type for camera captures on some mobile devices
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/webp', 'image/gif'];
+        const isImage = validTypes.includes(file.type) || 
+                        file.type.startsWith('image/') || 
+                        file.name.match(/\.(jpg|jpeg|png|heic|webp|gif)$/i);
+        
+        if (isImage) {
           allFiles.push(file);
         } else {
+          console.log('Rejected file:', file.name, 'type:', file.type);
           toast({
             title: 'פורמט קובץ לא נתמך',
-            description: 'נא להעלות תמונות או PDF בלבד',
+            description: `נא להעלות תמונות או PDF בלבד (קיבלנו: ${file.type || 'לא ידוע'})`,
             variant: 'destructive',
           });
         }
