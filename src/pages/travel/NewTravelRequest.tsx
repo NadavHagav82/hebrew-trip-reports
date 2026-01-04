@@ -455,9 +455,11 @@ export default function NewTravelRequest() {
 
     setLoading(true);
     try {
-      let requestId = editRequestId;
+      // Use existing request ID from URL params OR from saved draft (for attachments)
+      const existingRequestId = editRequestId || savedRequestId;
+      let requestId = existingRequestId;
       
-      if (editRequestId) {
+      if (existingRequestId) {
         // Update existing request
         const { error: updateError } = await supabase
           .from('travel_requests')
@@ -483,7 +485,7 @@ export default function NewTravelRequest() {
             status: submit ? 'pending_approval' : 'draft',
             submitted_at: submit ? new Date().toISOString() : null
           })
-          .eq('id', editRequestId);
+          .eq('id', existingRequestId);
 
         if (updateError) throw updateError;
 
@@ -491,7 +493,7 @@ export default function NewTravelRequest() {
         await supabase
           .from('travel_request_violations')
           .delete()
-          .eq('travel_request_id', editRequestId);
+          .eq('travel_request_id', existingRequestId);
       } else {
         // Insert new request
         const { data: request, error: requestError } = await supabase
