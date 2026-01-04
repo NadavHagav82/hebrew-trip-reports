@@ -9,6 +9,7 @@ import Login from "./pages/auth/Login";
 import RegisterSelection from "./pages/auth/RegisterSelection";
 import RegisterEmployee from "./pages/auth/RegisterEmployee";
 import RegisterManager from "./pages/auth/RegisterManager";
+import RegisterIndependent from "./pages/auth/RegisterIndependent";
 import RegisterBootstrap from "./pages/auth/RegisterBootstrap";
 import RegisterWithCode from "./pages/auth/RegisterWithCode";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/auth/register" element={<RegisterSelection />} />
             <Route path="/auth/register/employee" element={<RegisterEmployee />} />
             <Route path="/auth/register/manager" element={<RegisterManager />} />
+            <Route path="/auth/register/independent" element={<RegisterIndependent />} />
             <Route path="/auth/register/bootstrap" element={<RegisterBootstrap />} />
             <Route path="/auth/register/code" element={<RegisterWithCode />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
