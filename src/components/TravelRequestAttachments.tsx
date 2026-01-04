@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,16 @@ export default function TravelRequestAttachments({
   const [isDragging, setIsDragging] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string; index: number } | null>(null);
+  
+  // Refs to keep current values accessible in callbacks
+  const pendingFilesRef = useRef(pendingFiles);
+  const pendingLinksRef = useRef(pendingLinks);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    pendingFilesRef.current = pendingFiles;
+    pendingLinksRef.current = pendingLinks;
+  }, [pendingFiles, pendingLinks]);
 
   // Get all image attachments for navigation
   const imageAttachments = attachments.filter(a => a.file_type.startsWith('image/'));
@@ -506,12 +516,21 @@ export default function TravelRequestAttachments({
     }
   };
 
-  const uploadAllAttachments = async (requestId: string) => {
+  const uploadAllAttachments = useCallback(async (requestId: string) => {
     if (!user) return;
+
+    // Use refs to get current values
+    const currentPendingFiles = pendingFilesRef.current;
+    const currentPendingLinks = pendingLinksRef.current;
+
+    if (currentPendingFiles.length === 0 && currentPendingLinks.length === 0) {
+      console.log('No pending files or links to upload');
+      return;
+    }
 
     setUploading(true);
     const uploadedAttachments: Attachment[] = [];
-    const totalFiles = pendingFiles.length + pendingLinks.length;
+    const totalFiles = currentPendingFiles.length + currentPendingLinks.length;
     let completedFiles = 0;
 
     try {
@@ -526,8 +545,8 @@ export default function TravelRequestAttachments({
       }
 
       // Upload files with progress tracking
-      for (let i = 0; i < pendingFiles.length; i++) {
-        const item = pendingFiles[i];
+      for (let i = 0; i < currentPendingFiles.length; i++) {
+        const item = currentPendingFiles[i];
         const file = item.file;
 
         setUploadProgress({
@@ -613,7 +632,7 @@ export default function TravelRequestAttachments({
       }
 
       // Save links
-      for (const link of pendingLinks) {
+      for (const link of currentPendingLinks) {
         setUploadProgress({
           fileName: new URL(link.url).hostname,
           progress: 100,
@@ -660,7 +679,7 @@ export default function TravelRequestAttachments({
       setUploading(false);
       setUploadProgress(null);
     }
-  };
+  }, [user]);
 
   const deleteAttachment = async (attachment: Attachment) => {
     if (attachment.file_type !== 'link') {
@@ -703,8 +722,13 @@ export default function TravelRequestAttachments({
     return CATEGORIES.find(c => c.value === category)?.label || category;
   };
 
-  // Expose upload function for parent component
-  (window as any).uploadTravelAttachments = uploadAllAttachments;
+  // Expose upload function for parent component - update on every render
+  useEffect(() => {
+    (window as any).uploadTravelAttachments = uploadAllAttachments;
+    return () => {
+      delete (window as any).uploadTravelAttachments;
+    };
+  }, [uploadAllAttachments]);
 
   const hasPendingItems = pendingFiles.length > 0 || pendingLinks.length > 0;
   const totalPendingCount = pendingFiles.length + pendingLinks.length;
