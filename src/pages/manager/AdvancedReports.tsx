@@ -703,7 +703,7 @@ const AdvancedReports = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" dir="rtl">
       {/* Header */}
-      <header className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 dark:from-indigo-950/50 dark:via-blue-950/50 dark:to-purple-950/50 border-b border-indigo-100 dark:border-indigo-900/30 sticky top-0 z-10 relative overflow-hidden">
+      <header className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 dark:from-indigo-950/50 dark:via-blue-950/50 dark:to-purple-950/50 border-b border-indigo-100 dark:border-indigo-900/30 fixed top-0 inset-x-0 z-50 overflow-hidden">
         <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-500" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-2xl" />
@@ -740,7 +740,7 @@ const AdvancedReports = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 pt-32 pb-6 space-y-6">
         {/* Filters */}
         <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-indigo-400 to-blue-500" />

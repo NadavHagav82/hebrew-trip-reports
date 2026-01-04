@@ -333,7 +333,7 @@ export default function ManagerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-amber-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/50 dark:via-amber-950/50 dark:to-yellow-950/50 border-b border-orange-100 dark:border-orange-900/30 sticky top-0 z-10 relative overflow-hidden">
+      <header className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/50 dark:via-amber-950/50 dark:to-yellow-950/50 border-b border-orange-100 dark:border-orange-900/30 fixed top-0 inset-x-0 z-50 relative overflow-hidden">
         {/* Top accent bar */}
         <div className="h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
         
@@ -384,7 +384,7 @@ export default function ManagerDashboard() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-32 pb-8">
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="relative overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">

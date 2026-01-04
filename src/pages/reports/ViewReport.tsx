@@ -1078,7 +1078,7 @@ const ViewReport = () => {
         </div>
 
         {/* Header */}
-        <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg sticky top-0 z-10 no-print">
+        <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg fixed top-0 inset-x-0 z-50 no-print">
           <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-5">
             {/* Mobile Layout */}
             <div className="flex md:hidden flex-col gap-3">
@@ -1240,7 +1240,7 @@ const ViewReport = () => {
         </header>
 
         {/* Screen View */}
-        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-5xl no-print relative">
+        <div id="report-pdf" className="container mx-auto px-3 sm:px-4 pt-36 pb-4 sm:pt-40 sm:pb-8 max-w-5xl no-print relative">
           {/* Hero Section */}
           <Card className="mb-6 shadow-xl border-0 overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 relative group">
             {/* Top accent bar */}

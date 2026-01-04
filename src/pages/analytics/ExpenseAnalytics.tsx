@@ -432,7 +432,7 @@ export default function ExpenseAnalytics() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <header className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 border-b border-blue-100 dark:border-blue-900/30 sticky top-0 z-10 relative overflow-hidden">
+      <header className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 border-b border-blue-100 dark:border-blue-900/30 fixed top-0 inset-x-0 z-50 overflow-hidden">
         {/* Top accent bar */}
         <div className="h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
         
@@ -465,7 +465,7 @@ export default function ExpenseAnalytics() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-32 pb-8">
         {/* Period Selector */}
         <Card className="mb-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
