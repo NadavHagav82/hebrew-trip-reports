@@ -494,7 +494,7 @@ export default function NewReport() {
     };
   }, [tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, expenses]);
 
-  // Save on page unload
+  // Save on page unload and visibility change (important for mobile!)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges.current && tripDestination.trim() && tripStartDate && tripEndDate) {
@@ -508,8 +508,30 @@ export default function NewReport() {
       }
     };
 
+    // Mobile browsers often don't fire beforeunload, but do fire visibilitychange
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && hasUnsavedChanges.current && tripDestination.trim() && tripStartDate && tripEndDate) {
+        // Save immediately when user switches tabs or apps on mobile
+        autoSaveReport();
+      }
+    };
+
+    // Also save on blur (when user taps outside the app on mobile)
+    const handleBlur = () => {
+      if (hasUnsavedChanges.current && tripDestination.trim() && tripStartDate && tripEndDate) {
+        autoSaveReport();
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
   }, [autoSaveReport, tripDestination, tripStartDate, tripEndDate]);
 
   const loadReport = async (reportId: string) => {
