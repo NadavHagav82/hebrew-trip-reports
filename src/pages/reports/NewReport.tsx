@@ -2368,12 +2368,6 @@ export default function NewReport() {
                               }
                             })()}
                           </div>
-                          {/* Date swap explanation */}
-                          {expense.expense_date && expense.dateFromReceipt && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              החלפת יום/חודש זמינה רק כשיום וחודש ≤ 12
-                            </p>
-                          )}
                         </div>
 
                         <div>
