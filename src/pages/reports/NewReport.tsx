@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isValid } from 'date-fns';
-import { ArrowRight, ArrowLeft, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff, ArrowLeftRight, Sparkles, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff, ArrowLeftRight, Sparkles, Edit3 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -825,11 +825,7 @@ export default function NewReport() {
   };
 
   const handleFileSelect = async (expenseId: string, files: FileList | null) => {
-    console.log('handleFileSelect called with expenseId:', expenseId, 'files:', files?.length);
-    if (!files || files.length === 0) {
-      console.log('No files selected, returning early');
-      return;
-    }
+    if (!files || files.length === 0) return;
 
     const maxSize = 10 * 1024 * 1024; // 10MB
     let allFiles: File[] = [];
@@ -867,61 +863,42 @@ export default function NewReport() {
         }
       } else {
         // Check if it's a valid image type
-        // Include webp and allow empty type for camera captures on some mobile devices
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/webp', 'image/gif'];
-        const isImage = validTypes.includes(file.type) || 
-                        file.type.startsWith('image/') || 
-                        file.name.match(/\.(jpg|jpeg|png|heic|webp|gif)$/i);
-        
-        if (isImage) {
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
+        if (validTypes.includes(file.type)) {
           allFiles.push(file);
         } else {
-          console.log('Rejected file:', file.name, 'type:', file.type);
           toast({
             title: 'פורמט קובץ לא נתמך',
-            description: `נא להעלות תמונות או PDF בלבד (קיבלנו: ${file.type || 'לא ידוע'})`,
+            description: 'נא להעלות תמונות או PDF בלבד',
             variant: 'destructive',
           });
         }
       }
     }
 
-    if (allFiles.length === 0) {
-      console.log('No valid files after processing, returning');
-      return;
-    }
+    if (allFiles.length === 0) return;
 
-    console.log('Creating receipts for', allFiles.length, 'files');
     const newReceipts: ReceiptFile[] = allFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
       uploading: false,
     }));
 
-    console.log('Current expenses count:', expenses.length);
-    console.log('Looking for expense with id:', expenseId);
-    const targetExpense = expenses.find(exp => exp.id === expenseId);
-    console.log('Found target expense:', targetExpense ? 'yes' : 'no');
-
-    setExpenses(prevExpenses => {
-      console.log('setExpenses called, prevExpenses count:', prevExpenses.length);
-      return prevExpenses.map(exp => {
-        if (exp.id === expenseId) {
-          const totalReceipts = exp.receipts.length + newReceipts.length;
-          if (totalReceipts > 10) {
-            toast({
-              title: 'יותר מדי קבצים',
-              description: 'מקסימום 10 קבלות לכל הוצאה',
-              variant: 'destructive',
-            });
-            return exp;
-          }
-          console.log('Adding receipts to expense', exp.id);
-          return { ...exp, receipts: [...exp.receipts, ...newReceipts] };
+    setExpenses(expenses.map(exp => {
+      if (exp.id === expenseId) {
+        const totalReceipts = exp.receipts.length + newReceipts.length;
+        if (totalReceipts > 10) {
+          toast({
+            title: 'יותר מדי קבצים',
+            description: 'מקסימום 10 קבלות לכל הוצאה',
+            variant: 'destructive',
+          });
+          return exp;
         }
-        return exp;
-      });
-    });
+        return { ...exp, receipts: [...exp.receipts, ...newReceipts] };
+      }
+      return exp;
+    }));
   };
 
   const removeReceipt = (expenseId: string, receiptIndex: number) => {
@@ -2313,11 +2290,6 @@ export default function NewReport() {
                                   initialFocus
                                   className="p-3 pointer-events-auto"
                                 />
-                                <p className="text-xs text-muted-foreground px-3 pb-2 text-center flex items-center justify-center gap-1">
-                                  <ChevronRight className="h-3 w-3" />
-                                  השתמשו בחצים כדי לנווט בין חודשים
-                                  <ChevronLeft className="h-3 w-3" />
-                                </p>
                               </PopoverContent>
                             </Popover>
                             
