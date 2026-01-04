@@ -31,37 +31,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleAuthUpdate = (nextSession: Session | null) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+    // CRITICAL: Prevent logout on refresh by properly handling session initialization
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // First, get the existing session from storage
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
+        if (isMounted && existingSession) {
+          setSession(existingSession);
+          setUser(existingSession.user);
+        }
+        
+        hasInitialized.current = true;
+        if (isMounted) {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+        hasInitialized.current = true;
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    // Listener FIRST
+    // Set up auth state listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      handleAuthUpdate(nextSession);
+      // Only update state if we're mounted
+      if (!isMounted) return;
 
-      // Prevent "logout on refresh" race: don't mark loading=false until we confirm initialization
-      if (!hasInitialized.current && event === 'INITIAL_SESSION') {
-        hasInitialized.current = true;
-        setLoading(false);
+      // Handle different auth events
+      switch (event) {
+        case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED':
+          setSession(nextSession);
+          setUser(nextSession?.user ?? null);
+          break;
+        case 'SIGNED_OUT':
+          // Only clear session on explicit sign out
+          setSession(null);
+          setUser(null);
+          break;
+        case 'INITIAL_SESSION':
+          // On initial session, only update if we have a session (don't clear existing)
+          if (nextSession) {
+            setSession(nextSession);
+            setUser(nextSession.user);
+          }
+          break;
+        default:
+          // For other events, update normally
+          if (nextSession) {
+            setSession(nextSession);
+            setUser(nextSession.user);
+          }
       }
 
-      // After initialization, any auth change means we're no longer "loading"
+      // Mark as no longer loading after first auth event
       if (hasInitialized.current) {
         setLoading(false);
       }
     });
 
-    // THEN check for existing session (authoritative for initialization)
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      handleAuthUpdate(existingSession);
-      hasInitialized.current = true;
-      setLoading(false);
-    });
+    // Initialize auth
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
