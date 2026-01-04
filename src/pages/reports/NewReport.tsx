@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -266,6 +266,7 @@ export default function NewReport() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shakingFields, setShakingFields] = useState<{[expenseId: string]: string[]}>({});
   const [savedExpenses, setSavedExpenses] = useState<Set<string>>(new Set());
+  const [pendingSaveExpenses, setPendingSaveExpenses] = useState<Set<string>>(new Set()); // Expenses waiting for auto-save
   const [duplicateWarning, setDuplicateWarning] = useState<{ expenseId: string; duplicates: Expense[]; reason: string } | null>(null);
   
   // Auto-save state
@@ -435,12 +436,24 @@ export default function NewReport() {
               .single();
 
             if (!expenseError && newExpense) {
-              // Update local expense with DB ID
+              // Update local expense with DB ID and mark as saved
               setExpenses(prev => prev.map(e => 
                 e.id === exp.id ? { ...e, dbId: newExpense.id } : e
               ));
+              // Clear pending status and mark as saved
+              setPendingSaveExpenses(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(exp.id);
+                return newSet;
+              });
             }
           }
+          // Clear pending status for successfully saved expenses
+          setPendingSaveExpenses(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(exp.id);
+            return newSet;
+          });
         }
       }
 
@@ -619,6 +632,8 @@ export default function NewReport() {
       }
       return exp;
     }));
+    // Mark expense as pending save
+    setPendingSaveExpenses(prev => new Set(prev).add(id));
   };
 
   const removeExpense = (id: string) => {
@@ -1828,24 +1843,39 @@ export default function NewReport() {
                   const CategoryIcon = expense.category ? categoryIcons[expense.category] : Package;
                   const categoryColor = expense.category ? categoryColors[expense.category] : 'bg-muted text-muted-foreground';
                   
+                  // Determine save status
+                  const isSavedInDb = !!expense.dbId;
+                  const isPendingSave = pendingSaveExpenses.has(expense.id);
+                  const isUnsaved = !isSavedInDb && !isPendingSave;
+                  
                   return (
                   <Card 
                     key={expense.id} 
                     className={`relative transition-all duration-300 overflow-hidden hover:shadow-lg ${
-                      savedExpenses.has(expense.id) 
+                      isSavedInDb && !isPendingSave
                         ? 'border-2 border-green-500 shadow-green-100 dark:shadow-green-900/20' 
-                        : 'border border-border hover:border-primary/30'
+                        : isPendingSave
+                          ? 'border-2 border-amber-400 shadow-amber-100 dark:shadow-amber-900/20'
+                          : 'border border-border hover:border-primary/30'
                     }`}
                   >
                     {/* Category color indicator */}
                     <div className={`absolute top-0 left-0 right-0 h-1 ${categoryColor.split(' ')[0]}`} />
                     
-                    {/* Saved indicator - top left corner */}
-                    {savedExpenses.has(expense.id) && (
-                      <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full p-1.5 shadow-md" title="נשמר">
-                        <Save className="w-3.5 h-3.5" />
+                    {/* Save status indicator - top left corner */}
+                    {isSavedInDb && !isPendingSave ? (
+                      <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full p-1.5 shadow-md" title="נשמר בהצלחה">
+                        <Check className="w-3.5 h-3.5" />
                       </div>
-                    )}
+                    ) : isPendingSave ? (
+                      <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-full p-1.5 shadow-md animate-pulse" title="ממתין לשמירה...">
+                        <Clock className="w-3.5 h-3.5" />
+                      </div>
+                    ) : isUnsaved && (expense.expense_date || expense.description || expense.amount > 0) ? (
+                      <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-full p-1.5 shadow-md" title="לא נשמר">
+                        <CloudOff className="w-3.5 h-3.5" />
+                      </div>
+                    ) : null}
                     
                     <div
                       className="p-4 pt-5 cursor-pointer flex items-center justify-between hover:bg-muted/30 transition-colors"
@@ -1856,7 +1886,19 @@ export default function NewReport() {
                           <CategoryIcon className="w-5 h-5" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-bold text-foreground">הוצאה #{expenses.length - index}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground">הוצאה #{expenses.length - index}</span>
+                            {/* Save status badge */}
+                            {isSavedInDb && !isPendingSave ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">
+                                נשמר
+                              </span>
+                            ) : isPendingSave ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium animate-pulse">
+                                שומר...
+                              </span>
+                            ) : null}
+                          </div>
                           {expense.description && (
                             <span className="text-sm text-muted-foreground">{expense.description}</span>
                           )}
