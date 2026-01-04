@@ -2588,22 +2588,26 @@ export default function NewReport() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-6">
                 <Button
                   variant="outline"
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-3 h-14 text-base font-semibold border-2 border-blue-300 dark:border-blue-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
                   onClick={() => handleSave(true)}
                   disabled={loading}
                 >
-                  <Save className="w-4 h-4" />
+                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/50">
+                    <Save className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                   שמור דוח
                 </Button>
                 <Button
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-3 h-14 text-base font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                   onClick={() => handleSave(false)}
                   disabled={loading || expenses.length === 0}
                 >
-                  <FileText className="w-4 h-4" />
+                  <div className="p-2 rounded-full bg-white/20">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
                   הפק דוח
                 </Button>
               </div>
