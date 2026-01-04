@@ -323,22 +323,32 @@ export default function NewReport() {
       if (report.daily_allowance !== null && report.daily_allowance !== undefined) {
         if (report.daily_allowance > 0) {
           setIncludeDailyAllowance(true);
-          // Determine if it was full days or custom days
+          setDailyAllowance(report.daily_allowance);
+          
+          // Determine if it was full days or custom days using allowance_days
           const tripDays = (() => {
             const start = new Date(report.trip_start_date);
             const end = new Date(report.trip_end_date);
             const diffTime = Math.abs(end.getTime() - start.getTime());
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
           })();
-          // We can't know for sure if it was custom, so default to full
-          setAllowanceType('full');
-          setCustomAllowanceDays(tripDays);
+          
+          // Check if allowance_days exists and differs from trip days
+          const savedAllowanceDays = (report as any).allowance_days;
+          if (savedAllowanceDays && savedAllowanceDays < tripDays) {
+            setAllowanceType('custom');
+            setCustomAllowanceDays(savedAllowanceDays);
+          } else {
+            setAllowanceType('full');
+            setCustomAllowanceDays(tripDays);
+          }
         } else {
           setIncludeDailyAllowance(false);
           setAllowanceType('none');
         }
+      } else {
+        setDailyAllowance(100);
       }
-      setDailyAllowance(report.daily_allowance || 100);
 
       // Load expenses
       const { data: expensesData, error: expensesError } = await supabase

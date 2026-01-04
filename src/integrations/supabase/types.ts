@@ -1195,6 +1195,7 @@ export type Database = {
       }
       reports: {
         Row: {
+          allowance_days: number | null
           approved_at: string | null
           approved_by: string | null
           created_at: string
@@ -1219,6 +1220,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allowance_days?: number | null
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
@@ -1243,6 +1245,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allowance_days?: number | null
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
