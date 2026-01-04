@@ -307,13 +307,10 @@ export const NotificationBell = () => {
     const travelRequestId = notification.travel_request_id || undefined;
     const isActionableApproval = !!travelRequestId && actionableApprovalRequestIds.has(travelRequestId);
 
-    // Travel approvals: only route to the approver screen when THIS user still has a pending approval
+    // Travel approvals: for approval notifications, route to the approvals screen.
+    // If the request isn't actionable for this user anymore, the approvals screen will show the correct state.
     if (notification.type === 'travel_request_pending' && travelRequestId) {
-      if (isActionableApproval) {
-        navigate(`/travel/pending-approvals?request=${travelRequestId}`);
-      } else {
-        navigate(`/travel-requests/${travelRequestId}`);
-      }
+      navigate(`/travel/pending-approvals?request=${travelRequestId}`);
       setOpen(false);
       return;
     }
