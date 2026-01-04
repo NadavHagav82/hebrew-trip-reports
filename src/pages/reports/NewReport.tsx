@@ -2154,17 +2154,6 @@ export default function NewReport() {
                                           ✨ אישור וניתוח
                                         </Button>
                                       )}
-                                      {!savedExpenses.has(expense.id) && (
-                                        <Button
-                                          type="button"
-                                          size="default"
-                                          className="bg-green-600 hover:bg-green-700"
-                                          onClick={() => saveExpense(expense.id)}
-                                        >
-                                          <Save className="w-4 h-4 ml-1" />
-                                          שמור הוצאה
-                                        </Button>
-                                      )}
                                     </div>
                                   </div>
                                 ))}
