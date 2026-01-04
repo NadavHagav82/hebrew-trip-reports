@@ -859,21 +859,10 @@ export default function TravelRequestAttachments({
                     קבצים ממתינים לשמירה
                   </Label>
                   <div className="flex items-center gap-2">
-                    {!travelRequestId && onRequestSaveDraft && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={async () => {
-                          const newId = await onRequestSaveDraft();
-                          if (newId) {
-                            toast.info('טיוטה נשמרה – מעלה צרופות...');
-                          }
-                        }}
-                        className="text-xs"
-                      >
-                        <Save className="h-3 w-3 mr-1" />
-                        שמור טיוטה והעלה
-                      </Button>
+                    {!travelRequestId && (
+                      <span className="text-xs text-muted-foreground">
+                        יישמרו עם שמירת הטיוטה או שליחת הבקשה
+                      </span>
                     )}
                     <Button 
                       variant="ghost" 
@@ -996,12 +985,19 @@ export default function TravelRequestAttachments({
             {/* Pending Links */}
             {pendingLinks.length > 0 && (
               <div className="space-y-2 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-xs">
-                    {pendingLinks.length}
-                  </span>
-                  קישורים ממתינים לשמירה
-                </Label>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-xs">
+                      {pendingLinks.length}
+                    </span>
+                    קישורים ממתינים לשמירה
+                  </Label>
+                  {!travelRequestId && (
+                    <span className="text-xs text-muted-foreground">
+                      יישמרו עם שמירת הטיוטה או שליחת הבקשה
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-1">
                   {pendingLinks.map((link, index) => (
                     <div key={index} className="flex items-center gap-2 p-2 bg-background rounded-md border">
@@ -1010,15 +1006,17 @@ export default function TravelRequestAttachments({
                         {getCategoryLabel(link.category)}
                       </span>
                       <span className="flex-1 text-sm truncate">{link.url}</span>
-                      <Button
-                        onClick={() => void savePendingLink(index)}
-                        disabled={uploading}
-                        size="sm"
-                        className="h-8 text-xs shrink-0"
-                        variant="secondary"
-                      >
-                        שמור קישור
-                      </Button>
+                      {travelRequestId && (
+                        <Button
+                          onClick={() => void savePendingLink(index)}
+                          disabled={uploading}
+                          size="sm"
+                          className="h-8 text-xs shrink-0"
+                          variant="secondary"
+                        >
+                          שמור קישור
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1038,7 +1036,7 @@ export default function TravelRequestAttachments({
               <div className={`p-3 rounded-lg flex items-center gap-2 ${
                 travelRequestId 
                   ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800' 
-                  : 'bg-muted border'
+                  : 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800'
               }`}>
                 {travelRequestId ? (
                   <>
@@ -1049,9 +1047,9 @@ export default function TravelRequestAttachments({
                   </>
                 ) : (
                   <>
-                    <Loader2 className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      כדי לשמור צרופות יש לשמור את הבקשה כטיוטה קודם
+                    <Paperclip className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm text-amber-700 dark:text-amber-300">
+                      הקבצים והקישורים יועלו אוטומטית עם שמירת הטיוטה או שליחת הבקשה
                     </span>
                   </>
                 )}
