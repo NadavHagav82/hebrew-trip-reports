@@ -884,7 +884,7 @@ export default function NewReport() {
       uploading: false,
     }));
 
-    setExpenses(expenses.map(exp => {
+    setExpenses(prevExpenses => prevExpenses.map(exp => {
       if (exp.id === expenseId) {
         const totalReceipts = exp.receipts.length + newReceipts.length;
         if (totalReceipts > 10) {
@@ -902,7 +902,7 @@ export default function NewReport() {
   };
 
   const removeReceipt = (expenseId: string, receiptIndex: number) => {
-    setExpenses(expenses.map(exp => {
+    setExpenses(prevExpenses => prevExpenses.map(exp => {
       if (exp.id === expenseId) {
         const receipt = exp.receipts[receiptIndex];
         URL.revokeObjectURL(receipt.preview);
@@ -942,8 +942,8 @@ export default function NewReport() {
       return;
     }
 
-    // Mark as analyzing
-    setExpenses(expenses.map(exp => {
+    // Mark as analyzing - use functional update to avoid stale closure
+    setExpenses(prevExpenses => prevExpenses.map(exp => {
       if (exp.id === expenseId) {
         return {
           ...exp,
@@ -1011,8 +1011,8 @@ export default function NewReport() {
           // Don't fail the whole operation if logging fails
         }
         
-        // Update expense with analyzed data
-        setExpenses(expenses.map(exp => {
+        // Update expense with analyzed data - use functional update to avoid stale closure
+        setExpenses(prevExpenses => prevExpenses.map(exp => {
           if (exp.id === expenseId) {
             const updated = { ...exp };
             if (date) {
@@ -1049,8 +1049,8 @@ export default function NewReport() {
     } catch (error: any) {
       console.error('Error analyzing receipt:', error);
       
-      // Remove analyzing state
-      setExpenses(expenses.map(exp => {
+      // Remove analyzing state - use functional update to avoid stale closure
+      setExpenses(prevExpenses => prevExpenses.map(exp => {
         if (exp.id === expenseId) {
           return {
             ...exp,
