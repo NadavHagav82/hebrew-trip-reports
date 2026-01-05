@@ -280,7 +280,13 @@ export default function NewReport() {
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasUnsavedChanges = useRef(false);
-  
+
+  // Prevent auto-save while we hydrate state from the backend.
+  const isHydratingFromLoadRef = useRef(false);
+
+  // If the user interacted while a report load is in flight, we won't overwrite local state.
+  const userInteractedSinceLoadRef = useRef(false);
+
   // Track deleted expense DB IDs for auto-save sync
   const deletedExpenseDbIds = useRef<Set<string>>(new Set());
 
@@ -475,12 +481,16 @@ export default function NewReport() {
 
   // Debounced auto-save - triggers 1.5 seconds after last change
   const triggerAutoSave = useCallback(() => {
+    // While hydrating the report from the backend we don't want to mark "unsaved" or run saves.
+    // Otherwise: loading sets trip fields -> triggers auto-save -> blocks expenses load / overwrites totals.
+    if (isHydratingFromLoadRef.current) return;
+
     hasUnsavedChanges.current = true;
-    
+
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
-    
+
     autoSaveTimeoutRef.current = setTimeout(() => {
       autoSaveReport();
     }, 1500); // 1.5 second debounce for faster auto-save
@@ -489,16 +499,16 @@ export default function NewReport() {
   // Auto-save when form fields or expenses change
   useEffect(() => {
     // Only trigger auto-save if we have minimum required data
-    if (tripDestination.trim() && tripStartDate && tripEndDate) {
+    if (!isHydratingFromLoadRef.current && tripDestination.trim() && tripStartDate && tripEndDate) {
       triggerAutoSave();
     }
-    
+
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, expenses]);
+  }, [tripDestination, tripStartDate, tripEndDate, tripPurpose, reportNotes, dailyAllowance, allowanceType, customAllowanceDays, expenses, triggerAutoSave]);
 
   // Save on page unload and visibility change (important for mobile!)
   useEffect(() => {
@@ -545,6 +555,9 @@ export default function NewReport() {
   const loadReport = async (reportId: string) => {
     const requestId = ++loadReportRequestIdRef.current;
 
+    // Reset interaction flag for this load cycle
+    userInteractedSinceLoadRef.current = false;
+
     try {
       setLoading(true);
 
@@ -557,6 +570,9 @@ export default function NewReport() {
 
       if (requestId !== loadReportRequestIdRef.current) return;
       if (reportError) throw reportError;
+
+      // Hydrate state from backend without triggering auto-save
+      isHydratingFromLoadRef.current = true;
 
       // Set trip details
       setTripDestination(report.trip_destination);
@@ -604,9 +620,8 @@ export default function NewReport() {
       if (requestId !== loadReportRequestIdRef.current) return;
       if (expensesError) throw expensesError;
 
-      // If the user already started editing (e.g., quickly adding an expense),
-      // don't overwrite local state with the late network response.
-      if (hasUnsavedChanges.current) return;
+      // If the user already interacted while loading, don't overwrite local edits.
+      if (userInteractedSinceLoadRef.current) return;
 
       // Transform expenses to local format - keep DB ID for sync
       const transformedExpenses: Expense[] = expensesData.map(exp => ({
@@ -627,6 +642,10 @@ export default function NewReport() {
       }));
 
       setExpenses(transformedExpenses);
+
+      // Hydration done
+      isHydratingFromLoadRef.current = false;
+      hasUnsavedChanges.current = false;
     } catch (error: any) {
       toast({
         title: 'שגיאה',
@@ -635,6 +654,7 @@ export default function NewReport() {
       });
       navigate('/');
     } finally {
+      isHydratingFromLoadRef.current = false;
       if (requestId === loadReportRequestIdRef.current) {
         setLoading(false);
       }
@@ -642,6 +662,8 @@ export default function NewReport() {
   };
 
   const addExpense = () => {
+    userInteractedSinceLoadRef.current = true;
+
     const newExpense: Expense = {
       id: Date.now().toString(),
       expense_date: '',
@@ -659,6 +681,8 @@ export default function NewReport() {
   };
 
   const updateExpense = (id: string, field: keyof Expense, value: any) => {
+    userInteractedSinceLoadRef.current = true;
+
     setExpenses(prev =>
       prev.map(exp => {
         if (exp.id === id) {
@@ -679,6 +703,8 @@ export default function NewReport() {
   };
 
   const removeExpense = (id: string) => {
+    userInteractedSinceLoadRef.current = true;
+
     setExpenses(prev => {
       const expense = prev.find(exp => exp.id === id);
       if (expense) {
@@ -1513,6 +1539,13 @@ export default function NewReport() {
     }
   };
 
+  const handleBack = async () => {
+    // When the user leaves the draft, flush the latest changes immediately.
+    if (!isHydratingFromLoadRef.current && hasUnsavedChanges.current && tripDestination.trim() && tripStartDate && tripEndDate) {
+      await autoSaveReport();
+    }
+    navigate('/');
+  };
 
   const calculateTripDuration = () => {
     if (!tripStartDate || !tripEndDate) return 0;
@@ -1542,7 +1575,7 @@ export default function NewReport() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => navigate('/')} 
+                onClick={handleBack}
                 className="h-9 hover:bg-primary/10 rounded-xl"
               >
                 <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
