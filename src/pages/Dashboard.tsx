@@ -50,7 +50,7 @@ interface Profile {
 }
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +83,9 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking user
+    if (authLoading) return;
+    
     if (!user) {
       navigate('/auth/login');
       return;
@@ -97,7 +100,7 @@ export default function Dashboard() {
     fetchPendingReportsForManager();
     fetchPendingTravelApprovals();
     fetchTravelSummary();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const checkAdminStatus = async () => {
     if (!user) return;
