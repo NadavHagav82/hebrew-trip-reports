@@ -540,10 +540,14 @@ export default function NewReport() {
     };
   }, [autoSaveReport, tripDestination, tripStartDate, tripEndDate]);
 
+  const loadReportRequestIdRef = useRef(0);
+
   const loadReport = async (reportId: string) => {
+    const requestId = ++loadReportRequestIdRef.current;
+
     try {
       setLoading(true);
-      
+
       // Load report details
       const { data: report, error: reportError } = await supabase
         .from('reports')
@@ -551,6 +555,7 @@ export default function NewReport() {
         .eq('id', reportId)
         .single();
 
+      if (requestId !== loadReportRequestIdRef.current) return;
       if (reportError) throw reportError;
 
       // Set trip details
@@ -564,7 +569,7 @@ export default function NewReport() {
         if (report.daily_allowance > 0) {
           setIncludeDailyAllowance(true);
           setDailyAllowance(report.daily_allowance);
-          
+
           // Determine if it was full days or custom days using allowance_days
           const tripDays = (() => {
             const start = new Date(report.trip_start_date);
@@ -572,7 +577,7 @@ export default function NewReport() {
             const diffTime = Math.abs(end.getTime() - start.getTime());
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
           })();
-          
+
           // Check if allowance_days exists and differs from trip days
           const savedAllowanceDays = (report as any).allowance_days;
           if (savedAllowanceDays && savedAllowanceDays < tripDays) {
@@ -596,7 +601,12 @@ export default function NewReport() {
         .select('*')
         .eq('report_id', reportId);
 
+      if (requestId !== loadReportRequestIdRef.current) return;
       if (expensesError) throw expensesError;
+
+      // If the user already started editing (e.g., quickly adding an expense),
+      // don't overwrite local state with the late network response.
+      if (hasUnsavedChanges.current) return;
 
       // Transform expenses to local format - keep DB ID for sync
       const transformedExpenses: Expense[] = expensesData.map(exp => ({
@@ -625,7 +635,9 @@ export default function NewReport() {
       });
       navigate('/');
     } finally {
-      setLoading(false);
+      if (requestId === loadReportRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -642,41 +654,46 @@ export default function NewReport() {
       notes: '',
       payment_method: '',
     };
-    setExpenses([...expenses, newExpense]);
+    setExpenses(prev => [...prev, newExpense]);
     setExpandedExpense(newExpense.id);
   };
 
   const updateExpense = (id: string, field: keyof Expense, value: any) => {
-    setExpenses(expenses.map(exp => {
-      if (exp.id === id) {
-        const updated = { ...exp, [field]: value };
-        // Auto-convert to ILS
-        if (field === 'amount' || field === 'currency') {
+    setExpenses(prev =>
+      prev.map(exp => {
+        if (exp.id === id) {
+          const updated = { ...exp, [field]: value };
+          // Auto-convert to ILS
+          if (field === 'amount' || field === 'currency') {
             const amount = field === 'amount' ? value : exp.amount;
             const currency = field === 'currency' ? value : exp.currency;
             updated.amount_in_ils = amount * (currencyRates[currency as keyof typeof currencyRates] || 1);
+          }
+          return updated;
         }
-        return updated;
-      }
-      return exp;
-    }));
+        return exp;
+      })
+    );
     // Mark expense as pending save
     setPendingSaveExpenses(prev => new Set(prev).add(id));
   };
 
   const removeExpense = (id: string) => {
-    const expense = expenses.find(exp => exp.id === id);
-    if (expense) {
-      // Cleanup preview URLs
-      expense.receipts.forEach(receipt => {
-        URL.revokeObjectURL(receipt.preview);
-      });
-      // Track DB ID for deletion during auto-save
-      if (expense.dbId) {
-        deletedExpenseDbIds.current.add(expense.dbId);
+    setExpenses(prev => {
+      const expense = prev.find(exp => exp.id === id);
+      if (expense) {
+        // Cleanup preview URLs
+        expense.receipts.forEach(receipt => {
+          URL.revokeObjectURL(receipt.preview);
+        });
+        // Track DB ID for deletion during auto-save
+        if (expense.dbId) {
+          deletedExpenseDbIds.current.add(expense.dbId);
+        }
       }
-    }
-    setExpenses(expenses.filter(exp => exp.id !== id));
+      return prev.filter(exp => exp.id !== id);
+    });
+
     setSavedExpenses(prev => {
       const newSet = new Set(prev);
       newSet.delete(id);
