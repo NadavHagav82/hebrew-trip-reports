@@ -549,7 +549,11 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
 
       {/* Receipt Pages - Start on new page */}
       {expenses.map((expense, expenseIndex) => {
-        const imageReceipts = expense.receipts?.filter(r => r.file_type === 'image') || [];
+        // Include both image receipts - PDFs cannot be embedded in react-pdf
+        const imageReceipts = expense.receipts?.filter(r => 
+          r.file_type === 'image' || 
+          r.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/)
+        ) || [];
         
         if (imageReceipts.length === 0) return null;
 

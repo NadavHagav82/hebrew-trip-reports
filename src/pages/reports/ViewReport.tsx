@@ -433,8 +433,47 @@ const ViewReport = () => {
 
     try {
       console.log('PDF Generation: Starting with @react-pdf/renderer...');
+      console.log('PDF Generation: Expenses count:', expenses.length);
       
-      const pdfDoc = <ReportPdf report={report} expenses={expenses} profile={profile} />;
+      // Generate fresh signed URLs for all receipts before PDF generation
+      const expensesWithFreshUrls = await Promise.all(
+        expenses.map(async (expense) => {
+          const receiptsWithUrls = await Promise.all(
+            (expense.receipts || []).map(async (receipt: any) => {
+              try {
+                // Generate a fresh signed URL for each receipt
+                const { data } = await supabase.storage
+                  .from('receipts')
+                  .createSignedUrl(receipt.file_url.includes('/') && !receipt.file_url.startsWith('http') 
+                    ? receipt.file_url 
+                    : receipt.file_url.replace(/.*\/receipts\//, ''), 
+                    60 * 60
+                  );
+                
+                const signedUrl = data?.signedUrl;
+                console.log('PDF Generation: Receipt signed URL generated:', !!signedUrl, receipt.file_name);
+                
+                return {
+                  ...receipt,
+                  file_url: signedUrl || receipt.file_url,
+                };
+              } catch (err) {
+                console.error('PDF Generation: Error generating signed URL for receipt:', receipt.file_name, err);
+                return receipt;
+              }
+            })
+          );
+          
+          return {
+            ...expense,
+            receipts: receiptsWithUrls,
+          };
+        })
+      );
+      
+      console.log('PDF Generation: All receipts processed, generating PDF...');
+      
+      const pdfDoc = <ReportPdf report={report} expenses={expensesWithFreshUrls} profile={profile} />;
       const blob = await pdf(pdfDoc).toBlob();
       
       console.log('PDF Generation: Blob created, size:', blob.size);
