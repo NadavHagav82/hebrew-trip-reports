@@ -433,11 +433,32 @@ const ViewReport = () => {
 
     try {
       console.log('PDF Generation: Starting with @react-pdf/renderer...');
-      console.log('PDF Generation: Expenses count:', expenses.length);
-      
+
+      // Always refetch expenses+receipts when generating PDF.
+      // This prevents cases where the in-memory state is missing receipts after leaving and re-entering the report.
+      const { data: freshExpenses, error: freshExpensesError } = await supabase
+        .from('expenses')
+        .select(`*, receipts (*)`)
+        .eq('report_id', report.id)
+        .order('expense_date', { ascending: true });
+
+      if (freshExpensesError) {
+        console.warn('PDF Generation: Failed to refetch expenses for PDF, falling back to state', freshExpensesError);
+      }
+
+      const sourceExpenses: Expense[] = (freshExpensesError ? null : (freshExpenses as any[] | null))
+        ? ((freshExpenses as any[]) || []).map((e: any) => ({ ...e, receipts: e.receipts || [] }))
+        : expenses;
+
+      console.log('PDF Generation: Expenses count (source):', sourceExpenses.length);
+      console.log(
+        'PDF Generation: Receipts count (source):',
+        sourceExpenses.reduce((sum, e) => sum + (e.receipts?.length || 0), 0)
+      );
+
       // Convert images to base64 data URIs to avoid Buffer issues in browser
       const expensesWithBase64Images = await Promise.all(
-        expenses.map(async (expense) => {
+        sourceExpenses.map(async (expense) => {
           const receiptsWithBase64 = await Promise.all(
             (expense.receipts || []).map(async (receipt: any) => {
               try {
