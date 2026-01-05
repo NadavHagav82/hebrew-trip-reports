@@ -435,30 +435,62 @@ const ViewReport = () => {
       console.log('PDF Generation: Starting with @react-pdf/renderer...');
       console.log('PDF Generation: Expenses count:', expenses.length);
       
-      // Generate fresh signed URLs for all receipts before PDF generation
-      const expensesWithFreshUrls = await Promise.all(
+      // Convert images to base64 data URIs to avoid Buffer issues in browser
+      const expensesWithBase64Images = await Promise.all(
         expenses.map(async (expense) => {
-          const receiptsWithUrls = await Promise.all(
+          const receiptsWithBase64 = await Promise.all(
             (expense.receipts || []).map(async (receipt: any) => {
               try {
+                // Only process image receipts
+                const isImage = receipt.file_type === 'image' || 
+                  receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
+                
+                if (!isImage) {
+                  return receipt;
+                }
+
                 // Generate a fresh signed URL for each receipt
+                const filePath = receipt.file_url.includes('/') && !receipt.file_url.startsWith('http') 
+                  ? receipt.file_url 
+                  : receipt.file_url.replace(/.*\/receipts\//, '');
+                
                 const { data } = await supabase.storage
                   .from('receipts')
-                  .createSignedUrl(receipt.file_url.includes('/') && !receipt.file_url.startsWith('http') 
-                    ? receipt.file_url 
-                    : receipt.file_url.replace(/.*\/receipts\//, ''), 
-                    60 * 60
-                  );
+                  .createSignedUrl(filePath, 60 * 60);
                 
                 const signedUrl = data?.signedUrl;
-                console.log('PDF Generation: Receipt signed URL generated:', !!signedUrl, receipt.file_name);
+                
+                if (!signedUrl) {
+                  console.log('PDF Generation: No signed URL for receipt:', receipt.file_name);
+                  return receipt;
+                }
+
+                // Fetch the image and convert to base64 data URI
+                const response = await fetch(signedUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                let binary = '';
+                for (let i = 0; i < uint8Array.length; i++) {
+                  binary += String.fromCharCode(uint8Array[i]);
+                }
+                const base64 = btoa(binary);
+                
+                // Determine MIME type from file extension
+                const ext = receipt.file_name?.toLowerCase().split('.').pop() || 'jpeg';
+                const mimeType = ext === 'png' ? 'image/png' : 
+                                 ext === 'gif' ? 'image/gif' : 
+                                 ext === 'webp' ? 'image/webp' : 'image/jpeg';
+                
+                const dataUri = `data:${mimeType};base64,${base64}`;
+                
+                console.log('PDF Generation: Image converted to base64:', receipt.file_name);
                 
                 return {
                   ...receipt,
-                  file_url: signedUrl || receipt.file_url,
+                  file_url: dataUri,
                 };
               } catch (err) {
-                console.error('PDF Generation: Error generating signed URL for receipt:', receipt.file_name, err);
+                console.error('PDF Generation: Error processing receipt:', receipt.file_name, err);
                 return receipt;
               }
             })
@@ -466,14 +498,14 @@ const ViewReport = () => {
           
           return {
             ...expense,
-            receipts: receiptsWithUrls,
+            receipts: receiptsWithBase64,
           };
         })
       );
       
-      console.log('PDF Generation: All receipts processed, generating PDF...');
+      console.log('PDF Generation: All images converted to base64, generating PDF...');
       
-      const pdfDoc = <ReportPdf report={report} expenses={expensesWithFreshUrls} profile={profile} />;
+      const pdfDoc = <ReportPdf report={report} expenses={expensesWithBase64Images} profile={profile} />;
       const blob = await pdf(pdfDoc).toBlob();
       
       console.log('PDF Generation: Blob created, size:', blob.size);
