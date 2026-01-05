@@ -257,7 +257,18 @@ const ViewReport = () => {
             })
           );
 
-          setExpenses(enriched);
+          // Prevent stale background hydration from overwriting newer state changes
+          // (e.g., if an expense was added/edited while hydration was still running).
+          setExpenses((prev) => {
+            const prevIds = new Set(prev.map((e) => e.id));
+            const baseIds = new Set(baseExpenses.map((e) => e.id));
+
+            // If the list changed since we started hydration, keep current state.
+            if (prevIds.size !== baseIds.size) return prev;
+            for (const id of prevIds) if (!baseIds.has(id)) return prev;
+
+            return enriched;
+          });
         } catch {
           // silent; page already rendered
         }
