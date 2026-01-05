@@ -663,6 +663,7 @@ export default function NewReport() {
 
   const addExpense = () => {
     userInteractedSinceLoadRef.current = true;
+    hasUnsavedChanges.current = true;
 
     const newExpense: Expense = {
       id: Date.now().toString(),
@@ -677,11 +678,13 @@ export default function NewReport() {
       payment_method: '',
     };
     setExpenses(prev => [...prev, newExpense]);
+    setPendingSaveExpenses(prev => new Set(prev).add(newExpense.id));
     setExpandedExpense(newExpense.id);
   };
 
   const updateExpense = (id: string, field: keyof Expense, value: any) => {
     userInteractedSinceLoadRef.current = true;
+    hasUnsavedChanges.current = true;
 
     setExpenses(prev =>
       prev.map(exp => {
@@ -704,6 +707,7 @@ export default function NewReport() {
 
   const removeExpense = (id: string) => {
     userInteractedSinceLoadRef.current = true;
+    hasUnsavedChanges.current = true;
 
     setExpenses(prev => {
       const expense = prev.find(exp => exp.id === id);
@@ -827,7 +831,7 @@ export default function NewReport() {
         amount: 'סכום',
         payment_method: 'אמצעי תשלום'
       };
-      
+
       const missingFieldNames = missingFields.map(f => fieldNames[f]).join(', ');
       toast({
         title: '⚠️ שדות חובה חסרים',
@@ -843,7 +847,7 @@ export default function NewReport() {
           fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 100);
-      
+
       return;
     }
 
@@ -860,7 +864,11 @@ export default function NewReport() {
     setSavedExpenses(prev => new Set(prev).add(expenseId));
     setExpandedExpense(null);
     setDuplicateWarning(null);
-    
+
+    // Ensure the expense is persisted before the user leaves the page.
+    hasUnsavedChanges.current = true;
+    void autoSaveReport();
+
     toast({
       title: '✓ ההוצאה נשמרה',
       description: `${expense.description} - ${expense.amount.toFixed(2)} ${currencyLabels[expense.currency]}`,
@@ -869,6 +877,9 @@ export default function NewReport() {
 
   const handleFileSelect = async (expenseId: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    userInteractedSinceLoadRef.current = true;
+    hasUnsavedChanges.current = true;
 
     const maxSize = 10 * 1024 * 1024; // 10MB
     let allFiles: File[] = [];
@@ -942,9 +953,14 @@ export default function NewReport() {
       }
       return exp;
     }));
+
+    setPendingSaveExpenses(prev => new Set(prev).add(expenseId));
   };
 
   const removeReceipt = (expenseId: string, receiptIndex: number) => {
+    userInteractedSinceLoadRef.current = true;
+    hasUnsavedChanges.current = true;
+
     setExpenses(prevExpenses => prevExpenses.map(exp => {
       if (exp.id === expenseId) {
         const receipt = exp.receipts[receiptIndex];
@@ -956,6 +972,8 @@ export default function NewReport() {
       }
       return exp;
     }));
+
+    setPendingSaveExpenses(prev => new Set(prev).add(expenseId));
   };
 
   const openFileDialog = (expenseId: string) => {
