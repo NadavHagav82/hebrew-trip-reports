@@ -449,14 +449,40 @@ const ViewReport = () => {
                   return receipt;
                 }
 
-                // Generate a fresh signed URL for each receipt
-                const filePath = receipt.file_url.includes('/') && !receipt.file_url.startsWith('http') 
-                  ? receipt.file_url 
-                  : receipt.file_url.replace(/.*\/receipts\//, '');
+                // Extract the storage path from the file_url
+                // The file_url can be: 
+                // 1. Just a path like "user_id/filename.jpg"
+                // 2. A full signed URL starting with http
+                // 3. A path with storage prefix like "/storage/v1/object/..."
+                let storagePath = receipt.file_url;
                 
-                const { data } = await supabase.storage
+                if (storagePath.startsWith('http')) {
+                  // Extract path from full URL - look for /receipts/ in the URL
+                  const receiptsMatch = storagePath.match(/\/receipts\/(.+?)(?:\?|$)/);
+                  if (receiptsMatch) {
+                    storagePath = decodeURIComponent(receiptsMatch[1]);
+                  } else {
+                    console.log('PDF Generation: Could not extract path from URL:', storagePath);
+                    return receipt;
+                  }
+                } else if (storagePath.includes('/storage/v1/')) {
+                  // Extract path from storage URL
+                  const receiptsMatch = storagePath.match(/\/receipts\/(.+?)(?:\?|$)/);
+                  if (receiptsMatch) {
+                    storagePath = decodeURIComponent(receiptsMatch[1]);
+                  }
+                }
+                
+                console.log('PDF Generation: Generating signed URL for path:', storagePath);
+                
+                const { data, error } = await supabase.storage
                   .from('receipts')
-                  .createSignedUrl(filePath, 60 * 60);
+                  .createSignedUrl(storagePath, 60 * 60);
+                
+                if (error) {
+                  console.error('PDF Generation: Error creating signed URL:', error);
+                  return receipt;
+                }
                 
                 const signedUrl = data?.signedUrl;
                 
@@ -465,8 +491,15 @@ const ViewReport = () => {
                   return receipt;
                 }
 
+                console.log('PDF Generation: Fetching image from signed URL...');
+                
                 // Fetch the image and convert to base64 data URI
                 const response = await fetch(signedUrl);
+                if (!response.ok) {
+                  console.error('PDF Generation: Failed to fetch image:', response.status);
+                  return receipt;
+                }
+                
                 const arrayBuffer = await response.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
                 let binary = '';
