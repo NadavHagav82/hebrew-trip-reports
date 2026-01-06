@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, XCircle, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, Save, Loader2 } from 'lucide-react';
 import { ManagerAttachmentUpload } from '@/components/ManagerAttachmentUpload';
 
 interface ManagerExpenseReviewProps {
   expenseId: string;
   currentStatus?: 'pending' | 'approved' | 'rejected';
   currentComment?: string;
-  onReview: (expenseId: string, status: 'approved' | 'rejected', comment: string, attachments: File[]) => void;
+  onReview: (expenseId: string, status: 'approved' | 'rejected', comment: string, attachments: File[]) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -25,71 +25,84 @@ export const ManagerExpenseReview = ({
   );
   const [comment, setComment] = useState(currentComment || '');
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Reset saved state when status changes
+  useEffect(() => {
+    setIsSaved(false);
+  }, [reviewStatus, comment]);
 
   const handleStatusChange = (status: 'approved' | 'rejected') => {
     setReviewStatus(status);
-    setShowCommentBox(true);
-    onReview(expenseId, status, comment, attachments);
+    setIsSaved(false);
   };
 
-  const handleCommentChange = (value: string) => {
-    setComment(value);
-    if (reviewStatus) {
-      onReview(expenseId, reviewStatus, value, attachments);
+  const handleSaveReview = async () => {
+    if (!reviewStatus) return;
+    
+    // Validate rejected expenses must have comment
+    if (reviewStatus === 'rejected' && !comment.trim()) {
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await onReview(expenseId, reviewStatus, comment, attachments);
+      setIsSaved(true);
+    } catch (error) {
+      console.error('Error saving review:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleAttachmentsChange = (files: File[]) => {
     setAttachments(files);
-    if (reviewStatus) {
-      onReview(expenseId, reviewStatus, comment, files);
-    }
+    setIsSaved(false);
   };
 
+  const canSave = reviewStatus && (reviewStatus === 'approved' || comment.trim());
+
   return (
-    <div className="mt-4 border-t border-dashed border-gray-300 pt-4">
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-sm font-semibold text-gray-600">סקירת מנהל:</span>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant={reviewStatus === 'approved' ? 'default' : 'outline'}
-            className={reviewStatus === 'approved' ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50 hover:border-green-300'}
-            onClick={() => handleStatusChange('approved')}
-            disabled={disabled}
-          >
-            <CheckCircle className="w-4 h-4 ml-1" />
-            אשר
-          </Button>
-          <Button
-            size="sm"
-            variant={reviewStatus === 'rejected' ? 'default' : 'outline'}
-            className={reviewStatus === 'rejected' ? 'bg-red-600 hover:bg-red-700' : 'hover:bg-red-50 hover:border-red-300'}
-            onClick={() => handleStatusChange('rejected')}
-            disabled={disabled}
-          >
-            <XCircle className="w-4 h-4 ml-1" />
-            דחה / בקש בירור
-          </Button>
-          {!showCommentBox && reviewStatus === null && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowCommentBox(true)}
-              disabled={disabled}
-            >
-              <MessageSquare className="w-4 h-4 ml-1" />
-              הערה
-            </Button>
-          )}
-        </div>
+        <span className="text-sm font-bold text-blue-800 dark:text-blue-300">סקירת מנהל:</span>
+      </div>
+      
+      {/* Status buttons */}
+      <div className="flex gap-2 mb-3">
+        <Button
+          size="sm"
+          variant={reviewStatus === 'approved' ? 'default' : 'outline'}
+          className={reviewStatus === 'approved' 
+            ? 'bg-green-600 hover:bg-green-700 text-white' 
+            : 'hover:bg-green-50 hover:border-green-300 border-green-200'}
+          onClick={() => handleStatusChange('approved')}
+          disabled={disabled || isSaving}
+        >
+          <CheckCircle className="w-4 h-4 ml-1" />
+          אשר
+        </Button>
+        <Button
+          size="sm"
+          variant={reviewStatus === 'rejected' ? 'default' : 'outline'}
+          className={reviewStatus === 'rejected' 
+            ? 'bg-red-600 hover:bg-red-700 text-white' 
+            : 'hover:bg-red-50 hover:border-red-300 border-red-200'}
+          onClick={() => handleStatusChange('rejected')}
+          disabled={disabled || isSaving}
+        >
+          <XCircle className="w-4 h-4 ml-1" />
+          דחה / בקש בירור
+        </Button>
       </div>
 
-      {showCommentBox && (
-        <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+      {/* Comment section - always visible when status is selected */}
+      {reviewStatus && (
+        <div className="space-y-3">
           <div>
-            <Label htmlFor={`manager-comment-${expenseId}`} className="text-sm mb-1 block">
+            <Label htmlFor={`manager-comment-${expenseId}`} className="text-sm mb-1 block font-medium">
               {reviewStatus === 'rejected' ? 'הערה / בקשת בירור (חובה):' : 'הערה (אופציונלי):'}
             </Label>
             <Textarea
@@ -98,10 +111,10 @@ export const ManagerExpenseReview = ({
                 ? 'פרט מדוע ההוצאה נדחתה או מה נדרש לבירור...' 
                 : 'הוסף הערה...'}
               value={comment}
-              onChange={(e) => handleCommentChange(e.target.value)}
+              onChange={(e) => setComment(e.target.value)}
               rows={2}
-              className="text-sm"
-              disabled={disabled}
+              className="text-sm bg-white dark:bg-slate-800"
+              disabled={disabled || isSaving}
             />
           </div>
           
@@ -109,9 +122,42 @@ export const ManagerExpenseReview = ({
             <ManagerAttachmentUpload
               expenseId={expenseId}
               onFilesChange={handleAttachmentsChange}
-              disabled={disabled}
+              disabled={disabled || isSaving}
             />
           )}
+          
+          {/* Save button */}
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              onClick={handleSaveReview}
+              disabled={disabled || isSaving || !canSave}
+              className={isSaved 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-blue-600 hover:bg-blue-700'}
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 ml-1 animate-spin" />
+              ) : isSaved ? (
+                <CheckCircle className="w-4 h-4 ml-1" />
+              ) : (
+                <Save className="w-4 h-4 ml-1" />
+              )}
+              {isSaved ? 'נשמר!' : 'שמור הערה'}
+            </Button>
+            
+            {reviewStatus === 'rejected' && !comment.trim() && (
+              <span className="text-xs text-red-600 font-medium">
+                יש להוסיף הערה לדחייה
+              </span>
+            )}
+            
+            {isSaved && (
+              <span className="text-xs text-green-600 font-medium">
+                ✓ ההערה נשמרה על ההוצאה
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>
