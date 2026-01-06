@@ -2016,38 +2016,56 @@ const ViewReport = () => {
                     />
                   </div>
                   
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="text-sm text-blue-700 dark:text-blue-300">
-                      {expenses.filter(e => !e.approval_status || e.approval_status === 'pending').length > 0 ? (
-                        <span className="text-amber-600 font-medium">
-                          יש {expenses.filter(e => !e.approval_status || e.approval_status === 'pending').length} הוצאות שטרם נסקרו
-                        </span>
-                      ) : expenses.some(e => e.approval_status === 'rejected') ? (
-                        <span className="text-red-600 font-medium">
-                          ישנן הוצאות שנדחו - הדוח יחזור לעובד לתיקון
-                        </span>
-                      ) : (
-                        <span className="text-green-600 font-medium">
-                          ✓ כל ההוצאות אושרו
-                        </span>
-                      )}
+                  {/* Show status message and action buttons */}
+                  {expenses.filter(e => !e.approval_status || e.approval_status === 'pending').length > 0 ? (
+                    <div className="text-amber-600 font-medium text-sm">
+                      ⚠️ יש לסקור את כל ההוצאות לפני סיום הביקורת. נותרו {expenses.filter(e => !e.approval_status || e.approval_status === 'pending').length} הוצאות שטרם נסקרו.
                     </div>
-                    
-                    <Button
-                      onClick={handleFinalizeReview}
-                      disabled={submittingReview || expenses.some(e => !e.approval_status || e.approval_status === 'pending')}
-                      className={expenses.some(e => e.approval_status === 'rejected') 
-                        ? 'bg-orange-600 hover:bg-orange-700' 
-                        : 'bg-green-600 hover:bg-green-700'}
-                    >
-                      {submittingReview ? (
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4 ml-2" />
-                      )}
-                      {expenses.some(e => e.approval_status === 'rejected') ? 'החזר לעובד לתיקון' : 'אשר וסגור דוח'}
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-sm font-medium">
+                        {expenses.some(e => e.approval_status === 'rejected') ? (
+                          <span className="text-red-600">
+                            ⚠️ ישנן הוצאות שנדחו - הדוח יחזור לעובד לתיקון
+                          </span>
+                        ) : (
+                          <span className="text-green-600">
+                            ✓ כל ההוצאות אושרו
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        {expenses.some(e => e.approval_status === 'rejected') ? (
+                          <Button
+                            onClick={handleFinalizeReview}
+                            disabled={submittingReview}
+                            className="bg-orange-600 hover:bg-orange-700 flex-1"
+                          >
+                            {submittingReview ? (
+                              <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4 ml-2" />
+                            )}
+                            שלח לבירור
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={handleFinalizeReview}
+                            disabled={submittingReview}
+                            className="bg-green-600 hover:bg-green-700 flex-1"
+                          >
+                            {submittingReview ? (
+                              <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4 ml-2" />
+                            )}
+                            אשר דוח
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
