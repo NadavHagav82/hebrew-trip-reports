@@ -217,10 +217,14 @@ export default function Dashboard() {
   };
 
   const fetchReports = async () => {
+    if (!user) return;
+    
     try {
+      // Only fetch reports that belong to the current user (their own reports)
       const { data, error } = await supabase
         .from('reports')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

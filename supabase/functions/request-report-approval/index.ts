@@ -38,6 +38,30 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Get the report to find the user_id and then the manager_id
+    const { data: reportData, error: reportError } = await supabase
+      .from('reports')
+      .select('user_id')
+      .eq('id', reportId)
+      .single();
+
+    if (reportError) {
+      console.error("Error fetching report:", reportError);
+      throw reportError;
+    }
+
+    // Get the manager_id from the employee's profile
+    const { data: employeeProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('manager_id')
+      .eq('id', reportData.user_id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching employee profile:", profileError);
+      throw profileError;
+    }
+
     // Generate unique approval token
     const approvalToken = crypto.randomUUID();
     
@@ -54,6 +78,27 @@ const handler = async (req: Request): Promise<Response> => {
     if (updateError) {
       console.error("Error updating report:", updateError);
       throw updateError;
+    }
+
+    // Create notification for manager if manager_id exists
+    if (employeeProfile.manager_id) {
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: employeeProfile.manager_id,
+          type: 'report_pending',
+          title: 'דוח חדש ממתין לאישור',
+          message: `${employeeName} שלח/ה דוח נסיעה ל${reportDetails.destination} לאישור שלך. סה"כ: ₪${reportDetails.totalAmount.toFixed(2)}`,
+          report_id: reportId,
+          is_read: false,
+        });
+
+      if (notificationError) {
+        console.error("Error creating notification:", notificationError);
+        // Don't throw - continue with email even if notification fails
+      } else {
+        console.log("Notification created for manager:", employeeProfile.manager_id);
+      }
     }
 
     // Create approval URL
