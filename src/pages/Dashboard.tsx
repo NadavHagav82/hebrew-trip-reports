@@ -494,7 +494,7 @@ export default function Dashboard() {
 
   const getStatistics = () => {
     return {
-      open: reports.filter(r => r.status === 'open').length,
+      open: reports.filter(r => r.status === 'open' || r.status === 'pending_approval').length,
       draft: reports.filter(r => r.status === 'draft').length,
       closed: reports.filter(r => r.status === 'closed').length,
     };
@@ -509,7 +509,7 @@ export default function Dashboard() {
       } else if (status === 'closed') {
         filtered = filtered.filter(r => r.status === 'closed');
       } else {
-        filtered = filtered.filter(r => r.status === 'open');
+        filtered = filtered.filter(r => r.status === 'open' || r.status === 'pending_approval');
       }
     }
 
