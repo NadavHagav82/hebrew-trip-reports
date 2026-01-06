@@ -492,14 +492,20 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
         </View>
 
         {/* Payment Method Summary */}
-        <View style={[styles.summaryBox, { marginTop: 16, backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]} wrap={false}>
+        <View
+          style={[
+            styles.summaryBox,
+            { marginTop: 16, backgroundColor: '#fef3c7', borderColor: '#f59e0b' },
+          ]}
+          wrap={false}
+        >
           <Text style={[styles.summaryTitle, { color: '#92400e' }]}>סיכום לפי אמצעי תשלום</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>💳 כרטיס חברה</Text>
+            <Text style={styles.summaryLabel}>כרטיס חברה</Text>
             <Text style={styles.summaryValue}>₪{companyCardTotal.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>💵 מכיס העובד</Text>
+            <Text style={styles.summaryLabel}>מכיס העובד</Text>
             <Text style={styles.summaryValue}>₪{outOfPocketTotal.toFixed(2)}</Text>
           </View>
           {outOfPocketTotal > 0 && (
