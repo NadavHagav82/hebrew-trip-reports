@@ -64,10 +64,31 @@ export const ManagerExpenseReview = ({
 
   const canSave = reviewStatus && (reviewStatus === 'approved' || comment.trim());
 
+  // If already saved to DB (currentStatus is set from DB), show saved state
+  const isAlreadySavedToDb = currentStatus === 'approved' || currentStatus === 'rejected';
+
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
-      <div className="flex items-center gap-2 mb-3">
+    <div className={`p-4 rounded-xl border-2 transition-all ${
+      isAlreadySavedToDb || isSaved
+        ? currentStatus === 'approved' || reviewStatus === 'approved'
+          ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-300 dark:border-green-700'
+          : 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-300 dark:border-red-700'
+        : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800'
+    }`}>
+      <div className="flex items-center justify-between gap-2 mb-3">
         <span className="text-sm font-bold text-blue-800 dark:text-blue-300">סקירת מנהל:</span>
+        
+        {/* Show saved status indicator */}
+        {(isAlreadySavedToDb || isSaved) && (
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+            currentStatus === 'approved' || reviewStatus === 'approved'
+              ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-100'
+              : 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-100'
+          }`}>
+            <CheckCircle className="w-3.5 h-3.5" />
+            {currentStatus === 'approved' || reviewStatus === 'approved' ? 'אושר ונשמר' : 'נדחה ונשמר'}
+          </div>
+        )}
       </div>
       
       {/* Status buttons */}
@@ -127,23 +148,23 @@ export const ManagerExpenseReview = ({
           )}
           
           {/* Save button */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Button
               size="sm"
               onClick={handleSaveReview}
               disabled={disabled || isSaving || !canSave}
-              className={isSaved 
+              className={isSaved || isAlreadySavedToDb
                 ? 'bg-green-600 hover:bg-green-700' 
                 : 'bg-blue-600 hover:bg-blue-700'}
             >
               {isSaving ? (
                 <Loader2 className="w-4 h-4 ml-1 animate-spin" />
-              ) : isSaved ? (
+              ) : isSaved || isAlreadySavedToDb ? (
                 <CheckCircle className="w-4 h-4 ml-1" />
               ) : (
                 <Save className="w-4 h-4 ml-1" />
               )}
-              {isSaved ? 'נשמר!' : 'שמור הערה'}
+              {isSaved || isAlreadySavedToDb ? 'נשמר ✓' : 'שמור הערה'}
             </Button>
             
             {reviewStatus === 'rejected' && !comment.trim() && (
@@ -151,13 +172,19 @@ export const ManagerExpenseReview = ({
                 יש להוסיף הערה לדחייה
               </span>
             )}
-            
-            {isSaved && (
-              <span className="text-xs text-green-600 font-medium">
-                ✓ ההערה נשמרה על ההוצאה
-              </span>
-            )}
           </div>
+          
+          {/* Saved confirmation message */}
+          {(isSaved || isAlreadySavedToDb) && currentComment && (
+            <div className={`mt-2 p-2 rounded-lg text-xs ${
+              reviewStatus === 'approved' || currentStatus === 'approved'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
+                : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
+            }`}>
+              <span className="font-semibold">הערה שנשמרה: </span>
+              {currentComment}
+            </div>
+          )}
         </div>
       )}
     </div>
