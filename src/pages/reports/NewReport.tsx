@@ -2326,18 +2326,25 @@ export default function NewReport() {
                                   <div key={idx} className="flex gap-3 items-start">
                                     <div className="relative group flex-shrink-0">
                                       <div className="w-32 h-32 rounded-lg border-2 overflow-hidden bg-muted">
-                                        {receipt.file.type.startsWith('image') ? (
-                                          <img
-                                            src={receipt.preview}
-                                            alt={`קבלה ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center flex-col">
-                                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                                            <span className="text-xs mt-2">PDF</span>
-                                          </div>
-                                        )}
+                                        {(() => {
+                                          const isImage =
+                                            receipt.file?.type?.startsWith('image/') ||
+                                            receipt.fileType === 'image' ||
+                                            !!receipt.fileName?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
+
+                                          return isImage ? (
+                                            <img
+                                              src={receipt.preview}
+                                              alt={`קבלה ${idx + 1}`}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center flex-col">
+                                              <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                              <span className="text-xs mt-2">PDF</span>
+                                            </div>
+                                          );
+                                        })()}
                                       </div>
                                       <Button
                                         type="button"
