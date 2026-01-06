@@ -934,7 +934,7 @@ const ViewReport = () => {
     setSubmittingReview(true);
     try {
       const reviewsArray = Array.from(expenseReviews.values());
-      
+      console.log('Submitting reviews:', reviewsArray.map(r => ({ id: r.expenseId, status: r.status, comment: r.comment })));
       // Upload attachments first
       for (const review of reviewsArray) {
         if (review.attachments && review.attachments.length > 0) {
@@ -972,7 +972,7 @@ const ViewReport = () => {
 
       // Update each expense
       for (const review of reviewsArray) {
-        await supabase
+        const { error: expenseUpdateError } = await supabase
           .from('expenses')
           .update({
             approval_status: review.status,
@@ -980,7 +980,13 @@ const ViewReport = () => {
             reviewed_by: user.id,
             reviewed_at: new Date().toISOString(),
           })
-          .eq('id', review.expenseId);
+          .eq('id', review.expenseId)
+          .eq('report_id', report.id);
+        
+        if (expenseUpdateError) {
+          console.error(`Error updating expense ${review.expenseId}:`, expenseUpdateError);
+          throw new Error(`שגיאה בעדכון הוצאה: ${expenseUpdateError.message}`);
+        }
       }
 
       // Determine overall report status
@@ -1833,7 +1839,7 @@ const ViewReport = () => {
                         </span>
                       )}
                       <Button
-                        onClick={handleSubmitManagerReview}
+                        onClick={expenseReviews.size === 0 ? handleApproveReport : handleSubmitManagerReview}
                         disabled={submittingReview || (expenseReviews.size > 0 && expenseReviews.size < expenses.length)}
                         className="bg-green-600 hover:bg-green-700"
                       >
