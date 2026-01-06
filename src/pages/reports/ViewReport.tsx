@@ -108,8 +108,9 @@ const ViewReport = () => {
   // Manager review state
   const [expenseReviews, setExpenseReviews] = useState<Map<string, { expenseId: string; status: 'approved' | 'rejected'; comment: string; attachments: File[] }>>(new Map());
   const [managerGeneralComment, setManagerGeneralComment] = useState('');
+  const [managerGeneralCommentLastSaved, setManagerGeneralCommentLastSaved] = useState('');
+  const [isSavingManagerGeneralComment, setIsSavingManagerGeneralComment] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
-  
   // Submit for approval confirmation dialog state
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false);
   const [isSubmittingForApproval, setIsSubmittingForApproval] = useState(false);
