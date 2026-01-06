@@ -114,6 +114,9 @@ const ViewReport = () => {
   const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false);
   const [isSubmittingForApproval, setIsSubmittingForApproval] = useState(false);
   
+  // Cancel submission state
+  const [isCancellingSubmission, setIsCancellingSubmission] = useState(false);
+  
   // Receipt preview modal state
   const [previewReceipts, setPreviewReceipts] = useState<{ url: string; name: string; type: string }[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -797,6 +800,49 @@ const ViewReport = () => {
       setIsSubmittingForApproval(false);
     }
   };
+  const handleCancelSubmission = async () => {
+    if (!report || !user) return;
+
+    setIsCancellingSubmission(true);
+    try {
+      // Update report status back to open
+      const { error: updateError } = await supabase
+        .from('reports')
+        .update({
+          status: 'open',
+          manager_approval_token: null,
+          manager_approval_requested_at: null,
+        })
+        .eq('id', report.id);
+
+      if (updateError) throw updateError;
+
+      // Add history entry
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: 'edited',
+        performed_by: user.id,
+        notes: 'בקשת האישור בוטלה על ידי העובד',
+      });
+
+      toast({
+        title: 'הבקשה בוטלה',
+        description: 'הדוח חזר לסטטוס פתוח וניתן לעריכה',
+      });
+
+      loadReport();
+    } catch (error: any) {
+      console.error('Error cancelling submission:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לבטל את הבקשה',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCancellingSubmission(false);
+    }
+  };
+
   const handleApproveReport = async () => {
     if (!report || !user) return;
 
@@ -1290,6 +1336,22 @@ const ViewReport = () => {
                     אשר דוח
                   </Button>
                 )}
+                {report.status === 'pending_approval' && user?.id === report.user_id && (
+                  <Button 
+                    size="sm"
+                    onClick={handleCancelSubmission}
+                    disabled={isCancellingSubmission}
+                    variant="outline"
+                    className="whitespace-nowrap border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100 transition-all rounded-xl"
+                  >
+                    {isCancellingSubmission ? (
+                      <Loader2 className="w-4 h-4 ml-1 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    )}
+                    בטל שליחה
+                  </Button>
+                )}
                 {report.status === 'closed' && (
                   <Button 
                     size="sm"
@@ -1365,6 +1427,21 @@ const ViewReport = () => {
                   >
                     <CheckCircle className="w-4 h-4 ml-2" />
                     אשר דוח
+                  </Button>
+                )}
+                {report.status === 'pending_approval' && user?.id === report.user_id && (
+                  <Button 
+                    onClick={handleCancelSubmission}
+                    disabled={isCancellingSubmission}
+                    variant="outline"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50 transition-all rounded-xl"
+                  >
+                    {isCancellingSubmission ? (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    )}
+                    בטל שליחה
                   </Button>
                 )}
                 {report.status === 'closed' && (
