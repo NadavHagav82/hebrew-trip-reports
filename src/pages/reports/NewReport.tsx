@@ -496,7 +496,25 @@ export default function NewReport() {
                   .single();
                 if (receiptDbError) throw receiptDbError;
 
-                const { data } = supabase.storage.from('receipts').getPublicUrl(fileName);
+                let preview = '';
+                try {
+                  const { data: signedData } = await supabase.storage
+                    .from('receipts')
+                    .createSignedUrl(fileName, 60 * 60);
+                  const signedUrl = (signedData as any)?.signedUrl as string | undefined;
+                  preview = signedUrl
+                    ? signedUrl.startsWith('http')
+                      ? signedUrl
+                      : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`
+                    : '';
+                } catch {
+                  // ignore
+                }
+
+                if (!preview) {
+                  const { data } = supabase.storage.from('receipts').getPublicUrl(fileName);
+                  preview = data.publicUrl;
+                }
 
                 // Replace local receipt with "existing" receipt so we don't upload it again
                 setExpenses((prev) =>
@@ -512,7 +530,7 @@ export default function NewReport() {
                               fileName: receipt.file?.name,
                               fileType: receipt.file?.type,
                               fileSize: receipt.file?.size,
-                              preview: data.publicUrl,
+                              preview,
                               uploading: false,
                             }
                           : r
@@ -520,6 +538,7 @@ export default function NewReport() {
                     };
                   })
                 );
+
               } catch (e) {
                 console.error('Receipt upload failed during auto-save:', e);
               }
@@ -690,37 +709,70 @@ export default function NewReport() {
       // If the user already interacted while loading, don't overwrite local edits.
       if (userInteractedSinceLoadRef.current) return;
 
-      const transformedExpenses: Expense[] = (expensesData || []).map((exp: any) => {
-        const receipts: ReceiptFile[] = (exp.receipts || []).map((r: any) => {
-          const { data } = supabase.storage.from('receipts').getPublicUrl(r.file_url);
-          return {
-            existingId: r.id,
-            fileUrl: r.file_url,
-            fileName: r.file_name,
-            fileType: r.file_type,
-            fileSize: r.file_size,
-            preview: data.publicUrl,
-            uploading: false,
-          };
-        });
+      const withTimeout = async <T,>(p: Promise<T>, ms: number): Promise<T> => {
+        return await Promise.race([
+          p,
+          new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+        ]);
+      };
 
-        return {
-          id: exp.id, // Use DB ID as local ID for existing expenses
-          dbId: exp.id,
-          expense_date: exp.expense_date,
-          category: exp.category,
-          description: exp.description,
-          amount: exp.amount,
-          currency: exp.currency,
-          amount_in_ils: exp.amount_in_ils,
-          receipts,
-          notes: exp.notes || '',
-          payment_method: (exp as any).payment_method || '',
-          approval_status: exp.approval_status || 'pending',
-          manager_comment: exp.manager_comment || undefined,
-          reviewed_at: exp.reviewed_at || undefined,
-        } as Expense;
-      });
+      const getReceiptPreviewUrl = async (path: string): Promise<string> => {
+        // receipts bucket is private, so prefer signed URLs.
+        try {
+          const { data } = await withTimeout(
+            supabase.storage.from('receipts').createSignedUrl(path, 60 * 60),
+            6000
+          );
+          const signedUrl = (data as any)?.signedUrl as string | undefined;
+          if (signedUrl) {
+            return signedUrl.startsWith('http')
+              ? signedUrl
+              : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`;
+          }
+        } catch {
+          // ignore and fall back
+        }
+
+        // Fallback (may still be blocked if bucket is private)
+        const { data } = supabase.storage.from('receipts').getPublicUrl(path);
+        return data.publicUrl;
+      };
+
+      const transformedExpenses: Expense[] = await Promise.all(
+        (expensesData || []).map(async (exp: any) => {
+          const receipts: ReceiptFile[] = await Promise.all(
+            (exp.receipts || []).map(async (r: any) => {
+              const preview = await getReceiptPreviewUrl(r.file_url);
+              return {
+                existingId: r.id,
+                fileUrl: r.file_url,
+                fileName: r.file_name,
+                fileType: r.file_type,
+                fileSize: r.file_size,
+                preview,
+                uploading: false,
+              };
+            })
+          );
+
+          return {
+            id: exp.id, // Use DB ID as local ID for existing expenses
+            dbId: exp.id,
+            expense_date: exp.expense_date,
+            category: exp.category,
+            description: exp.description,
+            amount: exp.amount,
+            currency: exp.currency,
+            amount_in_ils: exp.amount_in_ils,
+            receipts,
+            notes: exp.notes || '',
+            payment_method: (exp as any).payment_method || '',
+            approval_status: exp.approval_status || 'pending',
+            manager_comment: exp.manager_comment || undefined,
+            reviewed_at: exp.reviewed_at || undefined,
+          } as Expense;
+        })
+      );
 
       setExpenses(transformedExpenses);
 
