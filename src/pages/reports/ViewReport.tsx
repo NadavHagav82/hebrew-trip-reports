@@ -687,13 +687,19 @@ const ViewReport = () => {
   };
 
   const handleCloseReport = async () => {
-    if (!report || !profile || !user) return;
+    if (!report || !profile || !user) {
+      console.log('handleCloseReport - missing data:', { report: !!report, profile: !!profile, user: !!user });
+      return;
+    }
 
     const isOwner = user.id === report.user_id;
     const hasManager = profile.manager_id !== null && profile.manager_id !== undefined;
+    
+    console.log('handleCloseReport called:', { isOwner, hasManager, managerId: profile.manager_id, userId: user.id, reportUserId: report.user_id });
 
     // If owner with manager, show confirmation dialog instead of submitting directly
     if (isOwner && hasManager) {
+      console.log('Opening submit confirmation dialog');
       setShowSubmitConfirmDialog(true);
       return;
     }
