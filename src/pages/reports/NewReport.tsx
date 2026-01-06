@@ -11,7 +11,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, isValid } from 'date-fns';
-import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff, ArrowLeftRight, Sparkles, Edit3, FileText } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, FileOutput, Globe, Image as ImageIcon, Plus, Save, Trash2, Upload, X, Plane, Hotel, Utensils, Car, Package, Receipt, Check, DollarSign, Clock, CloudOff, ArrowLeftRight, Sparkles, Edit3, FileText, User, Send, Edit } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from '@/components/ui/separator';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -285,6 +293,11 @@ export default function NewReport() {
   const [savedExpenses, setSavedExpenses] = useState<Set<string>>(new Set());
   const [pendingSaveExpenses, setPendingSaveExpenses] = useState<Set<string>>(new Set()); // Expenses waiting for auto-save
   const [duplicateWarning, setDuplicateWarning] = useState<{ expenseId: string; duplicates: Expense[]; reason: string } | null>(null);
+  
+  // Manager approval dialog state
+  const [showManagerApprovalDialog, setShowManagerApprovalDialog] = useState(false);
+  const [managerInfo, setManagerInfo] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isSubmittingForApproval, setIsSubmittingForApproval] = useState(false);
   
   // Auto-save state
   const [autoSaving, setAutoSaving] = useState(false);
@@ -1323,6 +1336,41 @@ export default function NewReport() {
     }
   };
 
+  // Check if user has manager and show confirmation dialog before submitting
+  const checkManagerAndShowDialog = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('is_manager, manager_id')
+      .eq('id', user.id)
+      .single();
+
+    const hasManager = !!profileData?.manager_id;
+    const isManagerUser = !!profileData?.is_manager;
+
+    // If employee with manager, show confirmation dialog
+    if (!isManagerUser && hasManager) {
+      // Load manager info
+      const { data: managerData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('id', profileData.manager_id)
+        .single();
+
+      if (managerData) {
+        setManagerInfo({
+          id: managerData.id,
+          name: managerData.full_name || 'מנהל',
+          email: managerData.email || '',
+        });
+        setShowManagerApprovalDialog(true);
+        return true; // Dialog is shown, don't proceed with save
+      }
+    }
+    return false; // No dialog shown, proceed with save
+  };
+
   const handleSave = async (saveAsDraft: boolean = false, closeReport: boolean = false) => {
     console.log('handleSave called', { saveAsDraft, closeReport, expensesLength: expenses.length });
     
@@ -1426,6 +1474,23 @@ export default function NewReport() {
       }
     }
 
+    // If closeReport=true, check if we need to show manager approval dialog first
+    if (closeReport) {
+      setLoading(true);
+      const dialogShown = await checkManagerAndShowDialog();
+      setLoading(false);
+      if (dialogShown) {
+        return; // Wait for user confirmation in dialog
+      }
+    }
+
+    // Proceed with save
+    await performSave(saveAsDraft, closeReport);
+  };
+
+  const performSave = async (saveAsDraft: boolean = false, closeReport: boolean = false, forceManagerApproval: boolean = false) => {
+    if (!user) return;
+
     setLoading(true);
     try {
       const withTimeout = async <T,>(p: Promise<T>, ms: number): Promise<T> => {
@@ -1455,7 +1520,7 @@ export default function NewReport() {
         username?: string | null;
       } | null = null;
 
-      if (closeReport) {
+      if (closeReport || forceManagerApproval) {
         const { data } = await supabase
           .from('profiles')
           .select('is_manager, manager_id, full_name, email, accounting_manager_email, username')
@@ -1470,10 +1535,10 @@ export default function NewReport() {
 
       // Determine status based on action
       let newStatus: 'draft' | 'open' | 'closed' | 'pending_approval';
-      if (closeReport) {
+      if (closeReport || forceManagerApproval) {
         // Employee with manager → send to manager for approval
         // Manager or employee without manager → close directly
-        newStatus = !isManagerUser && hasManager ? 'pending_approval' : 'closed';
+        newStatus = (!isManagerUser && hasManager) || forceManagerApproval ? 'pending_approval' : 'closed';
       } else if (saveAsDraft) {
         newStatus = 'draft';
       } else {
@@ -1718,6 +1783,14 @@ export default function NewReport() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle confirmation from manager approval dialog
+  const handleConfirmManagerApproval = async () => {
+    setShowManagerApprovalDialog(false);
+    setIsSubmittingForApproval(true);
+    await performSave(false, true, true);
+    setIsSubmittingForApproval(false);
   };
 
   const handleBack = async () => {
@@ -2953,6 +3026,95 @@ export default function NewReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Manager Approval Confirmation Dialog */}
+      <Dialog open={showManagerApprovalDialog} onOpenChange={setShowManagerApprovalDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Send className="w-5 h-5 text-primary" />
+              שליחת דוח לאישור מנהל
+            </DialogTitle>
+            <DialogDescription>
+              הדוח יישלח לאישור המנהל שלך לפני הגשה סופית
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Manager Info */}
+            {managerInfo && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">{managerInfo.name}</p>
+                    <p className="text-sm text-muted-foreground">{managerInfo.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Report Summary */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <h4 className="font-semibold text-sm text-muted-foreground">סיכום הדוח</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">יעד:</span>
+                  <span className="font-medium">{tripDestination}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">תאריכים:</span>
+                  <span className="font-medium">
+                    {tripStartDate && format(new Date(tripStartDate), 'dd/MM/yyyy')} - {tripEndDate && format(new Date(tripEndDate), 'dd/MM/yyyy')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">מטרה:</span>
+                  <span className="font-medium">{tripPurpose}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">סה״כ הוצאות:</span>
+                  <span className="font-bold text-primary">₪{calculateGrandTotal().toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">מספר הוצאות:</span>
+                  <span className="font-medium">{expenses.length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowManagerApprovalDialog(false)}
+              className="gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              חזור לעריכה
+            </Button>
+            <Button
+              onClick={handleConfirmManagerApproval}
+              disabled={isSubmittingForApproval}
+              className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            >
+              {isSubmittingForApproval ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  שלח לאישור
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
