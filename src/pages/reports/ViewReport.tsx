@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt, Calculator } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt, Calculator, User } from 'lucide-react';
 import { DuplicateExpenseDetector } from '@/components/DuplicateExpenseDetector';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -109,6 +109,10 @@ const ViewReport = () => {
   const [expenseReviews, setExpenseReviews] = useState<Map<string, { expenseId: string; status: 'approved' | 'rejected'; comment: string; attachments: File[] }>>(new Map());
   const [managerGeneralComment, setManagerGeneralComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  
+  // Submit for approval confirmation dialog state
+  const [showSubmitConfirmDialog, setShowSubmitConfirmDialog] = useState(false);
+  const [isSubmittingForApproval, setIsSubmittingForApproval] = useState(false);
   
   // Receipt preview modal state
   const [previewReceipts, setPreviewReceipts] = useState<{ url: string; name: string; type: string }[]>([]);
@@ -685,85 +689,40 @@ const ViewReport = () => {
   const handleCloseReport = async () => {
     if (!report || !profile || !user) return;
 
+    const isOwner = user.id === report.user_id;
+    const hasManager = profile.manager_id !== null && profile.manager_id !== undefined;
+
+    // If owner with manager, show confirmation dialog instead of submitting directly
+    if (isOwner && hasManager) {
+      setShowSubmitConfirmDialog(true);
+      return;
+    }
+
+    // Not the report owner OR owner without manager – close report directly
     try {
-      console.log('handleCloseReport debug', {
-        currentUserId: user.id,
-        reportUserId: report.user_id,
-        isOwner: user.id === report.user_id,
-        profileUserId: (profile as any).id,
-        profileManagerId: profile.manager_id,
-        hasManager: profile.manager_id !== null && profile.manager_id !== undefined,
+      await supabase
+        .from('reports')
+        .update({ 
+          status: 'closed', 
+          approved_at: new Date().toISOString(),
+          approved_by: user.id,
+        })
+        .eq('id', report.id);
+      
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: 'approved',
+        performed_by: user.id,
+        notes: isOwner
+          ? 'הדוח הופק ונסגר (לעובד ללא מנהל אחראי)'
+          : 'הדוח אושר ונסגר על ידי משתמש אחר (מנהל / חשבונאות)',
       });
-
-      const isOwner = user.id === report.user_id;
-      const hasManager = profile.manager_id !== null && profile.manager_id !== undefined;
-
-      if (!isOwner || !hasManager) {
-        // Not the report owner OR owner without manager – close report directly
-        await supabase
-          .from('reports')
-          .update({ 
-            status: 'closed', 
-            approved_at: new Date().toISOString(),
-            approved_by: user.id,
-          })
-          .eq('id', report.id);
-        
-        await supabase.from('report_history').insert({
-          report_id: report.id,
-          action: 'approved',
-          performed_by: user.id,
-          notes: isOwner
-            ? 'הדוח הופק ונסגר (לעובד ללא מנהל אחראי)'
-            : 'הדוח אושר ונסגר על ידי משתמש אחר (מנהל / חשבונאות)',
-        });
-        
-        toast({
-          title: 'הדוח הופק בהצלחה',
-          description: 'הדוח אושר ונסגר',
-        });
-      } else {
-        // Owner with manager – send for approval
-        if (!profile.manager_email || !profile.manager_name) {
-          toast({
-            title: 'שגיאה',
-            description: 'לא נמצאו פרטי מנהל בפרופיל העובד',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        const { error } = await supabase.functions.invoke('request-report-approval', {
-          body: {
-            reportId: report.id,
-            managerEmail: profile.manager_email,
-            managerName: profile.manager_name,
-            employeeName: profile.full_name,
-            reportDetails: {
-              destination: report.trip_destination,
-              startDate: format(new Date(report.trip_start_date), 'dd/MM/yyyy'),
-              endDate: format(new Date(report.trip_end_date), 'dd/MM/yyyy'),
-              purpose: report.trip_purpose,
-              totalAmount: report.total_amount_ils,
-            },
-          },
-        });
-
-        if (error) throw error;
-
-        await supabase.from('report_history').insert({
-          report_id: report.id,
-          action: 'submitted',
-          performed_by: user.id,
-          notes: `הדוח הוגש לאישור של ${profile.manager_name}`,
-        });
-
-        toast({
-          title: 'הדוח נשלח לאישור',
-          description: `הדוח נשלח לאישור של ${profile.manager_name}`,
-        });
-      }
-
+      
+      toast({
+        title: 'הדוח הופק בהצלחה',
+        description: 'הדוח אושר ונסגר',
+      });
+      
       loadReport();
     } catch (error: any) {
       console.error('Error closing report:', error);
@@ -772,6 +731,64 @@ const ViewReport = () => {
         description: error.message || 'לא ניתן להפיק את הדוח',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleConfirmSubmitForApproval = async () => {
+    if (!report || !profile || !user) return;
+
+    if (!profile.manager_email || !profile.manager_name) {
+      toast({
+        title: 'שגיאה',
+        description: 'לא נמצאו פרטי מנהל בפרופיל העובד',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmittingForApproval(true);
+    try {
+      const { error } = await supabase.functions.invoke('request-report-approval', {
+        body: {
+          reportId: report.id,
+          managerEmail: profile.manager_email,
+          managerName: profile.manager_name,
+          employeeName: profile.full_name,
+          reportDetails: {
+            destination: report.trip_destination,
+            startDate: format(new Date(report.trip_start_date), 'dd/MM/yyyy'),
+            endDate: format(new Date(report.trip_end_date), 'dd/MM/yyyy'),
+            purpose: report.trip_purpose,
+            totalAmount: report.total_amount_ils,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: 'submitted',
+        performed_by: user.id,
+        notes: `הדוח הוגש לאישור של ${profile.manager_name}`,
+      });
+
+      toast({
+        title: 'הדוח נשלח לאישור בהצלחה!',
+        description: `הדוח נשלח לאישור של ${profile.manager_name}`,
+      });
+
+      setShowSubmitConfirmDialog(false);
+      loadReport();
+    } catch (error: any) {
+      console.error('Error submitting for approval:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לשלוח את הדוח לאישור',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingForApproval(false);
     }
   };
   const handleApproveReport = async () => {
@@ -1431,9 +1448,33 @@ const ViewReport = () => {
                   <span className="font-bold text-lg text-foreground">{profile?.full_name || '-'}</span>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-card p-4 rounded-xl border border-purple-100 dark:border-purple-900/50 hover:shadow-md transition-all">
-                  <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wide block mb-1">חברה</span>
+                  <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wide block mb-1">מחלקה</span>
                   <span className="font-bold text-lg text-foreground">{profile?.department || '-'}</span>
                 </div>
+                {profile?.manager_name && (
+                  <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-card p-4 rounded-xl border border-blue-100 dark:border-blue-900/50 hover:shadow-md transition-all sm:col-span-2">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wide block mb-1">מנהל מאשר</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-lg text-foreground block">{profile.manager_name}</span>
+                        {profile.manager_email && (
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Mail className="w-3.5 h-3.5" />
+                            {profile.manager_email}
+                          </span>
+                        )}
+                      </div>
+                      {report.status === 'pending_approval' && (
+                        <span className="mr-auto bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-3 py-1.5 rounded-lg text-sm font-medium">
+                          ⏳ ממתין לאישור
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-card p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/50 hover:shadow-md transition-all">
                   <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase tracking-wide block mb-1">יעד</span>
                   <span className="font-bold text-lg text-foreground">{report.trip_destination}</span>
@@ -2550,6 +2591,120 @@ const ViewReport = () => {
                 </>
               ) : (
                 'שמור'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submit for Approval Confirmation Dialog */}
+      <Dialog open={showSubmitConfirmDialog} onOpenChange={setShowSubmitConfirmDialog}>
+        <DialogContent className="sm:max-w-lg overflow-hidden border-0 shadow-2xl p-0 rounded-2xl bg-gradient-to-br from-white via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6">
+            <DialogHeader className="text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                  <Send className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-white">שליחת דוח לאישור</DialogTitle>
+                  <DialogDescription className="text-white/80 mt-1">
+                    הדוח יישלח לאישור המנהל שלך
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          
+          <div className="p-6 space-y-5">
+            {/* Manager Info */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/50">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <User className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wide block mb-1">מנהל מאשר</span>
+                  <span className="font-bold text-xl text-foreground">{profile?.manager_name || 'לא הוגדר'}</span>
+                  {profile?.manager_email && (
+                    <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+                      <Mail className="w-4 h-4" />
+                      <span>{profile.manager_email}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Report Summary */}
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-950/30 dark:to-gray-950/20 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-500" />
+                סיכום הדוח
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl">
+                  <span className="text-muted-foreground block text-xs mb-1">יעד</span>
+                  <span className="font-semibold">{report?.trip_destination}</span>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl">
+                  <span className="text-muted-foreground block text-xs mb-1">סה"כ</span>
+                  <span className="font-bold text-primary">₪{report?.total_amount_ils?.toFixed(2)}</span>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl col-span-2">
+                  <span className="text-muted-foreground block text-xs mb-1">תאריכים</span>
+                  <span className="font-semibold">
+                    {report && format(new Date(report.trip_start_date), 'dd/MM/yyyy')} - {report && format(new Date(report.trip_end_date), 'dd/MM/yyyy')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Info message */}
+            <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="text-sm text-amber-800 dark:text-amber-200">
+                <p className="font-semibold mb-1">שים לב</p>
+                <p>לאחר שליחת הדוח, הוא יעבור לסטטוס "ממתין לאישור" ולא ניתן יהיה לערוך אותו עד לקבלת תשובה מהמנהל.</p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/reports/edit/${report?.id}`)}
+              disabled={isSubmittingForApproval}
+              className="h-11 px-5 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              ערוך לפני שליחה
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSubmitConfirmDialog(false)}
+              disabled={isSubmittingForApproval}
+              className="h-11 px-5 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            >
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleConfirmSubmitForApproval} 
+              disabled={isSubmittingForApproval}
+              className="h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all gap-2"
+            >
+              {isSubmittingForApproval ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  שלח לאישור
+                </>
               )}
             </Button>
           </DialogFooter>
