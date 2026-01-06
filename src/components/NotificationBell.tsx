@@ -334,7 +334,7 @@ export const NotificationBell = () => {
     }
 
     if (notification.report_id) {
-      navigate(`/report/${notification.report_id}`);
+      navigate(`/reports/${notification.report_id}`);
       setOpen(false);
     }
   };
