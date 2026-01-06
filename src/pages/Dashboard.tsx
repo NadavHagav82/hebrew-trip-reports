@@ -46,6 +46,8 @@ interface Profile {
   department: string;
   accounting_manager_email?: string | null;
   manager_id?: string | null;
+  manager_name?: string | null;
+  manager_email?: string | null;
   is_manager?: boolean;
 }
 
@@ -245,7 +247,29 @@ export default function Dashboard() {
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      
+      // Fetch manager details if manager_id exists
+      let managerName: string | null = null;
+      let managerEmail: string | null = null;
+      
+      if (data.manager_id) {
+        const { data: managerData } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', data.manager_id)
+          .single();
+        
+        if (managerData) {
+          managerName = managerData.full_name;
+          managerEmail = managerData.email;
+        }
+      }
+      
+      setProfile({
+        ...data,
+        manager_name: managerName,
+        manager_email: managerEmail,
+      });
       setEditedProfile({
         full_name: data.full_name || '',
         department: data.department || '',
@@ -920,10 +944,17 @@ export default function Dashboard() {
                           onClick={() => navigate(report.status === 'draft' ? `/reports/edit/${report.id}` : `/reports/${report.id}`)}
                         >
                           <td className="p-4">
-                            <StatusBadge 
-                              status={report.status} 
-                              daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
-                            />
+                            <div className="flex flex-col gap-1">
+                              <StatusBadge 
+                                status={report.status} 
+                                daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
+                              />
+                              {report.status === 'pending_approval' && profile?.manager_name && (
+                                <span className="text-xs text-muted-foreground">
+                                  ממתין ל: {profile.manager_name}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
