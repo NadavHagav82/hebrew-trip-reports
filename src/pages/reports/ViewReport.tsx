@@ -897,15 +897,20 @@ const ViewReport = () => {
     await handleSubmitManagerReview();
   };
 
-  const handleManagerExpenseReview = async (expenseId: string, status: 'approved' | 'rejected', comment: string, attachments: File[]): Promise<void> => {
+  const handleManagerExpenseReview = async (
+    expenseId: string,
+    status: 'approved' | 'rejected',
+    comment: string,
+    attachments: File[]
+  ): Promise<void> => {
     if (!user || !report) return;
-    
+
     // Upload attachments first
     if (attachments && attachments.length > 0) {
       for (const file of attachments) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${expenseId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('manager-attachments')
           .upload(fileName, file);
@@ -915,16 +920,14 @@ const ViewReport = () => {
           throw new Error(`שגיאה בהעלאת הקובץ ${file.name}`);
         }
 
-        const { error: dbError } = await supabase
-          .from('manager_comment_attachments')
-          .insert({
-            expense_id: expenseId,
-            file_name: file.name,
-            file_url: fileName,
-            file_size: file.size,
-            file_type: file.type,
-            uploaded_by: user.id,
-          });
+        const { error: dbError } = await supabase.from('manager_comment_attachments').insert({
+          expense_id: expenseId,
+          file_name: file.name,
+          file_url: fileName,
+          file_size: file.size,
+          file_type: file.type,
+          uploaded_by: user.id,
+        });
 
         if (dbError) {
           console.error('Error saving attachment metadata:', dbError);
@@ -932,33 +935,47 @@ const ViewReport = () => {
         }
       }
     }
-    
+
+    const reviewedAt = new Date().toISOString();
+
     // Save directly to DB
     const { error: expenseUpdateError } = await supabase
       .from('expenses')
       .update({
         approval_status: status,
-        manager_comment: comment || null,
+        manager_comment: comment?.trim() ? comment.trim() : null,
         reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
+        reviewed_at: reviewedAt,
       })
       .eq('id', expenseId)
       .eq('report_id', report.id);
-    
+
     if (expenseUpdateError) {
       console.error(`Error updating expense ${expenseId}:`, expenseUpdateError);
       throw new Error(`שגיאה בעדכון הוצאה: ${expenseUpdateError.message}`);
     }
-    
+
+    // Update UI immediately so the manager sees what was saved and buttons become enabled
+    setExpenses((prev) =>
+      prev.map((e) =>
+        e.id === expenseId
+          ? {
+              ...e,
+              approval_status: status,
+              manager_comment: comment?.trim() ? comment.trim() : null,
+              reviewed_at: reviewedAt,
+              reviewed_by: user.id,
+            }
+          : e
+      )
+    );
+
     // Track locally too for submit validation
-    setExpenseReviews(prev => {
+    setExpenseReviews((prev) => {
       const newMap = new Map(prev);
-      newMap.set(expenseId, { expenseId, status, comment, attachments: [] }); // Clear attachments since already uploaded
+      newMap.set(expenseId, { expenseId, status, comment: comment?.trim() || '', attachments: [] });
       return newMap;
     });
-    
-    // Reload to show updated status
-    await loadReport();
   };
 
   const handleSubmitManagerReview = async () => {
@@ -1708,8 +1725,12 @@ const ViewReport = () => {
                   
                   <div className="flex gap-3">
                     <Button
-                      onClick={handleFinalizeReview}
-                      disabled={submittingReview || expenses.some(e => !e.approval_status || e.approval_status === 'pending')}
+                      onClick={() => handleFinalizeReview('return')}
+                      disabled={
+                        submittingReview ||
+                        expenses.some((e) => !e.approval_status || e.approval_status === 'pending') ||
+                        !expenses.some((e) => e.approval_status === 'rejected')
+                      }
                       className="bg-orange-600 hover:bg-orange-700"
                       variant="default"
                     >
@@ -1721,8 +1742,12 @@ const ViewReport = () => {
                       שלח לבירור
                     </Button>
                     <Button
-                      onClick={handleFinalizeReview}
-                      disabled={submittingReview || expenses.some(e => !e.approval_status || e.approval_status === 'pending') || expenses.some(e => e.approval_status === 'rejected')}
+                      onClick={() => handleFinalizeReview('approve')}
+                      disabled={
+                        submittingReview ||
+                        expenses.some((e) => !e.approval_status || e.approval_status === 'pending') ||
+                        expenses.some((e) => e.approval_status === 'rejected')
+                      }
                       className="bg-green-600 hover:bg-green-700"
                       variant="default"
                     >
@@ -2085,7 +2110,7 @@ const ViewReport = () => {
                       
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button
-                          onClick={handleFinalizeReview}
+                          onClick={() => handleFinalizeReview('return')}
                           disabled={submittingReview || !expenses.some(e => e.approval_status === 'rejected')}
                           className="bg-orange-600 hover:bg-orange-700 flex-1"
                           variant="default"
@@ -2098,7 +2123,7 @@ const ViewReport = () => {
                           שלח לבירור
                         </Button>
                         <Button
-                          onClick={handleFinalizeReview}
+                          onClick={() => handleFinalizeReview('approve')}
                           disabled={submittingReview || expenses.some(e => e.approval_status === 'rejected')}
                           className="bg-green-600 hover:bg-green-700 flex-1"
                           variant="default"

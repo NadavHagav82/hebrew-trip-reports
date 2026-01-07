@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, XCircle, Save, Loader2 } from 'lucide-react';
 import { ManagerAttachmentUpload } from '@/components/ManagerAttachmentUpload';
+import { useToast } from '@/hooks/use-toast';
 
 interface ManagerExpenseReviewProps {
   expenseId: string;
@@ -20,6 +21,8 @@ export const ManagerExpenseReview = ({
   onReview,
   disabled = false,
 }: ManagerExpenseReviewProps) => {
+  const { toast } = useToast();
+
   const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected' | null>(
     currentStatus === 'approved' || currentStatus === 'rejected' ? currentStatus : null
   );
@@ -28,10 +31,15 @@ export const ManagerExpenseReview = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Reset saved state when status changes
+  // Keep local UI in sync with DB-driven props (e.g., after reload)
   useEffect(() => {
+    setReviewStatus(
+      currentStatus === 'approved' || currentStatus === 'rejected' ? currentStatus : null
+    );
+    setComment(currentComment || '');
+    setAttachments([]);
     setIsSaved(false);
-  }, [reviewStatus, comment]);
+  }, [expenseId, currentStatus, currentComment]);
 
   const handleStatusChange = (status: 'approved' | 'rejected') => {
     setReviewStatus(status);
@@ -40,18 +48,27 @@ export const ManagerExpenseReview = ({
 
   const handleSaveReview = async () => {
     if (!reviewStatus) return;
-    
-    // Validate rejected expenses must have comment
+
     if (reviewStatus === 'rejected' && !comment.trim()) {
+      toast({
+        title: 'חסרה הערה',
+        description: 'כדי לדחות/לבקש בירור חובה לכתוב הערה.',
+        variant: 'destructive',
+      });
       return;
     }
-    
+
     setIsSaving(true);
     try {
       await onReview(expenseId, reviewStatus, comment, attachments);
       setIsSaved(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving review:', error);
+      toast({
+        title: 'שגיאה בשמירה',
+        description: error?.message || 'לא ניתן לשמור את ההערה. נסה שוב.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -175,16 +192,24 @@ export const ManagerExpenseReview = ({
           </div>
           
           {/* Saved confirmation message */}
-          {(isSaved || isAlreadySavedToDb) && currentComment && (
-            <div className={`mt-2 p-2 rounded-lg text-xs ${
-              reviewStatus === 'approved' || currentStatus === 'approved'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
-            }`}>
-              <span className="font-semibold">הערה שנשמרה: </span>
-              {currentComment}
-            </div>
-          )}
+          {(isSaved || isAlreadySavedToDb) && (
+            () => {
+              const savedText = (currentComment ?? comment).trim();
+              if (!savedText) return null;
+              return (
+                <div
+                  className={`mt-2 p-2 rounded-lg text-xs ${
+                    reviewStatus === 'approved' || currentStatus === 'approved'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
+                  }`}
+                >
+                  <span className="font-semibold">נשמר: </span>
+                  {savedText}
+                </div>
+              );
+            }
+          )()}
         </div>
       )}
     </div>
