@@ -12,6 +12,8 @@ const corsHeaders = {
 interface ReportEmailRequest {
   reportId: string;
   accountingEmail: string;
+  pdfBase64?: string;
+  pdfFileName?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -30,9 +32,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    const { reportId, accountingEmail }: ReportEmailRequest = await req.json();
+    const { reportId, accountingEmail, pdfBase64, pdfFileName }: ReportEmailRequest = await req.json();
 
     console.log('Fetching report details for:', reportId);
+    console.log('PDF attached:', !!pdfBase64);
 
     // Fetch report details with user profile
     const { data: report, error: reportError } = await supabaseClient
@@ -98,7 +101,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Sending email to:', accountingEmail);
 
-    const emailResponse = await resend.emails.send({
+    // Prepare email options
+    const emailOptions: any = {
       from: "Travel Reports <onboarding@resend.dev>",
       to: [accountingEmail],
       subject: `דוח נסיעה ${statusText} - ${report.profiles.full_name}`,
@@ -123,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
                 פרטי העובד
               </h2>
               <p style="margin: 10px 0;"><strong>שם:</strong> ${report.profiles.full_name}</p>
-              <p style="margin: 10px 0;"><strong>מספר עובד:</strong> ${report.profiles.employee_id}</p>
+              <p style="margin: 10px 0;"><strong>מספר עובד:</strong> ${report.profiles.employee_id || '-'}</p>
               <p style="margin: 10px 0;"><strong>מחלקה:</strong> ${report.profiles.department}</p>
             </div>
 
@@ -156,6 +160,14 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin: 10px 0;"><strong>סטטוס:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
             </div>
 
+            ${pdfBase64 ? `
+            <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+              <p style="margin: 0; color: #1e40af; font-weight: bold;">
+                📎 קובץ PDF מצורף למייל זה
+              </p>
+            </div>
+            ` : ''}
+
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
               <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
                 מייל זה נשלח אוטומטית ממערכת דוחות הנסיעה
@@ -168,7 +180,19 @@ const handler = async (req: Request): Promise<Response> => {
         </body>
         </html>
       `,
-    });
+    };
+
+    // Add PDF attachment if provided
+    if (pdfBase64) {
+      emailOptions.attachments = [
+        {
+          filename: pdfFileName || 'travel-report.pdf',
+          content: pdfBase64,
+        }
+      ];
+    }
+
+    const emailResponse = await resend.emails.send(emailOptions);
 
     console.log("Email sent successfully:", emailResponse);
 

@@ -7,6 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Users, Send } from "lucide-react";
+import { pdf } from "@react-pdf/renderer";
+import { ReportPdf } from "@/pdf/ReportPdf";
 
 interface AccountingManager {
   id: string;
@@ -84,12 +86,77 @@ export function SendToAccountingDialog({
     }
   };
 
+  const generatePdfBase64 = async (): Promise<string | null> => {
+    try {
+      // Fetch report data
+      const { data: report, error: reportError } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('id', reportId)
+        .single();
+
+      if (reportError || !report) {
+        console.error('Error fetching report:', reportError);
+        return null;
+      }
+
+      // Fetch expenses
+      const { data: expenses, error: expensesError } = await supabase
+        .from('expenses')
+        .select(`
+          *,
+          receipts (id, file_url, file_name, file_type)
+        `)
+        .eq('report_id', reportId)
+        .order('expense_date', { ascending: true });
+
+      if (expensesError) {
+        console.error('Error fetching expenses:', expensesError);
+        return null;
+      }
+
+      // Fetch profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, employee_id, department')
+        .eq('id', report.user_id)
+        .single();
+
+      // Generate PDF
+      const pdfDoc = <ReportPdf report={report} expenses={expenses || []} profile={profile} />;
+      const blob = await pdf(pdfDoc).toBlob();
+      
+      // Convert to base64
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          // Remove data URL prefix
+          const base64Data = base64.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      return null;
+    }
+  };
+
   const handleSend = async () => {
     setLoading(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('לא מחובר');
+
+      // Generate PDF
+      toast({
+        title: "מכין PDF...",
+        description: "אנא המתן",
+      });
+      
+      const pdfBase64 = await generatePdfBase64();
 
       if (sendMethod === "system") {
         if (!selectedAccountingManagerId) {
@@ -127,10 +194,15 @@ export function SendToAccountingDialog({
           send_method: 'system',
         });
 
-        // Also send email to accounting manager
+        // Also send email to accounting manager with PDF
         if (selectedManager?.email) {
           await supabase.functions.invoke('send-accounting-report', {
-            body: { reportId, accountingEmail: selectedManager.email }
+            body: { 
+              reportId, 
+              accountingEmail: selectedManager.email,
+              pdfBase64,
+              pdfFileName: `דוח-נסיעה-${reportDestination}.pdf`
+            }
           });
         }
 
@@ -172,7 +244,12 @@ export function SendToAccountingDialog({
         });
 
         await supabase.functions.invoke('send-accounting-report', {
-          body: { reportId, accountingEmail: emailToSend }
+          body: { 
+            reportId, 
+            accountingEmail: emailToSend,
+            pdfBase64,
+            pdfFileName: `דוח-נסיעה-${reportDestination}.pdf`
+          }
         });
 
         toast({
@@ -234,7 +311,7 @@ export function SendToAccountingDialog({
                 <Mail className="w-4 h-4 text-green-600" />
                 <div>
                   <p className="font-medium">שליחה למייל</p>
-                  <p className="text-xs text-muted-foreground">הזן כתובת מייל לשליחת הדוח</p>
+                  <p className="text-xs text-muted-foreground">הזן כתובת מייל לשליחת הדוח עם קובץ PDF</p>
                 </div>
               </Label>
             </div>
@@ -298,12 +375,12 @@ export function SendToAccountingDialog({
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                שולח...
+                מייצר PDF ושולח...
               </>
             ) : (
               <>
                 <Send className="w-4 h-4 ml-2" />
-                שלח
+                שלח עם PDF
               </>
             )}
           </Button>
