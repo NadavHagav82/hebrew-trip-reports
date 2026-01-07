@@ -1261,11 +1261,11 @@ const ViewReport = () => {
 
       await supabase.from('notifications').insert({
         user_id: report.user_id,
-        type: mode === 'return' ? 'report_rejected' : 'report_approved',
-        title: mode === 'return' ? 'הדוח שלך דורש תיקונים' : 'הדוח שלך אושר',
+        type: mode === 'return' ? 'report_returned' : 'report_approved',
+        title: mode === 'return' ? 'הדוח הוחזר לבירור' : 'הדוח שלך אושר',
         message:
           mode === 'return'
-            ? `הדוח ל${report.trip_destination} הוחזר אליך עם הערות. ${rejectedCount} הוצאות דורשות תיקון.`
+            ? `הדוח ל${report.trip_destination} הוחזר אליך עם הערות מהמנהל. ${rejectedCount} הוצאות דורשות תיקון.`
             : `הדוח ל${report.trip_destination} אושר על ידי המנהל.`,
         report_id: report.id,
       });

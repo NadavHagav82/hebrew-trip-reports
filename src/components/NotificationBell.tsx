@@ -71,7 +71,7 @@ export const NotificationBell = () => {
       return ['travel_approved', 'travel_rejected', 'travel_request_pending'].includes(n.type);
     }
     if (filter === 'reports') {
-      return ['report_approved', 'report_rejected', 'expense_approved', 'expense_rejected'].includes(n.type);
+      return ['report_approved', 'report_rejected', 'report_returned', 'expense_approved', 'expense_rejected'].includes(n.type);
     }
     return true;
   });
@@ -398,6 +398,8 @@ export const NotificationBell = () => {
       case "report_rejected":
       case "travel_rejected":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      case "report_returned":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
       case "expense_rejected":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
       case "expense_approved":
@@ -415,6 +417,8 @@ export const NotificationBell = () => {
         return "דוח אושר";
       case "report_rejected":
         return "דוח נדחה";
+      case "report_returned":
+        return "הוחזר לבירור";
       case "expense_rejected":
         return "הוצאה נדחתה";
       case "expense_approved":

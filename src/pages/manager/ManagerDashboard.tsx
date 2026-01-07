@@ -289,6 +289,13 @@ export default function ManagerDashboard() {
     setProcessingReportId(reportId);
     
     try {
+      // Get the report to find the user_id and destination
+      const { data: reportData } = await supabase
+        .from('reports')
+        .select('user_id, trip_destination')
+        .eq('id', reportId)
+        .single();
+
       const { error } = await supabase
         .from('reports')
         .update({
@@ -300,9 +307,20 @@ export default function ManagerDashboard() {
 
       if (error) throw error;
 
+      // Create notification for the employee
+      if (reportData?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: reportData.user_id,
+          type: 'report_returned',
+          title: 'הדוח הוחזר לבירור',
+          message: `הדוח ל${reportData.trip_destination || 'נסיעה'} הוחזר אליך עם הערות מהמנהל.`,
+          report_id: reportId,
+        });
+      }
+
       toast({
-        title: "הדוח נדחה",
-        description: "הדוח הוחזר לעובד לתיקון",
+        title: "הדוח הוחזר לבירור",
+        description: "הדוח הוחזר לעובד עם הערות",
       });
 
       loadPendingReports();
