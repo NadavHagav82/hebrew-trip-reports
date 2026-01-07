@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportHistory } from '@/components/ReportHistory';
 import { AccountingComments } from '@/components/AccountingComments';
+import { AccountingSendHistory } from '@/components/AccountingSendHistory';
 import { BudgetComparisonCard } from '@/components/BudgetComparisonCard';
 import AddExpenseByAccounting from '@/components/AddExpenseByAccounting';
 import { ManagerExpenseReview } from '@/components/ManagerExpenseReview';
@@ -2437,6 +2438,11 @@ const ViewReport = () => {
           {/* Accounting Comments */}
           {(report.status === 'closed' || report.status === 'pending_approval' || isAccountingUser) && (
             <AccountingComments reportId={report.id} isAccountingUser={isAccountingUser} />
+          )}
+
+          {/* Accounting Send History */}
+          {report.status === 'closed' && (
+            <AccountingSendHistory reportId={report.id} />
           )}
         </div>
         
