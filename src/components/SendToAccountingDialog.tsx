@@ -86,6 +86,16 @@ export function SendToAccountingDialog({
     }
   };
 
+  const getFullReceiptUrl = (path: string): string => {
+    // If already a full URL, return as-is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // Build full Supabase Storage URL
+    const { data } = supabase.storage.from('receipts').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const generatePdfBase64 = async (): Promise<string | null> => {
     try {
       // Fetch report data
@@ -115,6 +125,15 @@ export function SendToAccountingDialog({
         return null;
       }
 
+      // Transform expenses to include full receipt URLs
+      const expensesWithFullUrls = (expenses || []).map(expense => ({
+        ...expense,
+        receipts: expense.receipts?.map(receipt => ({
+          ...receipt,
+          file_url: getFullReceiptUrl(receipt.file_url)
+        })) || []
+      }));
+
       // Fetch profile
       const { data: profile } = await supabase
         .from('profiles')
@@ -122,8 +141,8 @@ export function SendToAccountingDialog({
         .eq('id', report.user_id)
         .single();
 
-      // Generate PDF
-      const pdfDoc = <ReportPdf report={report} expenses={expenses || []} profile={profile} />;
+      // Generate PDF with full URLs
+      const pdfDoc = <ReportPdf report={report} expenses={expensesWithFullUrls} profile={profile} />;
       const blob = await pdf(pdfDoc).toBlob();
       
       // Convert to base64
