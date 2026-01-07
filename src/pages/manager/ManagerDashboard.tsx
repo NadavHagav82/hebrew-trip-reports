@@ -12,6 +12,7 @@ import { Shield, Check, X, Eye, Loader2, ArrowRight, Calendar, DollarSign, Check
 import { StatusBadge } from "@/components/StatusBadge";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+import { SendToAccountingDialog } from "@/components/SendToAccountingDialog";
 
 interface PendingReport {
   id: string;
@@ -37,6 +38,12 @@ export default function ManagerDashboard() {
   const [isManager, setIsManager] = useState(false);
   const [processingReportId, setProcessingReportId] = useState<string | null>(null);
   const [bulkApproving, setBulkApproving] = useState(false);
+  const [showAccountingDialog, setShowAccountingDialog] = useState(false);
+  const [approvedReportData, setApprovedReportData] = useState<{
+    reportId: string;
+    destination: string;
+    employeeName: string;
+  } | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -197,7 +204,7 @@ export default function ManagerDashboard() {
     loadPendingReports();
   };
 
-  const approveReport = async (reportId: string, showToast = true) => {
+  const approveReport = async (reportId: string, showToast = true, skipDialog = false) => {
     if (showToast) {
       setProcessingReportId(reportId);
     }
@@ -232,39 +239,28 @@ export default function ManagerDashboard() {
         console.error('Error approving expenses:', expensesError);
       }
 
-      // Get user profile for email
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('username, accounting_manager_email')
-        .eq('id', report.user_id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Send emails
-      const { error: emailError } = await supabase.functions.invoke('send-accounting-report', {
-        body: {
-          userEmail: profileData.username,
-          accountingEmail: profileData.accounting_manager_email,
-          reportId: reportId,
-          reportDetails: {
-            destination: report.trip_destination,
-            startDate: report.trip_start_date,
-            endDate: report.trip_end_date,
-            totalAmount: report.total_amount_ils,
-            employeeName: report.profiles.full_name,
-          }
-        }
+      // Create notification for the employee
+      await supabase.from('notifications').insert({
+        user_id: report.user_id,
+        type: 'report_approved',
+        title: 'הדוח שלך אושר',
+        message: `הדוח ל${report.trip_destination} אושר על ידי המנהל.`,
+        report_id: reportId,
       });
 
-      if (emailError) {
-        console.error('Email sending error:', emailError);
-      }
-
-      if (showToast) {
+      if (showToast && !skipDialog) {
+        // Show dialog to send to accounting
+        setApprovedReportData({
+          reportId: reportId,
+          destination: report.trip_destination,
+          employeeName: report.profiles.full_name,
+        });
+        setShowAccountingDialog(true);
+        loadPendingReports();
+      } else if (showToast) {
         toast({
           title: "הדוח אושר",
-          description: "הדוח אושר בהצלחה ונשלח להנהלת חשבונות",
+          description: "הדוח אושר בהצלחה",
         });
         loadPendingReports();
       }
@@ -619,6 +615,17 @@ export default function ManagerDashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Send to Accounting Dialog */}
+      {approvedReportData && (
+        <SendToAccountingDialog
+          open={showAccountingDialog}
+          onOpenChange={setShowAccountingDialog}
+          reportId={approvedReportData.reportId}
+          reportDestination={approvedReportData.destination}
+          employeeName={approvedReportData.employeeName}
+        />
+      )}
     </div>
   );
 }
