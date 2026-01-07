@@ -249,14 +249,20 @@ export default function ManagerDashboard() {
       });
 
       if (showToast && !skipDialog) {
-        // Show dialog to send to accounting
+        // Show dialog to send to accounting - set data BEFORE reloading reports
         setApprovedReportData({
           reportId: reportId,
           destination: report.trip_destination,
           employeeName: report.profiles.full_name,
         });
         setShowAccountingDialog(true);
+        // Reload reports after setting dialog data
         loadPendingReports();
+        
+        toast({
+          title: "הדוח אושר",
+          description: "כעת ניתן לשלוח להנהלת חשבונות",
+        });
       } else if (showToast) {
         toast({
           title: "הדוח אושר",
