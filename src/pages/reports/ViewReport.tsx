@@ -66,6 +66,7 @@ interface Report {
   manager_approval_requested_at?: string | null;
   manager_approval_token?: string | null;
   manager_general_comment?: string | null;
+  rejection_reason?: string | null;
   created_at: string;
   notes?: string;
   daily_allowance?: number;
@@ -1505,7 +1506,7 @@ const ViewReport = () => {
                     צפייה בדוח
                   </h1>
                 </div>
-                <StatusBadge status={report.status} />
+                <StatusBadge status={report.status} returnedForClarification={report.status === 'open' && !!report.rejection_reason} />
               </div>
               
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -1709,7 +1710,7 @@ const ViewReport = () => {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <StatusBadge status={report.status} />
+                  <StatusBadge status={report.status} returnedForClarification={report.status === 'open' && !!report.rejection_reason} />
                   <div className="text-3xl sm:text-4xl font-black text-primary">
                     ₪{report.total_amount_ils?.toFixed(2)}
                   </div>

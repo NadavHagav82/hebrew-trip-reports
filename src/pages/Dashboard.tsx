@@ -36,6 +36,7 @@ interface Report {
   created_at: string;
   manager_approval_requested_at?: string | null;
   manager_approval_token?: string | null;
+  rejection_reason?: string | null;
 }
 
 interface Profile {
@@ -952,6 +953,7 @@ export default function Dashboard() {
                               <StatusBadge 
                                 status={report.status} 
                                 daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
+                                returnedForClarification={report.status === 'open' && !!report.rejection_reason}
                               />
                               {report.status === 'pending_approval' && profile?.manager_name && (
                                 <span className="text-xs text-muted-foreground">
@@ -1091,6 +1093,7 @@ export default function Dashboard() {
                           <StatusBadge 
                             status={report.status} 
                             daysOpen={report.status === 'open' ? calculateDaysOpen(report.submitted_at) : undefined}
+                            returnedForClarification={report.status === 'open' && !!report.rejection_reason}
                           />
                         </div>
                         
