@@ -471,6 +471,8 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["expense_currency"]
           description: string
+          employee_reply: string | null
+          employee_reply_at: string | null
           expense_date: string
           id: string
           manager_comment: string | null
@@ -490,6 +492,8 @@ export type Database = {
           created_at?: string
           currency: Database["public"]["Enums"]["expense_currency"]
           description: string
+          employee_reply?: string | null
+          employee_reply_at?: string | null
           expense_date: string
           id?: string
           manager_comment?: string | null
@@ -509,6 +513,8 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["expense_currency"]
           description?: string
+          employee_reply?: string | null
+          employee_reply_at?: string | null
           expense_date?: string
           id?: string
           manager_comment?: string | null
