@@ -191,6 +191,21 @@ const handler = async (req: Request): Promise<Response> => {
       notes: historyNotes,
     });
 
+    // Create notification for the employee
+    const notificationType = allApproved ? 'report_approved' : 'report_returned';
+    const notificationTitle = allApproved ? 'הדוח שלך אושר' : 'הדוח הוחזר לבירור';
+    const notificationMessage = allApproved 
+      ? `הדוח ל${report.trip_destination} אושר על ידי המנהל ונשלח להנהלת חשבונות.`
+      : `הדוח ל${report.trip_destination} הוחזר אליך עם הערות מהמנהל. ${rejectedCount} הוצאות דורשות תיקון.`;
+
+    await supabase.from('notifications').insert({
+      user_id: report.user_id,
+      type: notificationType,
+      title: notificationTitle,
+      message: notificationMessage,
+      report_id: report.id,
+    });
+
     // Send notification email to employee
     try {
       const { error: notifyError } = await supabase.functions.invoke('notify-employee-review', {
