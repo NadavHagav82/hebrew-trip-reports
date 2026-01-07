@@ -66,6 +66,47 @@ export type Database = {
           },
         ]
       }
+      accounting_send_history: {
+        Row: {
+          id: string
+          report_id: string
+          send_method: string
+          sent_at: string
+          sent_by: string
+          sent_to_email: string
+          sent_to_name: string | null
+          sent_to_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          report_id: string
+          send_method: string
+          sent_at?: string
+          sent_by: string
+          sent_to_email: string
+          sent_to_name?: string | null
+          sent_to_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          report_id?: string
+          send_method?: string
+          sent_at?: string
+          sent_by?: string
+          sent_to_email?: string
+          sent_to_name?: string | null
+          sent_to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_send_history_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approval_chain_configs: {
         Row: {
           created_at: string

@@ -88,6 +88,9 @@ export function SendToAccountingDialog({
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('לא מחובר');
+
       if (sendMethod === "system") {
         if (!selectedAccountingManagerId) {
           toast({
@@ -98,6 +101,8 @@ export function SendToAccountingDialog({
           setLoading(false);
           return;
         }
+
+        const selectedManager = accountingManagers.find(m => m.id === selectedAccountingManagerId);
 
         // Create notification for the accounting manager
         const { error: notificationError } = await supabase
@@ -112,8 +117,17 @@ export function SendToAccountingDialog({
 
         if (notificationError) throw notificationError;
 
+        // Save send history
+        await supabase.from('accounting_send_history').insert({
+          report_id: reportId,
+          sent_by: user.id,
+          sent_to_user_id: selectedAccountingManagerId,
+          sent_to_email: selectedManager?.email || '',
+          sent_to_name: selectedManager?.full_name || '',
+          send_method: 'system',
+        });
+
         // Also send email to accounting manager
-        const selectedManager = accountingManagers.find(m => m.id === selectedAccountingManagerId);
         if (selectedManager?.email) {
           await supabase.functions.invoke('send-accounting-report', {
             body: { reportId, accountingEmail: selectedManager.email }
@@ -148,6 +162,14 @@ export function SendToAccountingDialog({
           setLoading(false);
           return;
         }
+
+        // Save send history
+        await supabase.from('accounting_send_history').insert({
+          report_id: reportId,
+          sent_by: user.id,
+          sent_to_email: emailToSend,
+          send_method: 'email',
+        });
 
         await supabase.functions.invoke('send-accounting-report', {
           body: { reportId, accountingEmail: emailToSend }
