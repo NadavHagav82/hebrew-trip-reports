@@ -1161,14 +1161,15 @@ const ViewReport = () => {
     }
   };
 
-  // Finalize manager review - close or return report based on expense statuses
-  const handleFinalizeReview = async () => {
+  // Finalize manager review - explicit action (return to employee vs approve)
+  const handleFinalizeReview = async (mode: 'return' | 'approve') => {
     if (!report || !user) return;
-    
+
     setSubmittingReview(true);
     try {
-      // Check if all expenses have been reviewed
-      const unreviewedExpenses = expenses.filter(e => !e.approval_status || e.approval_status === 'pending');
+      const unreviewedExpenses = expenses.filter(
+        (e) => !e.approval_status || e.approval_status === 'pending'
+      );
       if (unreviewedExpenses.length > 0) {
         toast({
           title: 'יש להשלים את הביקורת',
@@ -1179,39 +1180,58 @@ const ViewReport = () => {
         return;
       }
 
-      const hasRejected = expenses.some(e => e.approval_status === 'rejected');
-      const newStatus = hasRejected ? 'open' : 'closed';
-      
+      const hasRejected = expenses.some((e) => e.approval_status === 'rejected');
+
+      if (mode === 'approve' && hasRejected) {
+        toast({
+          title: 'לא ניתן לאשר',
+          description: 'קיימות הוצאות שנדחו/לבירור. כדי לאשר צריך שכל ההוצאות יהיו מאושרות.',
+          variant: 'destructive',
+        });
+        setSubmittingReview(false);
+        return;
+      }
+
+      if (mode === 'return' && !hasRejected) {
+        toast({
+          title: 'אין מה לשלוח לבירור',
+          description: 'כדי לשלוח לבירור צריך לסמן לפחות הוצאה אחת כ״דחה / בקש בירור״.',
+          variant: 'destructive',
+        });
+        setSubmittingReview(false);
+        return;
+      }
+
+      const newStatus = mode === 'return' ? 'open' : 'closed';
+
       await supabase
         .from('reports')
         .update({
           status: newStatus,
           manager_approval_token: null,
           manager_general_comment: managerGeneralComment || null,
-          rejection_reason: hasRejected ? 'חלק מההוצאות נדחו או דורשות בירור' : null,
-          approved_at: hasRejected ? null : new Date().toISOString(),
-          approved_by: hasRejected ? null : user.id,
+          rejection_reason: mode === 'return' ? 'חלק מההוצאות נדחו או דורשות בירור' : null,
+          approved_at: mode === 'approve' ? new Date().toISOString() : null,
+          approved_by: mode === 'approve' ? user.id : null,
         })
         .eq('id', report.id);
 
-      // Add history entry
       await supabase.from('report_history').insert({
         report_id: report.id,
-        action: hasRejected ? 'rejected' : 'approved',
+        action: mode === 'return' ? 'rejected' : 'approved',
         performed_by: user.id,
-        notes: hasRejected 
-          ? `חלק מההוצאות נדחו או דורשות בירור. הדוח הוחזר לעובד.`
-          : 'הדוח אושר על ידי מנהל',
+        notes:
+          mode === 'return'
+            ? 'הדוח הוחזר לעובד עם הערות ובקשות לבירור.'
+            : 'הדוח אושר על ידי מנהל',
       });
 
-      // Prepare expense reviews for email
-      const expenseReviewsForEmail = expenses.map(e => ({
+      const expenseReviewsForEmail = expenses.map((e) => ({
         expenseId: e.id,
         status: e.approval_status,
         comment: e.manager_comment || '',
       }));
 
-      // Send notification to employee
       await supabase.functions.invoke('notify-employee-review', {
         body: {
           employeeEmail: (profile as any)?.email,
@@ -1225,43 +1245,32 @@ const ViewReport = () => {
           },
           expenseReviews: expenseReviewsForEmail,
           generalComment: managerGeneralComment || null,
-          allApproved: !hasRejected,
+          allApproved: mode === 'approve',
         },
       });
 
-      // Create in-app notification for employee
-      const approvedCount = expenses.filter(e => e.approval_status === 'approved').length;
-      const rejectedCount = expenses.filter(e => e.approval_status === 'rejected').length;
-      
-      const notificationType = hasRejected ? 'report_rejected' : 'report_approved';
-      const notificationTitle = hasRejected 
-        ? 'הדוח שלך דורש תיקונים' 
-        : 'הדוח שלך אושר';
-      const notificationMessage = hasRejected
-        ? `הדוח ל${report.trip_destination} הוחזר אליך עם הערות. ${rejectedCount} הוצאות דורשות תיקון.`
-        : `הדוח ל${report.trip_destination} אושר על ידי המנהל.`;
+      const approvedCount = expenses.filter((e) => e.approval_status === 'approved').length;
+      const rejectedCount = expenses.filter((e) => e.approval_status === 'rejected').length;
 
       await supabase.from('notifications').insert({
         user_id: report.user_id,
-        type: notificationType,
-        title: notificationTitle,
-        message: notificationMessage,
+        type: mode === 'return' ? 'report_rejected' : 'report_approved',
+        title: mode === 'return' ? 'הדוח שלך דורש תיקונים' : 'הדוח שלך אושר',
+        message:
+          mode === 'return'
+            ? `הדוח ל${report.trip_destination} הוחזר אליך עם הערות. ${rejectedCount} הוצאות דורשות תיקון.`
+            : `הדוח ל${report.trip_destination} אושר על ידי המנהל.`,
         report_id: report.id,
       });
 
-      if (!hasRejected) {
-        toast({
-          title: 'הדוח אושר בהצלחה',
-          description: 'כל ההוצאות אושרו והדוח נסגר',
-        });
-      } else {
-        toast({
-          title: 'הדוח הוחזר לעובד',
-          description: `${rejectedCount} הוצאות דורשות תיקון. הדוח הוחזר לעובד.`,
-        });
-      }
+      toast({
+        title: mode === 'approve' ? 'הדוח אושר בהצלחה' : 'הדוח נשלח לבירור',
+        description:
+          mode === 'approve'
+            ? `כל ההוצאות אושרו (${approvedCount}).`
+            : `${rejectedCount} הוצאות סומנו לבירור והדוח הוחזר לעובד.`,
+      });
 
-      // Reset review state
       setExpenseReviews(new Map());
       setManagerGeneralComment('');
       loadReport();
