@@ -96,6 +96,31 @@ export function SendToAccountingDialog({
     return data.publicUrl;
   };
 
+  const imageUrlToBase64 = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error('Failed to fetch image:', url, response.status);
+        return url; // Fallback to original URL
+      }
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = () => {
+          console.error('Error reading blob:', url);
+          resolve(url); // Fallback to original URL
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      return url; // Fallback to original URL
+    }
+  };
+
   const generatePdfBase64 = async (): Promise<string | null> => {
     try {
       // Fetch report data
@@ -125,14 +150,25 @@ export function SendToAccountingDialog({
         return null;
       }
 
-      // Transform expenses to include full receipt URLs
-      const expensesWithFullUrls = (expenses || []).map(expense => ({
-        ...expense,
-        receipts: expense.receipts?.map(receipt => ({
-          ...receipt,
-          file_url: getFullReceiptUrl(receipt.file_url)
-        })) || []
-      }));
+      // Transform expenses to include base64 receipt images for PDF embedding
+      const expensesWithBase64 = await Promise.all(
+        (expenses || []).map(async (expense) => ({
+          ...expense,
+          receipts: await Promise.all(
+            (expense.receipts || []).map(async (receipt) => {
+              const fullUrl = getFullReceiptUrl(receipt.file_url);
+              // Only convert image files to base64
+              const isImage = receipt.file_type === 'image' || 
+                receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
+              const base64Url = isImage ? await imageUrlToBase64(fullUrl) : fullUrl;
+              return {
+                ...receipt,
+                file_url: base64Url
+              };
+            })
+          )
+        }))
+      );
 
       // Fetch profile
       const { data: profile } = await supabase
@@ -141,8 +177,8 @@ export function SendToAccountingDialog({
         .eq('id', report.user_id)
         .single();
 
-      // Generate PDF with full URLs
-      const pdfDoc = <ReportPdf report={report} expenses={expensesWithFullUrls} profile={profile} />;
+      // Generate PDF with base64 images
+      const pdfDoc = <ReportPdf report={report} expenses={expensesWithBase64} profile={profile} />;
       const blob = await pdf(pdfDoc).toBlob();
       
       // Convert to base64
