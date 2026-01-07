@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt, Calculator, User } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Edit, Loader2, Printer, Plane, Hotel, Utensils, Car, Package, Calendar, Mail, FileText, Download, Send, ChevronLeft, ChevronRight, CreditCard, Wallet, Receipt, Calculator, User, MessageSquare } from 'lucide-react';
 import { DuplicateExpenseDetector } from '@/components/DuplicateExpenseDetector';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -42,6 +42,8 @@ interface Expense {
   approval_status?: 'pending' | 'approved' | 'rejected';
   manager_comment?: string;
   reviewed_at?: string;
+  employee_reply?: string;
+  employee_reply_at?: string;
   manager_attachments?: {
     id: string;
     file_name: string;
@@ -118,6 +120,10 @@ const ViewReport = () => {
   
   // Cancel submission state
   const [isCancellingSubmission, setIsCancellingSubmission] = useState(false);
+  
+  // Employee reply state
+  const [employeeReplies, setEmployeeReplies] = useState<Map<string, string>>(new Map());
+  const [savingReplyFor, setSavingReplyFor] = useState<string | null>(null);
   
   // Receipt preview modal state
   const [previewReceipts, setPreviewReceipts] = useState<{ url: string; name: string; type: string }[]>([]);
@@ -1395,8 +1401,58 @@ const ViewReport = () => {
       });
     }
   };
-  
 
+  // Handle employee reply to manager comment
+  const handleSaveEmployeeReply = async (expenseId: string) => {
+    const replyText = employeeReplies.get(expenseId);
+    if (!replyText?.trim()) return;
+
+    setSavingReplyFor(expenseId);
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update({ 
+          employee_reply: replyText.trim(),
+          employee_reply_at: new Date().toISOString()
+        })
+        .eq('id', expenseId);
+
+      if (error) throw error;
+
+      // Update local state
+      setExpenses(prev => prev.map(exp => 
+        exp.id === expenseId 
+          ? { ...exp, employee_reply: replyText.trim(), employee_reply_at: new Date().toISOString() }
+          : exp
+      ));
+
+      toast({
+        title: 'התשובה נשמרה',
+        description: 'התשובה להערת המנהל נשמרה בהצלחה',
+      });
+
+      // Clear from local editing state
+      setEmployeeReplies(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(expenseId);
+        return newMap;
+      });
+    } catch (error: any) {
+      console.error('Error saving employee reply:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לשמור את התשובה',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingReplyFor(null);
+    }
+  };
+
+  // Check if report is returned for clarification
+  const isReturnedForClarification = report?.status === 'open' && !!report?.rejection_reason;
+  const isOwnReport = user?.id === report?.user_id;
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -2008,6 +2064,96 @@ const ViewReport = () => {
                                 ))}
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Employee Reply Section - Show for rejected expenses when report is returned for clarification */}
+                        {expense.manager_comment && expense.approval_status === 'rejected' && isOwnReport && (
+                          <div className="mb-4">
+                            {/* Show existing reply if saved */}
+                            {expense.employee_reply && !employeeReplies.has(expense.id) ? (
+                              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 rounded-xl">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                  <span className="text-sm font-bold text-blue-700 dark:text-blue-300">תשובתך:</span>
+                                </div>
+                                <p className="text-sm text-blue-600 dark:text-blue-400">{expense.employee_reply}</p>
+                                {isReturnedForClarification && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEmployeeReplies(prev => new Map(prev).set(expense.id, expense.employee_reply || ''))}
+                                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                                  >
+                                    <Edit className="w-3 h-3 ml-1" />
+                                    ערוך תשובה
+                                  </Button>
+                                )}
+                              </div>
+                            ) : isReturnedForClarification ? (
+                              /* Show reply input when report is returned for clarification */
+                              <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 p-4 rounded-xl">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                  <span className="text-sm font-bold text-blue-700 dark:text-blue-300">תשובה להערת המנהל:</span>
+                                </div>
+                                <Textarea
+                                  placeholder="הוסף תשובה או הסבר להערת המנהל..."
+                                  value={employeeReplies.get(expense.id) || ''}
+                                  onChange={(e) => setEmployeeReplies(prev => new Map(prev).set(expense.id, e.target.value))}
+                                  className="min-h-[80px] text-sm bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-700 focus:border-blue-400"
+                                  disabled={savingReplyFor === expense.id}
+                                />
+                                <div className="flex justify-end gap-2 mt-3">
+                                  {expense.employee_reply && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setEmployeeReplies(prev => {
+                                          const newMap = new Map(prev);
+                                          newMap.delete(expense.id);
+                                          return newMap;
+                                        });
+                                      }}
+                                      disabled={savingReplyFor === expense.id}
+                                      className="text-slate-600 hover:text-slate-700"
+                                    >
+                                      ביטול
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveEmployeeReply(expense.id)}
+                                    disabled={savingReplyFor === expense.id || !employeeReplies.get(expense.id)?.trim()}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    {savingReplyFor === expense.id ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 ml-1 animate-spin" />
+                                        שומר...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Send className="w-3 h-3 ml-1" />
+                                        שמור תשובה
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {/* Show employee reply to manager/non-owner */}
+                        {expense.employee_reply && !isOwnReport && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 rounded-xl mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              <span className="text-sm font-bold text-blue-700 dark:text-blue-300">תשובת העובד:</span>
+                            </div>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">{expense.employee_reply}</p>
                           </div>
                         )}
                         
