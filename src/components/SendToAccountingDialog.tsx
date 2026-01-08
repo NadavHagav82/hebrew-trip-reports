@@ -86,38 +86,43 @@ export function SendToAccountingDialog({
     }
   };
 
-  const getFullReceiptUrl = (path: string): string => {
-    // If already a full URL, return as-is
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+  const getReceiptAccessUrl = async (path: string): Promise<string> => {
+    // If already a URL (public/signed), use as-is
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+    // Our receipts bucket may be private; prefer a signed URL for reliable access.
+    const { data, error } = await supabase.storage
+      .from('receipts')
+      .createSignedUrl(path, 60 * 60);
+
+    if (error || !data?.signedUrl) {
+      console.error('Failed to create signed URL for receipt:', { path, error });
       return path;
     }
-    // Build full Supabase Storage URL
-    const { data } = supabase.storage.from('receipts').getPublicUrl(path);
-    return data.publicUrl;
+
+    return data.signedUrl;
   };
 
-  const imageUrlToBase64 = async (url: string): Promise<string> => {
+  const imageUrlToBase64 = async (url: string): Promise<string | null> => {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.error('Failed to fetch image:', url, response.status);
-        return url; // Fallback to original URL
+        console.error('Failed to fetch image for base64:', url, response.status);
+        return null;
       }
       const blob = await response.blob();
-      return new Promise((resolve) => {
+      return await new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
+        reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = () => {
-          console.error('Error reading blob:', url);
-          resolve(url); // Fallback to original URL
+          console.error('Error reading blob for base64:', url);
+          resolve(null);
         };
         reader.readAsDataURL(blob);
       });
     } catch (error) {
       console.error('Error converting image to base64:', error);
-      return url; // Fallback to original URL
+      return null;
     }
   };
 
@@ -152,22 +157,31 @@ export function SendToAccountingDialog({
 
       // Transform expenses to include base64 receipt images for PDF embedding
       const expensesWithBase64 = await Promise.all(
-        (expenses || []).map(async (expense) => ({
-          ...expense,
-          receipts: await Promise.all(
-            (expense.receipts || []).map(async (receipt) => {
-              const fullUrl = getFullReceiptUrl(receipt.file_url);
-              // Only convert image files to base64
-              const isImage = receipt.file_type === 'image' || 
-                receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
-              const base64Url = isImage ? await imageUrlToBase64(fullUrl) : fullUrl;
+        (expenses || []).map(async (expense) => {
+          const receipts = expense.receipts || [];
+
+          const enrichedReceipts = await Promise.all(
+            receipts.map(async (receipt) => {
+              const isImage =
+                receipt.file_type === 'image' ||
+                !!receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
+
+              const accessUrl = await getReceiptAccessUrl(receipt.file_url);
+              const base64Url = isImage ? await imageUrlToBase64(accessUrl) : null;
+
               return {
                 ...receipt,
-                file_url: base64Url
+                // react-pdf Image works best with data URLs; if we can't fetch, keep empty so it's skipped later.
+                file_url: base64Url ?? '',
               };
             })
-          )
-        }))
+          );
+
+          return {
+            ...expense,
+            receipts: enrichedReceipts,
+          };
+        })
       );
 
       // Fetch profile
@@ -180,7 +194,7 @@ export function SendToAccountingDialog({
       // Generate PDF with base64 images
       const pdfDoc = <ReportPdf report={report} expenses={expensesWithBase64} profile={profile} />;
       const blob = await pdf(pdfDoc).toBlob();
-      
+
       // Convert to base64
       return new Promise((resolve) => {
         const reader = new FileReader();
