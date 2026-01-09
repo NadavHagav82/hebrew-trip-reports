@@ -140,7 +140,7 @@ export function SendToAccountingDialog({
         return null;
       }
 
-      // Fetch expenses (via report relationship to guarantee scoping)
+      // Fetch expenses (via report relationship) + defensively filter by report_id
       const { data: reportWithExpenses, error: expensesError } = await supabase
         .from('reports')
         .select(
@@ -148,7 +148,7 @@ export function SendToAccountingDialog({
           id,
           expenses (
             *,
-            receipts (id, file_url, file_name, file_type)
+            receipts (id, expense_id, file_url, file_name, file_type)
           )
         `
         )
@@ -160,7 +160,16 @@ export function SendToAccountingDialog({
         return null;
       }
 
-      const expenses = (reportWithExpenses as any)?.expenses ?? [];
+      const rawExpenses = (reportWithExpenses as any)?.expenses ?? [];
+
+      // Defensive scoping: ensure we only include expenses that belong to this report
+      const expenses = (rawExpenses as any[])
+        .filter((e) => String(e.report_id) === String(reportId))
+        .map((e) => ({
+          ...e,
+          receipts: (e.receipts ?? []).filter((r: any) => String(r.expense_id) === String(e.id)),
+        }));
+
       // Ensure deterministic order (PostgREST nested selects don't support order reliably)
       expenses.sort((a: any, b: any) =>
         String(a.expense_date).localeCompare(String(b.expense_date))
@@ -168,11 +177,11 @@ export function SendToAccountingDialog({
 
       // Transform expenses to include base64 receipt images for PDF embedding
       const expensesWithBase64 = await Promise.all(
-        (expenses || []).map(async (expense) => {
+        expenses.map(async (expense) => {
           const receipts = expense.receipts || [];
 
           const enrichedReceipts = await Promise.all(
-            receipts.map(async (receipt) => {
+            receipts.map(async (receipt: any) => {
               const isImage =
                 receipt.file_type === 'image' ||
                 !!receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
