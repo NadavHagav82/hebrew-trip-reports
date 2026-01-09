@@ -140,20 +140,31 @@ export function SendToAccountingDialog({
         return null;
       }
 
-      // Fetch expenses
-      const { data: expenses, error: expensesError } = await supabase
-        .from('expenses')
-        .select(`
-          *,
-          receipts (id, file_url, file_name, file_type)
-        `)
-        .eq('report_id', reportId)
-        .order('expense_date', { ascending: true });
+      // Fetch expenses (via report relationship to guarantee scoping)
+      const { data: reportWithExpenses, error: expensesError } = await supabase
+        .from('reports')
+        .select(
+          `
+          id,
+          expenses (
+            *,
+            receipts (id, file_url, file_name, file_type)
+          )
+        `
+        )
+        .eq('id', reportId)
+        .single();
 
       if (expensesError) {
         console.error('Error fetching expenses:', expensesError);
         return null;
       }
+
+      const expenses = (reportWithExpenses as any)?.expenses ?? [];
+      // Ensure deterministic order (PostgREST nested selects don't support order reliably)
+      expenses.sort((a: any, b: any) =>
+        String(a.expense_date).localeCompare(String(b.expense_date))
+      );
 
       // Transform expenses to include base64 receipt images for PDF embedding
       const expensesWithBase64 = await Promise.all(
