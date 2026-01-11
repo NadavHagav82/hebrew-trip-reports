@@ -35,6 +35,12 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface ReceiptFile {
+  /**
+   * Stable id used to reconcile uploads/analysis against React state updates.
+   * Present for new uploads; may be missing for receipts loaded from the backend.
+   */
+  localId?: string;
+
   // New uploads
   file?: File;
 
@@ -535,9 +541,13 @@ export default function NewReport() {
                     if (e.id !== exp.id) return e;
                     return {
                       ...e,
-                      receipts: e.receipts.map((r) =>
-                        r === receipt
+                      receipts: e.receipts.map((r) => {
+                        const sameReceipt =
+                          (receipt.localId && r.localId === receipt.localId) || r === receipt;
+
+                        return sameReceipt
                           ? {
+                              localId: receipt.localId,
                               existingId: receiptRow?.id,
                               fileUrl: fileName,
                               fileName: receipt.file?.name,
@@ -545,9 +555,10 @@ export default function NewReport() {
                               fileSize: receipt.file?.size,
                               preview,
                               uploading: false,
+                              file: undefined,
                             }
-                          : r
-                      ),
+                          : r;
+                      }),
                     };
                   })
                 );
@@ -1080,7 +1091,13 @@ export default function NewReport() {
 
     if (allFiles.length === 0) return;
 
-    const newReceipts: ReceiptFile[] = allFiles.map(file => ({
+    const mkLocalId = () =>
+      (globalThis.crypto && 'randomUUID' in globalThis.crypto
+        ? (globalThis.crypto as Crypto).randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+    const newReceipts: ReceiptFile[] = allFiles.map((file) => ({
+      localId: mkLocalId(),
       file,
       preview: URL.createObjectURL(file),
       uploading: false,
