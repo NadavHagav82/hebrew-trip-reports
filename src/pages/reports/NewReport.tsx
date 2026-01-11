@@ -1110,7 +1110,7 @@ export default function NewReport() {
     setTimeout(() => {
       newReceipts.forEach((receipt, idx) => {
         if (receipt.file.type.startsWith('image/')) {
-          analyzeReceipt(expenseId, startIndex + idx);
+          void analyzeReceiptFile(expenseId, startIndex + idx, receipt.file);
         }
       });
     }, 100);
@@ -1157,66 +1157,49 @@ export default function NewReport() {
     cameraInputRef.current?.click();
   };
 
-  const analyzeReceipt = async (expenseId: string, receiptIndex: number) => {
-    const expense = expenses.find(exp => exp.id === expenseId);
-    if (!expense) return;
-
-    const receipt = expense.receipts[receiptIndex];
-    if (!receipt || receipt.analyzed) return;
-
-    // Check if file is an image
-    if (!receipt.file.type.startsWith('image/')) {
-      toast({
-        title: 'לא ניתן לנתח',
-        description: 'ניתן לנתח רק תמונות של קבלות',
-        variant: 'destructive',
-      });
+  const analyzeReceiptFile = async (expenseId: string, receiptIndex: number, file: File) => {
+    // Only images are supported
+    if (!file.type.startsWith('image/')) {
       return;
     }
 
-    // Mark as analyzing - use functional update to avoid stale closure
-    setExpenses(prevExpenses => prevExpenses.map(exp => {
-      if (exp.id === expenseId) {
+    // Mark as analyzing (functional update avoids stale state)
+    setExpenses(prevExpenses =>
+      prevExpenses.map(exp => {
+        if (exp.id !== expenseId) return exp;
+        if (!exp.receipts[receiptIndex]) return exp;
         return {
           ...exp,
-          receipts: exp.receipts.map((r, idx) =>
-            idx === receiptIndex ? { ...r, analyzing: true } : r
-          )
+          receipts: exp.receipts.map((r, idx) => (idx === receiptIndex ? { ...r, analyzing: true } : r)),
         };
-      }
-      return exp;
-    }));
+      })
+    );
 
     try {
       // Convert file to base64
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            resolve(reader.result);
-          } else {
-            reject(new Error('Failed to convert file'));
-          }
+          if (typeof reader.result === 'string') resolve(reader.result);
+          else reject(new Error('Failed to convert file'));
         };
         reader.onerror = reject;
       });
-      reader.readAsDataURL(receipt.file);
+      reader.readAsDataURL(file);
       const imageBase64 = await base64Promise;
 
-      // Call AI analysis with trip destination for currency detection
       const { data, error } = await supabase.functions.invoke('analyze-receipt', {
-        body: { 
+        body: {
           imageBase64,
-          tripDestination: tripDestination || ''
-        }
+          tripDestination: tripDestination || '',
+        },
       });
-
       if (error) throw error;
 
       if (data?.data) {
         const { date, amount, currency, category, description } = data.data;
-        
-        // Log analysis result to database for debugging/improvement
+
+        // Best-effort log for analytics/debugging
         let analysisLogId: string | undefined;
         try {
           const { data: logData } = await supabase
@@ -1224,8 +1207,8 @@ export default function NewReport() {
             .insert({
               user_id: user?.id,
               report_id: reportId || null,
-              image_file_name: receipt.file.name,
-              image_file_size: receipt.file.size,
+              image_file_name: file.name,
+              image_file_size: file.size,
               extracted_date: date || null,
               extracted_amount: amount || null,
               extracted_currency: currency || null,
@@ -1240,12 +1223,14 @@ export default function NewReport() {
           analysisLogId = logData?.id;
         } catch (logError) {
           console.error('Failed to log receipt analysis:', logError);
-          // Don't fail the whole operation if logging fails
         }
-        
-        // Update expense with analyzed data - use functional update to avoid stale closure
-        setExpenses(prevExpenses => prevExpenses.map(exp => {
-          if (exp.id === expenseId) {
+
+        // Apply extracted fields + mark analyzed
+        setExpenses(prevExpenses =>
+          prevExpenses.map(exp => {
+            if (exp.id !== expenseId) return exp;
+            if (!exp.receipts[receiptIndex]) return exp;
+
             const updated = { ...exp };
             if (date) {
               updated.expense_date = date;
@@ -1257,21 +1242,19 @@ export default function NewReport() {
             if (category) updated.category = category;
             if (description) updated.description = description;
             if (analysisLogId) updated.analysisLogId = analysisLogId;
-            
-            // Calculate ILS amount
+
             if (amount && currency) {
-              updated.amount_in_ils = parseFloat(amount) * (currencyRates[currency as keyof typeof currencyRates] || 1);
+              updated.amount_in_ils =
+                parseFloat(amount) * (currencyRates[currency as keyof typeof currencyRates] || 1);
             }
 
-            // Mark receipt as analyzed
-            updated.receipts = exp.receipts.map((r, idx) =>
+            updated.receipts = updated.receipts.map((r, idx) =>
               idx === receiptIndex ? { ...r, analyzing: false, analyzed: true } : r
             );
 
             return updated;
-          }
-          return exp;
-        }));
+          })
+        );
 
         toast({
           title: 'הקבלה נותחה בהצלחה! ✨',
@@ -1280,19 +1263,17 @@ export default function NewReport() {
       }
     } catch (error: any) {
       console.error('Error analyzing receipt:', error);
-      
-      // Remove analyzing state - use functional update to avoid stale closure
-      setExpenses(prevExpenses => prevExpenses.map(exp => {
-        if (exp.id === expenseId) {
+
+      setExpenses(prevExpenses =>
+        prevExpenses.map(exp => {
+          if (exp.id !== expenseId) return exp;
+          if (!exp.receipts[receiptIndex]) return exp;
           return {
             ...exp,
-            receipts: exp.receipts.map((r, idx) =>
-              idx === receiptIndex ? { ...r, analyzing: false } : r
-            )
+            receipts: exp.receipts.map((r, idx) => (idx === receiptIndex ? { ...r, analyzing: false } : r)),
           };
-        }
-        return exp;
-      }));
+        })
+      );
 
       toast({
         title: 'שגיאה בניתוח הקבלה',
@@ -1300,6 +1281,14 @@ export default function NewReport() {
         variant: 'destructive',
       });
     }
+  };
+
+  // Backwards compatible wrapper (kept in case other code calls it)
+  const analyzeReceipt = async (expenseId: string, receiptIndex: number) => {
+    const expense = expenses.find(exp => exp.id === expenseId);
+    const receipt = expense?.receipts?.[receiptIndex];
+    if (!receipt?.file) return;
+    await analyzeReceiptFile(expenseId, receiptIndex, receipt.file);
   };
 
   const calculateTotalByCategory = () => {
