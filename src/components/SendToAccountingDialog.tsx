@@ -163,12 +163,24 @@ export function SendToAccountingDialog({
       const rawExpenses = (reportWithExpenses as any)?.expenses ?? [];
 
       // Defensive scoping: ensure we only include expenses that belong to this report
-      const expenses = (rawExpenses as any[])
-        .filter((e) => String(e.report_id) === String(reportId))
-        .map((e) => ({
-          ...e,
-          receipts: (e.receipts ?? []).filter((r: any) => String(r.expense_id) === String(e.id)),
-        }));
+      // + de-duplicate (we've seen cases where embedded relations return duplicates)
+      const expenses = Array.from(
+        new Map(
+          (rawExpenses as any[])
+            .filter((e) => String(e.report_id) === String(reportId))
+            .map((e) => {
+              const uniqueReceipts = Array.from(
+                new Map(
+                  (e.receipts ?? [])
+                    .filter((r: any) => String(r.expense_id) === String(e.id))
+                    .map((r: any) => [String(r.id ?? `${r.file_url}-${r.file_name}`), r])
+                ).values()
+              );
+
+              return [String(e.id), { ...e, receipts: uniqueReceipts }] as const;
+            })
+        ).values()
+      );
 
       // Ensure deterministic order (PostgREST nested selects don't support order reliably)
       expenses.sort((a: any, b: any) =>
