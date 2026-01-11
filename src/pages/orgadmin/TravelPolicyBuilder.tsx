@@ -162,8 +162,8 @@ export default function TravelPolicyBuilder() {
         {/* Tabs menu - INSIDE header on mobile for visibility */}
         <div className="container mx-auto px-3 sm:px-4 pb-2 sm:pb-3">
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl border border-slate-200/40 dark:border-slate-700/40 p-1 sm:p-1.5 shadow-sm">
-            <div className="overflow-x-auto scrollbar-hide">
-              <div className="inline-flex min-w-full sm:grid sm:grid-cols-7 gap-1" role="tablist">
+            <div className="overflow-x-auto scrollbar-hide -mx-1 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="flex sm:grid sm:grid-cols-7 gap-1 w-max sm:w-full" role="tablist">
                 {[
                   { value: 'dashboard', icon: LayoutDashboard, label: 'דשבורד', color: 'blue' },
                   { value: 'grades', icon: Users, label: 'דרגות', color: 'violet' },
@@ -178,7 +178,7 @@ export default function TravelPolicyBuilder() {
                     role="tab"
                     aria-selected={activeTab === value}
                     onClick={() => setActiveTab(value)}
-                    className={`group flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 px-3 sm:px-2 rounded-lg transition-all duration-200 min-w-[60px] sm:min-w-0 shrink-0 ${
+                    className={`group flex flex-col items-center gap-0.5 sm:gap-1 py-2 sm:py-2.5 px-4 sm:px-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
                       activeTab === value
                         ? `bg-white dark:bg-slate-800 text-${color}-600 dark:text-${color}-400 shadow-sm border border-${color}-200/60 dark:border-${color}-700/60`
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60'
@@ -188,6 +188,13 @@ export default function TravelPolicyBuilder() {
                     <span className="text-[10px] sm:text-xs font-medium whitespace-nowrap">{label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+            {/* Scroll indicator for mobile */}
+            <div className="flex justify-center mt-1 sm:hidden">
+              <div className="flex gap-1">
+                <div className="w-6 h-0.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                <div className="w-2 h-0.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
               </div>
             </div>
           </div>
