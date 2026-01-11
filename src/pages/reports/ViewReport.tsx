@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { pdf } from '@react-pdf/renderer';
 import { ReportPdf } from '@/pdf/ReportPdf';
+import { blobToOrientedImageDataUrl } from '@/utils/imageDataUrl';
 
 interface Expense {
   id: string;
@@ -477,35 +478,52 @@ const ViewReport = () => {
         ? ((freshExpenses as any[]) || []).map((e: any) => ({ ...e, receipts: e.receipts || [] }))
         : expenses;
 
-      console.log('PDF Generation: Expenses count (source):', sourceExpenses.length);
+      // Defensive scoping + de-duplication (mobile flows have shown duplicates / wrong joins)
+      const scopedExpenses = Array.from(
+        new Map(
+          (sourceExpenses as any[])
+            .filter((e) => String(e.report_id ?? report.id) === String(report.id))
+            .map((e) => [
+              String(e.id),
+              {
+                ...e,
+                receipts: Array.from(
+                  new Map(
+                    (e.receipts ?? [])
+                      .filter((r: any) => String(r.expense_id ?? e.id) === String(e.id))
+                      .map((r: any) => [String(r.id ?? `${r.file_url}-${r.file_name}`), r])
+                  ).values()
+                ),
+              },
+            ])
+        ).values()
+      ) as any as Expense[];
+
+      console.log('PDF Generation: Expenses count (source):', scopedExpenses.length);
       console.log(
         'PDF Generation: Receipts count (source):',
-        sourceExpenses.reduce((sum, e) => sum + (e.receipts?.length || 0), 0)
+        scopedExpenses.reduce((sum, e) => sum + (e.receipts?.length || 0), 0)
       );
 
       // Convert images to base64 data URIs to avoid Buffer issues in browser
       const expensesWithBase64Images = await Promise.all(
-        sourceExpenses.map(async (expense) => {
+        scopedExpenses.map(async (expense) => {
           const receiptsWithBase64 = await Promise.all(
             (expense.receipts || []).map(async (receipt: any) => {
               try {
                 // Only process image receipts
-                const isImage = receipt.file_type === 'image' || 
+                const isImage =
+                  receipt.file_type === 'image' ||
                   receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
-                
+
                 if (!isImage) {
                   return receipt;
                 }
 
                 // Extract the storage path from the file_url
-                // The file_url can be: 
-                // 1. Just a path like "user_id/filename.jpg"
-                // 2. A full signed URL starting with http
-                // 3. A path with storage prefix like "/storage/v1/object/..."
                 let storagePath = receipt.file_url;
-                
+
                 if (storagePath.startsWith('http')) {
-                  // Extract path from full URL - look for /receipts/ in the URL
                   const receiptsMatch = storagePath.match(/\/receipts\/(.+?)(?:\?|$)/);
                   if (receiptsMatch) {
                     storagePath = decodeURIComponent(receiptsMatch[1]);
@@ -514,58 +532,56 @@ const ViewReport = () => {
                     return receipt;
                   }
                 } else if (storagePath.includes('/storage/v1/')) {
-                  // Extract path from storage URL
                   const receiptsMatch = storagePath.match(/\/receipts\/(.+?)(?:\?|$)/);
                   if (receiptsMatch) {
                     storagePath = decodeURIComponent(receiptsMatch[1]);
                   }
                 }
-                
+
                 console.log('PDF Generation: Generating signed URL for path:', storagePath);
-                
+
                 const { data, error } = await supabase.storage
                   .from('receipts')
                   .createSignedUrl(storagePath, 60 * 60);
-                
+
                 if (error) {
                   console.error('PDF Generation: Error creating signed URL:', error);
                   return receipt;
                 }
-                
+
                 const signedUrl = data?.signedUrl;
-                
                 if (!signedUrl) {
                   console.log('PDF Generation: No signed URL for receipt:', receipt.file_name);
                   return receipt;
                 }
 
                 console.log('PDF Generation: Fetching image from signed URL...');
-                
-                // Fetch the image and convert to base64 data URI
                 const response = await fetch(signedUrl);
                 if (!response.ok) {
                   console.error('PDF Generation: Failed to fetch image:', response.status);
                   return receipt;
                 }
-                
-                const arrayBuffer = await response.arrayBuffer();
-                const uint8Array = new Uint8Array(arrayBuffer);
-                let binary = '';
-                for (let i = 0; i < uint8Array.length; i++) {
-                  binary += String.fromCharCode(uint8Array[i]);
-                }
-                const base64 = btoa(binary);
-                
-                // Determine MIME type from file extension
-                const ext = receipt.file_name?.toLowerCase().split('.').pop() || 'jpeg';
-                const mimeType = ext === 'png' ? 'image/png' : 
-                                 ext === 'gif' ? 'image/gif' : 
-                                 ext === 'webp' ? 'image/webp' : 'image/jpeg';
-                
-                const dataUri = `data:${mimeType};base64,${base64}`;
-                
+
+                const blob = await response.blob();
+
+                // Normalize phone camera EXIF orientation so receipts are always upright in the PDF.
+                // Use extension to keep PNG/WebP when relevant, otherwise default to JPEG.
+                const ext = receipt.file_name?.toLowerCase().split('.').pop() || '';
+                const mimeType =
+                  ext === 'png'
+                    ? 'image/png'
+                    : ext === 'webp'
+                      ? 'image/webp'
+                      : 'image/jpeg';
+
+                const dataUri = await blobToOrientedImageDataUrl(blob, {
+                  mimeType,
+                  quality: 0.92,
+                  maxSize: 1800,
+                });
+
                 console.log('PDF Generation: Image converted to base64:', receipt.file_name);
-                
+
                 return {
                   ...receipt,
                   file_url: dataUri,
@@ -576,14 +592,14 @@ const ViewReport = () => {
               }
             })
           );
-          
+
           return {
             ...expense,
             receipts: receiptsWithBase64,
           };
         })
       );
-      
+
       console.log('PDF Generation: All images converted to base64, generating PDF...');
       
       const pdfDoc = <ReportPdf report={report} expenses={expensesWithBase64Images} profile={profile} />;
