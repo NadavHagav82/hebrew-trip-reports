@@ -183,12 +183,20 @@ export function SendToAccountingDialog({
       );
 
       // Transform expenses to include base64 receipt images for PDF embedding
+      // De-duplicate receipts by id before processing to avoid duplicate pages
       const expensesWithBase64 = await Promise.all(
         expenses.map(async (expense) => {
           const receipts = expense.receipts || [];
+          
+          // De-duplicate receipts by id
+          const uniqueReceipts = Array.from(
+            new Map(
+              receipts.map((r: any) => [String(r.id), r])
+            ).values()
+          );
 
           const enrichedReceipts = await Promise.all(
-            receipts.map(async (receipt: any) => {
+            uniqueReceipts.map(async (receipt: any) => {
               const isImage =
                 receipt.file_type === 'image' ||
                 !!receipt.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/);
