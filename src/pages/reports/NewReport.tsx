@@ -1086,6 +1086,7 @@ export default function NewReport() {
       uploading: false,
     }));
 
+    let startIndex = 0;
     setExpenses(prevExpenses => prevExpenses.map(exp => {
       if (exp.id === expenseId) {
         const totalReceipts = exp.receipts.length + newReceipts.length;
@@ -1097,12 +1098,22 @@ export default function NewReport() {
           });
           return exp;
         }
+        startIndex = exp.receipts.length;
         return { ...exp, receipts: [...exp.receipts, ...newReceipts] };
       }
       return exp;
     }));
 
     setPendingSaveExpenses(prev => new Set(prev).add(expenseId));
+
+    // Auto-analyze new image receipts immediately after upload
+    setTimeout(() => {
+      newReceipts.forEach((receipt, idx) => {
+        if (receipt.file.type.startsWith('image/')) {
+          analyzeReceipt(expenseId, startIndex + idx);
+        }
+      });
+    }, 100);
   };
 
   const removeReceipt = (expenseId: string, receiptIndex: number) => {
