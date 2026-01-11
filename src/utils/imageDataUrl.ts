@@ -38,7 +38,6 @@ export const blobToOrientedImageDataUrl = async (
 
   // Best effort: use createImageBitmap with EXIF orientation support.
   try {
-    // @ts-expect-error imageOrientation is supported in modern browsers
     const bitmap: ImageBitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
 
     let targetW = bitmap.width;
