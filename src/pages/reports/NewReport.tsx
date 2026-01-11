@@ -2452,17 +2452,11 @@ export default function NewReport() {
                                         </div>
                                       )}
                                     </div>
-                                    <div className="flex flex-col gap-2 mt-2">
-                                      {!receipt.analyzed && !receipt.analyzing && (
-                                        <Button
-                                          type="button"
-                                          size="default"
-                                          onClick={() => analyzeReceipt(expense.id, idx)}
-                                        >
-                                          ✨ אישור וניתוח
-                                        </Button>
-                                      )}
-                                    </div>
+                                    {!receipt.analyzed && !receipt.analyzing && (
+                                      <div className="text-xs text-muted-foreground mt-1 text-center">
+                                        ⏳ ממתין לניתוח...
+                                      </div>
+                                    )}
                                   </div>
                                 ))}
                               </div>
