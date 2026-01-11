@@ -40,6 +40,15 @@ p, h1, h2, h3, h4, h5, h6, span, a {
   overflow-wrap: break-word;
 }
 
+/* Hide scrollbar for horizontal scroll tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hebrew Business Travel Expense Report Design System */
 @layer base {
   :root {
