@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Users, Send } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import { ReportPdf } from "@/pdf/ReportPdf";
+import { blobToOrientedImageDataUrl } from "@/utils/imageDataUrl";
 
 interface AccountingManager {
   id: string;
@@ -110,16 +111,10 @@ export function SendToAccountingDialog({
         console.error('Failed to fetch image for base64:', url, response.status);
         return null;
       }
+
       const blob = await response.blob();
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => {
-          console.error('Error reading blob for base64:', url);
-          resolve(null);
-        };
-        reader.readAsDataURL(blob);
-      });
+      // Normalize EXIF orientation (phone camera) so react-pdf won't show rotated images.
+      return await blobToOrientedImageDataUrl(blob, { mimeType: 'image/jpeg', quality: 0.92, maxSize: 1800 });
     } catch (error) {
       console.error('Error converting image to base64:', error);
       return null;
