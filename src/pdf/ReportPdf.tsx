@@ -555,14 +555,19 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({ report, expenses, profile 
 
       {/* Receipt Pages - Start on new page */}
       {expenses.map((expense, expenseIndex) => {
-        // Include only image receipts with an actual embeddable src (data URL)
-        const imageReceipts =
-          expense.receipts?.filter(
-            (r) =>
-              !!r.file_url &&
-              (r.file_type === 'image' ||
-                r.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/))
-          ) || [];
+         // Include only image receipts with an actual embeddable src (data URL) + de-duplicate
+         const imageReceipts = Array.from(
+           new Map(
+             (expense.receipts ?? [])
+               .filter(
+                 (r) =>
+                   !!r.file_url &&
+                   (r.file_type === 'image' ||
+                     r.file_name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/))
+               )
+               .map((r) => [String(r.id ?? `${r.file_url}-${r.file_name}`), r])
+           ).values()
+         );
 
         if (imageReceipts.length === 0) return null;
 
