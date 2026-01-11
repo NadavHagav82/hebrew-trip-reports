@@ -163,58 +163,66 @@ export default function TravelPolicyBuilder() {
       <main className="container mx-auto px-4 pt-32 pb-6">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/40 dark:border-slate-700/40 p-1.5 shadow-sm">
-            <TabsList className="grid w-full grid-cols-7 h-auto bg-transparent gap-0.5">
-              <TabsTrigger 
-                value="dashboard" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-blue-600 data-[state=active]:dark:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-200/60 data-[state=active]:dark:border-blue-700/60 transition-all duration-200"
-              >
-                <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-blue-600 dark:group-data-[state=active]:text-blue-400" />
-                <span className="text-[10px] sm:text-xs font-medium">דשבורד</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="grades" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-violet-200/60 data-[state=active]:dark:border-violet-700/60 transition-all duration-200"
-              >
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-violet-600 dark:group-data-[state=active]:text-violet-400" />
-                <span className="text-[10px] sm:text-xs font-medium">דרגות</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="approvals" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-teal-600 data-[state=active]:dark:text-teal-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-teal-200/60 data-[state=active]:dark:border-teal-700/60 transition-all duration-200"
-              >
-                <GitBranch className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-teal-600 dark:group-data-[state=active]:text-teal-400" />
-                <span className="text-[10px] sm:text-xs font-medium">אישורים</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="categories" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-sky-600 data-[state=active]:dark:text-sky-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-sky-200/60 data-[state=active]:dark:border-sky-700/60 transition-all duration-200"
-              >
-                <Plane className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-sky-600 dark:group-data-[state=active]:text-sky-400" />
-                <span className="text-[10px] sm:text-xs font-medium">קטגוריות</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="restrictions" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-rose-600 data-[state=active]:dark:text-rose-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-rose-200/60 data-[state=active]:dark:border-rose-700/60 transition-all duration-200"
-              >
-                <Ban className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-rose-600 dark:group-data-[state=active]:text-rose-400" />
-                <span className="text-[10px] sm:text-xs font-medium">הגבלות</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="custom" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-amber-600 data-[state=active]:dark:text-amber-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-amber-200/60 data-[state=active]:dark:border-amber-700/60 transition-all duration-200"
-              >
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-amber-600 dark:group-data-[state=active]:text-amber-400" />
-                <span className="text-[10px] sm:text-xs font-medium">מותאם</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="preview" 
-                className="group flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-emerald-600 data-[state=active]:dark:text-emerald-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-emerald-200/60 data-[state=active]:dark:border-emerald-700/60 transition-all duration-200"
-              >
-                <Eye className="w-4 h-4 sm:w-5 sm:h-5 group-data-[state=active]:text-emerald-600 dark:group-data-[state=active]:text-emerald-400" />
-                <span className="text-[10px] sm:text-xs font-medium">תצוגה</span>
-              </TabsTrigger>
-            </TabsList>
+          {/* Mobile: Horizontal scroll menu */}
+          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/40 dark:border-slate-700/40 p-1.5 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto scrollbar-hide -mx-1.5 px-1.5">
+              <TabsList className="inline-flex min-w-full sm:grid sm:grid-cols-7 h-auto bg-transparent gap-1">
+                <TabsTrigger 
+                  value="dashboard" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-blue-600 data-[state=active]:dark:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-200/60 data-[state=active]:dark:border-blue-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <LayoutDashboard className="w-5 h-5 group-data-[state=active]:text-blue-600 dark:group-data-[state=active]:text-blue-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">דשבורד</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="grades" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-violet-600 data-[state=active]:dark:text-violet-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-violet-200/60 data-[state=active]:dark:border-violet-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <Users className="w-5 h-5 group-data-[state=active]:text-violet-600 dark:group-data-[state=active]:text-violet-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">דרגות</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="approvals" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-teal-600 data-[state=active]:dark:text-teal-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-teal-200/60 data-[state=active]:dark:border-teal-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <GitBranch className="w-5 h-5 group-data-[state=active]:text-teal-600 dark:group-data-[state=active]:text-teal-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">אישורים</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="categories" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-sky-600 data-[state=active]:dark:text-sky-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-sky-200/60 data-[state=active]:dark:border-sky-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <Plane className="w-5 h-5 group-data-[state=active]:text-sky-600 dark:group-data-[state=active]:text-sky-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">קטגוריות</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="restrictions" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-rose-600 data-[state=active]:dark:text-rose-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-rose-200/60 data-[state=active]:dark:border-rose-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <Ban className="w-5 h-5 group-data-[state=active]:text-rose-600 dark:group-data-[state=active]:text-rose-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">הגבלות</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="custom" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-amber-600 data-[state=active]:dark:text-amber-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-amber-200/60 data-[state=active]:dark:border-amber-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <Sparkles className="w-5 h-5 group-data-[state=active]:text-amber-600 dark:group-data-[state=active]:text-amber-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">מותאם</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="preview" 
+                  className="group flex flex-col items-center gap-1 py-3 px-4 sm:px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/60 data-[state=active]:bg-white data-[state=active]:dark:bg-slate-800 data-[state=active]:text-emerald-600 data-[state=active]:dark:text-emerald-400 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-emerald-200/60 data-[state=active]:dark:border-emerald-700/60 transition-all duration-200 min-w-[70px] shrink-0"
+                >
+                  <Eye className="w-5 h-5 group-data-[state=active]:text-emerald-600 dark:group-data-[state=active]:text-emerald-400" />
+                  <span className="text-xs font-medium whitespace-nowrap">תצוגה</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            {/* Scroll indicator for mobile */}
+            <div className="sm:hidden flex justify-center mt-1.5 gap-1">
+              <div className="w-8 h-0.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+              <div className="w-1.5 h-0.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+            </div>
           </div>
 
           <TabsContent value="dashboard">
