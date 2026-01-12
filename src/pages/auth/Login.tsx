@@ -15,19 +15,21 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<
-    'checking' | 'ok' | 'error'
-  >('checking');
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'ok' | 'error'>(
+    'checking'
+  );
+  const [backendDetails, setBackendDetails] = useState<string>('');
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const withTimeout = async <T,>(promiseLike: PromiseLike<T>, ms: number): Promise<T> => {
+  const withTimeout = async <T,>(
+    promiseLike: PromiseLike<T>,
+    ms: number
+  ): Promise<T> => {
     return await Promise.race([
       Promise.resolve(promiseLike),
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), ms)
-      ),
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
     ]);
   };
 
@@ -36,11 +38,38 @@ export default function Login() {
 
     const checkBackend = async () => {
       try {
-        // Simple, cheap check to verify the auth service is reachable.
-        await withTimeout(supabase.auth.getSession(), 12_000);
-        if (!cancelled) setBackendStatus('ok');
-      } catch {
-        if (!cancelled) setBackendStatus('error');
+        // 1) SDK-level check (returns {data,error} even when reachable)
+        const res = await withTimeout(supabase.auth.getSession(), 12_000);
+        if (res && typeof res === 'object' && 'error' in (res as any) && (res as any).error) {
+          throw (res as any).error;
+        }
+
+        // 2) Direct health endpoint check (catches DNS/CORS/network issues clearly)
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`;
+        const r = await withTimeout(
+          fetch(url, {
+            method: 'GET',
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }),
+          12_000
+        );
+        if (!r.ok) {
+          throw new Error(`health:${r.status}`);
+        }
+
+        if (!cancelled) {
+          setBackendStatus('ok');
+          setBackendDetails('');
+        }
+      } catch (e: any) {
+        const msg =
+          e?.message || (typeof e === 'string' ? e : 'לא ניתן להגיע לשרת האימות');
+        if (!cancelled) {
+          setBackendStatus('error');
+          setBackendDetails(msg);
+        }
       }
     };
 
@@ -150,6 +179,11 @@ export default function Login() {
               : backendStatus === 'ok'
                 ? 'חיבור לשרת תקין'
                 : 'לא מצליח להתחבר לשרת כרגע (נסה רענון/רשת אחרת)'}
+            {backendStatus === 'error' && backendDetails ? (
+              <div className="mt-1 text-[11px] text-muted-foreground/80 break-words">
+                פרטים: {backendDetails}
+              </div>
+            ) : null}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
