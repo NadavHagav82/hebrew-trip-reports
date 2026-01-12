@@ -353,6 +353,20 @@ export default function NewReport() {
     }
   };
 
+  // Small helper to prevent mobile hangs (network stalls) from freezing UI forever
+  const withTimeout = async <T,>(
+    promise: Promise<T>,
+    ms: number,
+    label: string
+  ): Promise<T> => {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+      ),
+    ]);
+  };
+
   // Auto-save function - saves report and expenses as draft
   const autoSaveReport = useCallback(async () => {
     // Don't auto-save if no user or missing required fields
@@ -367,219 +381,239 @@ export default function NewReport() {
 
     try {
       setAutoSaving(true);
-      let currentReportId = reportId;
 
-      if (currentReportId) {
-        // Update existing report
-        const { error } = await supabase
-          .from('reports')
-          .update({
-            trip_destination: tripDestination,
-            trip_start_date: tripStartDate,
-            trip_end_date: tripEndDate,
-            trip_purpose: tripPurpose,
-            notes: reportNotes,
-            daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
-            allowance_days: allowanceType === 'custom' ? customAllowanceDays : (allowanceType === 'full' ? (() => {
-              const start = new Date(tripStartDate);
-              const end = new Date(tripEndDate);
-              const diffTime = Math.abs(end.getTime() - start.getTime());
-              return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            })() : null),
-            total_amount_ils: expenses.reduce((sum, exp) => sum + exp.amount_in_ils, 0),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', currentReportId);
+      // Wrap the whole autosave flow with a timeout so a single stuck upload doesn't block forever.
+      await withTimeout(
+        (async () => {
+          let currentReportId = reportId;
 
-        if (error) throw error;
-      } else {
-        // Create new draft report
-        const { data: newReport, error } = await supabase
-          .from('reports')
-          .insert({
-            user_id: user.id,
-            trip_destination: tripDestination,
-            trip_start_date: tripStartDate,
-            trip_end_date: tripEndDate,
-            trip_purpose: tripPurpose || 'טיוטה',
-            notes: reportNotes,
-            daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
-            allowance_days: allowanceType === 'custom' ? customAllowanceDays : (allowanceType === 'full' ? (() => {
-              const start = new Date(tripStartDate);
-              const end = new Date(tripEndDate);
-              const diffTime = Math.abs(end.getTime() - start.getTime());
-              return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            })() : null),
-            status: 'draft',
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        
-        // Set the report ID for future updates
-        currentReportId = newReport.id;
-        setReportId(newReport.id);
-        setIsEditMode(true);
-        
-        // Update URL without full navigation
-        window.history.replaceState(null, '', `/reports/${newReport.id}/edit`);
-      }
-
-      // Auto-save expenses if we have a report ID
-      if (currentReportId) {
-        // Delete removed expenses from DB
-        if (deletedExpenseDbIds.current.size > 0) {
-          const idsToDelete = Array.from(deletedExpenseDbIds.current);
-          await supabase
-            .from('expenses')
-            .delete()
-            .in('id', idsToDelete);
-          deletedExpenseDbIds.current.clear();
-        }
-
-        // Save/update expenses (only those with minimum data)
-        for (const exp of expenses) {
-          // Only auto-save expenses that have at least some data
-          const hasMinimumData = exp.expense_date || exp.description || exp.amount > 0;
-          if (!hasMinimumData) continue;
-
-          let effectiveExpenseId = exp.dbId;
-
-          if (exp.dbId) {
-            // Update existing expense
-            await supabase
-              .from('expenses')
+          if (currentReportId) {
+            // Update existing report
+            const { error } = await supabase
+              .from('reports')
               .update({
-                expense_date: exp.expense_date || new Date().toISOString().split('T')[0],
-                category: exp.category,
-                description: exp.description,
-                amount: exp.amount,
-                currency: exp.currency as any,
-                amount_in_ils: exp.amount_in_ils,
-                notes: exp.notes || null,
-                payment_method: (exp.payment_method as any) || 'out_of_pocket',
+                trip_destination: tripDestination,
+                trip_start_date: tripStartDate,
+                trip_end_date: tripEndDate,
+                trip_purpose: tripPurpose,
+                notes: reportNotes,
+                daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
+                allowance_days:
+                  allowanceType === 'custom'
+                    ? customAllowanceDays
+                    : allowanceType === 'full'
+                      ? (() => {
+                          const start = new Date(tripStartDate);
+                          const end = new Date(tripEndDate);
+                          const diffTime = Math.abs(end.getTime() - start.getTime());
+                          return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                        })()
+                      : null,
+                total_amount_ils: expenses.reduce((sum, exp) => sum + exp.amount_in_ils, 0),
+                updated_at: new Date().toISOString(),
               })
-              .eq('id', exp.dbId);
+              .eq('id', currentReportId);
+
+            if (error) throw error;
           } else {
-            // Insert new expense
-            const { data: newExpense, error: expenseError } = await supabase
-              .from('expenses')
+            // Create new draft report
+            const { data: newReport, error } = await supabase
+              .from('reports')
               .insert({
-                report_id: currentReportId,
-                expense_date: exp.expense_date || new Date().toISOString().split('T')[0],
-                category: exp.category,
-                description: exp.description || 'הוצאה חדשה',
-                amount: exp.amount,
-                currency: exp.currency as any,
-                amount_in_ils: exp.amount_in_ils,
-                notes: exp.notes || null,
-                payment_method: (exp.payment_method as any) || 'out_of_pocket',
+                user_id: user.id,
+                trip_destination: tripDestination,
+                trip_start_date: tripStartDate,
+                trip_end_date: tripEndDate,
+                trip_purpose: tripPurpose || 'טיוטה',
+                notes: reportNotes,
+                daily_allowance: allowanceType === 'none' || !allowanceType ? null : dailyAllowance,
+                allowance_days:
+                  allowanceType === 'custom'
+                    ? customAllowanceDays
+                    : allowanceType === 'full'
+                      ? (() => {
+                          const start = new Date(tripStartDate);
+                          const end = new Date(tripEndDate);
+                          const diffTime = Math.abs(end.getTime() - start.getTime());
+                          return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                        })()
+                      : null,
+                status: 'draft',
               })
               .select()
               .single();
 
-            if (expenseError) throw expenseError;
-            effectiveExpenseId = newExpense.id;
+            if (error) throw error;
 
-            // Update local expense with DB ID and mark as saved
-            setExpenses(prev => prev.map(e =>
-              e.id === exp.id ? { ...e, dbId: newExpense.id } : e
-            ));
+            // Set the report ID for future updates
+            currentReportId = newReport.id;
+            setReportId(newReport.id);
+            setIsEditMode(true);
+
+            // Update URL without full navigation
+            window.history.replaceState(null, '', `/reports/${newReport.id}/edit`);
           }
 
-          // Upload NEW receipts (best-effort) so they won't "disappear" on re-entry.
-          if (effectiveExpenseId && exp.receipts?.length) {
-            for (const receipt of exp.receipts) {
-              if (!receipt.file) continue; // already uploaded/existing
+          // Auto-save expenses if we have a report ID
+          if (currentReportId) {
+            // Delete removed expenses from DB
+            if (deletedExpenseDbIds.current.size > 0) {
+              const idsToDelete = Array.from(deletedExpenseDbIds.current);
+              await supabase.from('expenses').delete().in('id', idsToDelete);
+              deletedExpenseDbIds.current.clear();
+            }
 
-              try {
-                const fileExt = receipt.file.name.split('.').pop();
-                const fileName = `${user.id}/${effectiveExpenseId}/${Date.now()}.${fileExt}`;
+            // Save/update expenses (only those with minimum data)
+            for (const exp of expenses) {
+              // Only auto-save expenses that have at least some data
+              const hasMinimumData = exp.expense_date || exp.description || exp.amount > 0;
+              if (!hasMinimumData) continue;
 
-                const { error: uploadError } = await supabase.storage
-                  .from('receipts')
-                  .upload(fileName, receipt.file);
-                if (uploadError) throw uploadError;
+              let effectiveExpenseId = exp.dbId;
 
-                const { data: receiptRow, error: receiptDbError } = await supabase
-                  .from('receipts')
+              if (exp.dbId) {
+                // Update existing expense
+                await supabase
+                  .from('expenses')
+                  .update({
+                    expense_date: exp.expense_date || new Date().toISOString().split('T')[0],
+                    category: exp.category,
+                    description: exp.description,
+                    amount: exp.amount,
+                    currency: exp.currency as any,
+                    amount_in_ils: exp.amount_in_ils,
+                    notes: exp.notes || null,
+                    payment_method: (exp.payment_method as any) || 'out_of_pocket',
+                  })
+                  .eq('id', exp.dbId);
+              } else {
+                // Insert new expense
+                const { data: newExpense, error: expenseError } = await supabase
+                  .from('expenses')
                   .insert({
-                    expense_id: effectiveExpenseId,
-                    file_name: receipt.file.name,
-                    file_url: fileName,
-                    file_type: receipt.file.type.startsWith('image') ? 'image' : 'pdf',
-                    file_size: receipt.file.size,
+                    report_id: currentReportId,
+                    expense_date: exp.expense_date || new Date().toISOString().split('T')[0],
+                    category: exp.category,
+                    description: exp.description || 'הוצאה חדשה',
+                    amount: exp.amount,
+                    currency: exp.currency as any,
+                    amount_in_ils: exp.amount_in_ils,
+                    notes: exp.notes || null,
+                    payment_method: (exp.payment_method as any) || 'out_of_pocket',
                   })
-                  .select('id')
+                  .select()
                   .single();
-                if (receiptDbError) throw receiptDbError;
 
-                let preview = '';
-                try {
-                  const { data: signedData } = await supabase.storage
-                    .from('receipts')
-                    .createSignedUrl(fileName, 60 * 60);
-                  const signedUrl = (signedData as any)?.signedUrl as string | undefined;
-                  preview = signedUrl
-                    ? signedUrl.startsWith('http')
-                      ? signedUrl
-                      : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`
-                    : '';
-                } catch {
-                  // ignore
-                }
+                if (expenseError) throw expenseError;
+                effectiveExpenseId = newExpense.id;
 
-                if (!preview) {
-                  const { data } = supabase.storage.from('receipts').getPublicUrl(fileName);
-                  preview = data.publicUrl;
-                }
-
-                // Replace local receipt with "existing" receipt so we don't upload it again
-                setExpenses((prev) =>
-                  prev.map((e) => {
-                    if (e.id !== exp.id) return e;
-                    return {
-                      ...e,
-                      receipts: e.receipts.map((r) => {
-                        const sameReceipt =
-                          (receipt.localId && r.localId === receipt.localId) || r === receipt;
-
-                        return sameReceipt
-                          ? {
-                              localId: receipt.localId,
-                              existingId: receiptRow?.id,
-                              fileUrl: fileName,
-                              fileName: receipt.file?.name,
-                              fileType: receipt.file?.type,
-                              fileSize: receipt.file?.size,
-                              preview,
-                              uploading: false,
-                              file: undefined,
-                            }
-                          : r;
-                      }),
-                    };
-                  })
-                );
-
-              } catch (e) {
-                console.error('Receipt upload failed during auto-save:', e);
+                // Update local expense with DB ID and mark as saved
+                setExpenses((prev) => prev.map((e) => (e.id === exp.id ? { ...e, dbId: newExpense.id } : e)));
               }
+
+              // Upload NEW receipts (best-effort) so they won't "disappear" on re-entry.
+              if (effectiveExpenseId && exp.receipts?.length) {
+                for (const receipt of exp.receipts) {
+                  if (!receipt.file) continue; // already uploaded/existing
+
+                  try {
+                    const fileExt = receipt.file.name.split('.').pop();
+                    const fileName = `${user.id}/${effectiveExpenseId}/${Date.now()}.${fileExt}`;
+
+                    const { error: uploadError } = await withTimeout(
+                      supabase.storage.from('receipts').upload(fileName, receipt.file),
+                      30_000,
+                      'Receipt upload'
+                    );
+                    if (uploadError) throw uploadError;
+
+                    const { data: receiptRow, error: receiptDbError } = await withTimeout(
+                      supabase
+                        .from('receipts')
+                        .insert({
+                          expense_id: effectiveExpenseId,
+                          file_name: receipt.file.name,
+                          file_url: fileName,
+                          file_type: receipt.file.type.startsWith('image') ? 'image' : 'pdf',
+                          file_size: receipt.file.size,
+                        })
+                        .select('id')
+                        .single(),
+                      20_000,
+                      'Receipt DB insert'
+                    );
+                    if (receiptDbError) throw receiptDbError;
+
+                    let preview = '';
+                    try {
+                      const { data: signedData } = await withTimeout(
+                        supabase.storage.from('receipts').createSignedUrl(fileName, 60 * 60),
+                        15_000,
+                        'Signed URL'
+                      );
+                      const signedUrl = (signedData as any)?.signedUrl as string | undefined;
+                      preview = signedUrl
+                        ? signedUrl.startsWith('http')
+                          ? signedUrl
+                          : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`
+                        : '';
+                    } catch {
+                      // ignore
+                    }
+
+                    if (!preview) {
+                      const { data } = supabase.storage.from('receipts').getPublicUrl(fileName);
+                      preview = data.publicUrl;
+                    }
+
+                    // Replace local receipt with "existing" receipt so we don't upload it again
+                    setExpenses((prev) =>
+                      prev.map((e) => {
+                        if (e.id !== exp.id) return e;
+                        return {
+                          ...e,
+                          receipts: e.receipts.map((r) => {
+                            const sameReceipt =
+                              (receipt.localId && r.localId === receipt.localId) || r === receipt;
+
+                            return sameReceipt
+                              ? {
+                                  localId: receipt.localId,
+                                  existingId: receiptRow?.id,
+                                  fileUrl: fileName,
+                                  fileName: receipt.file?.name,
+                                  fileType: receipt.file?.type,
+                                  fileSize: receipt.file?.size,
+                                  preview,
+                                  uploading: false,
+                                  file: undefined,
+                                }
+                              : r;
+                          }),
+                        };
+                      })
+                    );
+                  } catch (e) {
+                    console.error('Receipt upload failed during auto-save:', e);
+                  }
+                }
+              }
+
+              // Clear pending status for successfully saved expenses
+              setPendingSaveExpenses((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(exp.id);
+                return newSet;
+              });
             }
           }
 
-          // Clear pending status for successfully saved expenses
-          setPendingSaveExpenses(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(exp.id);
-            return newSet;
-          });
-        }
-      }
-
-      setLastAutoSave(new Date());
-      hasUnsavedChanges.current = false;
+          setLastAutoSave(new Date());
+          hasUnsavedChanges.current = false;
+        })(),
+        60_000,
+        'Auto-save'
+      );
     } catch (error) {
       console.error('Auto-save failed:', error);
       // Don't show error toast for auto-save failures - just log it
@@ -1181,8 +1215,8 @@ export default function NewReport() {
     }
 
     // Mark as analyzing (functional update avoids stale state)
-    setExpenses(prevExpenses =>
-      prevExpenses.map(exp => {
+    setExpenses((prevExpenses) =>
+      prevExpenses.map((exp) => {
         if (exp.id !== expenseId) return exp;
         if (!exp.receipts[receiptIndex]) return exp;
         return {
@@ -1205,12 +1239,18 @@ export default function NewReport() {
       reader.readAsDataURL(file);
       const imageBase64 = await base64Promise;
 
-      const { data, error } = await supabase.functions.invoke('analyze-receipt', {
-        body: {
-          imageBase64,
-          tripDestination: tripDestination || '',
-        },
-      });
+      // Timeout so we never get stuck forever on mobile networks
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('analyze-receipt', {
+          body: {
+            imageBase64,
+            tripDestination: tripDestination || '',
+          },
+        }),
+        45_000,
+        'Receipt analysis'
+      );
+
       if (error) throw error;
 
       if (data?.data) {
@@ -1219,32 +1259,36 @@ export default function NewReport() {
         // Best-effort log for analytics/debugging
         let analysisLogId: string | undefined;
         try {
-          const { data: logData } = await supabase
-            .from('receipt_analysis_logs')
-            .insert({
-              user_id: user?.id,
-              report_id: reportId || null,
-              image_file_name: file.name,
-              image_file_size: file.size,
-              extracted_date: date || null,
-              extracted_amount: amount || null,
-              extracted_currency: currency || null,
-              extracted_category: category || null,
-              extracted_description: description || null,
-              raw_ai_response: data.data,
-              trip_destination: tripDestination || null,
-              device_info: navigator.userAgent,
-            })
-            .select('id')
-            .single();
+          const { data: logData } = await withTimeout(
+            supabase
+              .from('receipt_analysis_logs')
+              .insert({
+                user_id: user?.id,
+                report_id: reportId || null,
+                image_file_name: file.name,
+                image_file_size: file.size,
+                extracted_date: date || null,
+                extracted_amount: amount || null,
+                extracted_currency: currency || null,
+                extracted_category: category || null,
+                extracted_description: description || null,
+                raw_ai_response: data.data,
+                trip_destination: tripDestination || null,
+                device_info: navigator.userAgent,
+              })
+              .select('id')
+              .single(),
+            15_000,
+            'Analysis log insert'
+          );
           analysisLogId = logData?.id;
         } catch (logError) {
           console.error('Failed to log receipt analysis:', logError);
         }
 
         // Apply extracted fields + mark analyzed
-        setExpenses(prevExpenses =>
-          prevExpenses.map(exp => {
+        setExpenses((prevExpenses) =>
+          prevExpenses.map((exp) => {
             if (exp.id !== expenseId) return exp;
             if (!exp.receipts[receiptIndex]) return exp;
 
@@ -1277,17 +1321,33 @@ export default function NewReport() {
           title: 'הקבלה נותחה בהצלחה! ✨',
           description: 'הפרטים מולאו אוטומטית',
         });
+      } else {
+        // Make sure we always clear the spinner
+        setExpenses((prevExpenses) =>
+          prevExpenses.map((exp) => {
+            if (exp.id !== expenseId) return exp;
+            if (!exp.receipts[receiptIndex]) return exp;
+            return {
+              ...exp,
+              receipts: exp.receipts.map((r, idx) =>
+                idx === receiptIndex ? { ...r, analyzing: false } : r
+              ),
+            };
+          })
+        );
       }
     } catch (error: any) {
       console.error('Error analyzing receipt:', error);
 
-      setExpenses(prevExpenses =>
-        prevExpenses.map(exp => {
+      setExpenses((prevExpenses) =>
+        prevExpenses.map((exp) => {
           if (exp.id !== expenseId) return exp;
           if (!exp.receipts[receiptIndex]) return exp;
           return {
             ...exp,
-            receipts: exp.receipts.map((r, idx) => (idx === receiptIndex ? { ...r, analyzing: false } : r)),
+            receipts: exp.receipts.map((r, idx) =>
+              idx === receiptIndex ? { ...r, analyzing: false } : r
+            ),
           };
         })
       );
