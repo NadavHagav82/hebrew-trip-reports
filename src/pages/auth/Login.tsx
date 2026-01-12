@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,18 +15,40 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<
+    'checking' | 'ok' | 'error'
+  >('checking');
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+  const withTimeout = async <T,>(promiseLike: PromiseLike<T>, ms: number): Promise<T> => {
     return await Promise.race([
-      promise,
+      Promise.resolve(promiseLike),
       new Promise<T>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), ms)
       ),
     ]);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkBackend = async () => {
+      try {
+        // Simple, cheap check to verify the auth service is reachable.
+        await withTimeout(supabase.auth.getSession(), 12_000);
+        if (!cancelled) setBackendStatus('ok');
+      } catch {
+        if (!cancelled) setBackendStatus('error');
+      }
+    };
+
+    checkBackend();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,15 +72,29 @@ export default function Login() {
         const msg = typeof error.message === 'string' ? error.message : '';
         const lower = msg.toLowerCase();
         const isNetworkError = lower.includes('failed to fetch') || lower.includes('network');
+        const isEmailNotConfirmed = lower.includes('email not confirmed');
 
         toast({
           title: isNetworkError ? 'שגיאת שרת' : 'שגיאת התחברות',
-          description: isNetworkError
-            ? 'לא הצלחנו להתחבר לשרת. נסה שוב בעוד רגע (לעיתים לוקח זמן להתעורר).'
-            : 'שם משתמש או סיסמה שגויים',
+          description: isEmailNotConfirmed
+            ? 'האימייל עדיין לא אומת. בדוק את תיבת הדואר ואמת את החשבון.'
+            : isNetworkError
+              ? 'לא הצלחנו להתחבר לשרת. נסה שוב בעוד רגע.'
+              : 'שם משתמש או סיסמה שגויים',
           variant: 'destructive',
         });
       } else {
+        // ודאות שיש סשן לפני ניווט (עוזר לזהות בעיות חיבור/Storage במובייל)
+        const { data } = await withTimeout(supabase.auth.getSession(), 12_000);
+        if (!data?.session) {
+          toast({
+            title: 'שגיאת התחברות',
+            description: 'ההתחברות בוצעה אך לא נוצר סשן. נסה לפתוח שוב את הדפדפן/לכבות מצב פרטי ולנסות שוב.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         navigate('/');
       }
     } catch (err: any) {
@@ -107,6 +144,14 @@ export default function Login() {
         </CardHeader>
         
         <CardContent className="px-6 sm:px-8 pb-8 relative">
+          <div className="mb-4 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            {backendStatus === 'checking'
+              ? 'בודק חיבור לשרת...'
+              : backendStatus === 'ok'
+                ? 'חיבור לשרת תקין'
+                : 'לא מצליח להתחבר לשרת כרגע (נסה רענון/רשת אחרת)'}
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">אימייל</Label>
