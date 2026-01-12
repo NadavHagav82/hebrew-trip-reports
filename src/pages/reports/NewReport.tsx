@@ -354,13 +354,14 @@ export default function NewReport() {
   };
 
   // Small helper to prevent mobile hangs (network stalls) from freezing UI forever
+  // Accepts PromiseLike (e.g., PostgrestBuilder) or Promise
   const withTimeout = async <T,>(
-    promise: Promise<T>,
+    promiseLike: PromiseLike<T>,
     ms: number,
     label: string
   ): Promise<T> => {
     return await Promise.race([
-      promise,
+      Promise.resolve(promiseLike),
       new Promise<T>((_, reject) =>
         setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
       ),
