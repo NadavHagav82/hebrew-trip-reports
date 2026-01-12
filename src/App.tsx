@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import InstallBanner from "./components/InstallBanner";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
 // Keep auth pages eager (fastest route to a working login)
 import Login from "./pages/auth/Login";
@@ -77,86 +78,88 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <InstallBanner />
-          <Suspense
-            fallback={
-              <div className="min-h-[50vh] flex items-center justify-center text-muted-foreground">
-                טוען...
-              </div>
-            }
-          >
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/auth/login" element={<Login />} />
-              <Route path="/auth/register" element={<RegisterSelection />} />
-              <Route path="/auth/register/employee" element={<RegisterEmployee />} />
-              <Route path="/auth/register/manager" element={<RegisterManager />} />
-              <Route path="/auth/register/independent" element={<RegisterIndependent />} />
-              <Route path="/auth/register/bootstrap" element={<RegisterBootstrap />} />
-              <Route path="/auth/register/code" element={<RegisterWithCode />} />
-              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-              <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/reports/new" element={<NewReport />} />
-              <Route path="/reports/edit/:id" element={<NewReport />} />
-              <Route path="/reports/:id" element={<ViewReport />} />
-              <Route path="/reports/view/:id" element={<ViewReport />} />
-              <Route path="/approve-report/:token" element={<ApproveReport />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/roles" element={<ManageRoles />} />
-              <Route path="/admin/manage-users" element={<ManageUsersRoles />} />
-              <Route path="/admin/organizations" element={<ManageOrganizations />} />
-              <Route path="/admin/org-dashboard" element={<OrganizationDashboard />} />
-              <Route path="/admin/org-users" element={<OrgAdminUsers />} />
-              <Route path="/manager/dashboard" element={<ManagerDashboard />} />
-              <Route path="/manager/team" element={<MyTeam />} />
-              <Route path="/manager/stats" element={<ManagerStats />} />
-              <Route path="/manager/personal-stats" element={<ManagerPersonalStats />} />
-              <Route path="/manager/advanced-reports" element={<AdvancedReports />} />
-              <Route path="/manager/travel-stats" element={<ManagerTravelStats />} />
-              <Route path="/accounting" element={<AccountingHome />} />
-              <Route path="/accounting/home" element={<AccountingHome />} />
-              <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
-              <Route path="/accounting/stats" element={<AccountingStats />} />
-              <Route
-                path="/accounting/organizational-analytics"
-                element={<OrganizationalAnalytics />}
-              />
-              <Route
-                path="/accounting/reimbursements"
-                element={<ReimbursementSummary />}
-              />
-              <Route path="/accounting/users" element={<ManageUsers />} />
-              <Route path="/accounting/templates" element={<ExpenseTemplates />} />
-              <Route
-                path="/accounting/bootstrap-tokens"
-                element={<BootstrapTokenManagement />}
-              />
-              <Route path="/accounting/ai-analytics" element={<AIAccuracyAnalytics />} />
-              <Route path="/analytics" element={<ExpenseAnalytics />} />
-              <Route path="/orgadmin" element={<OrgAdminDashboard />} />
-              <Route
-                path="/orgadmin/invitation-codes"
-                element={<InvitationCodesManagement />}
-              />
-              <Route path="/orgadmin/users" element={<OrgUsersManagement />} />
-              <Route path="/orgadmin/analytics" element={<OrgAnalytics />} />
-              <Route path="/orgadmin/travel-policy" element={<TravelPolicyBuilder />} />
-              <Route path="/my-travel-policy" element={<MyTravelPolicy />} />
-              <Route path="/travel-requests" element={<TravelRequestsList />} />
-              <Route path="/travel-requests/new" element={<NewTravelRequest />} />
-              <Route path="/travel-requests/:id" element={<TravelRequestDetails />} />
-              <Route path="/travel-requests/pending" element={<PendingTravelApprovals />} />
-              <Route path="/travel/pending-approvals" element={<PendingTravelApprovals />} />
-              <Route
-                path="/travel/my-approval-history"
-                element={<MyApprovalHistory />}
-              />
-              <Route path="/approved-travels" element={<ApprovedTravels />} />
-              <Route path="/install" element={<InstallApp />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <AppErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="min-h-[50vh] flex items-center justify-center text-muted-foreground">
+                  טוען...
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/auth/login" element={<Login />} />
+                <Route path="/auth/register" element={<RegisterSelection />} />
+                <Route path="/auth/register/employee" element={<RegisterEmployee />} />
+                <Route path="/auth/register/manager" element={<RegisterManager />} />
+                <Route path="/auth/register/independent" element={<RegisterIndependent />} />
+                <Route path="/auth/register/bootstrap" element={<RegisterBootstrap />} />
+                <Route path="/auth/register/code" element={<RegisterWithCode />} />
+                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/reports/new" element={<NewReport />} />
+                <Route path="/reports/edit/:id" element={<NewReport />} />
+                <Route path="/reports/:id" element={<ViewReport />} />
+                <Route path="/reports/view/:id" element={<ViewReport />} />
+                <Route path="/approve-report/:token" element={<ApproveReport />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/roles" element={<ManageRoles />} />
+                <Route path="/admin/manage-users" element={<ManageUsersRoles />} />
+                <Route path="/admin/organizations" element={<ManageOrganizations />} />
+                <Route path="/admin/org-dashboard" element={<OrganizationDashboard />} />
+                <Route path="/admin/org-users" element={<OrgAdminUsers />} />
+                <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+                <Route path="/manager/team" element={<MyTeam />} />
+                <Route path="/manager/stats" element={<ManagerStats />} />
+                <Route path="/manager/personal-stats" element={<ManagerPersonalStats />} />
+                <Route path="/manager/advanced-reports" element={<AdvancedReports />} />
+                <Route path="/manager/travel-stats" element={<ManagerTravelStats />} />
+                <Route path="/accounting" element={<AccountingHome />} />
+                <Route path="/accounting/home" element={<AccountingHome />} />
+                <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
+                <Route path="/accounting/stats" element={<AccountingStats />} />
+                <Route
+                  path="/accounting/organizational-analytics"
+                  element={<OrganizationalAnalytics />}
+                />
+                <Route
+                  path="/accounting/reimbursements"
+                  element={<ReimbursementSummary />}
+                />
+                <Route path="/accounting/users" element={<ManageUsers />} />
+                <Route path="/accounting/templates" element={<ExpenseTemplates />} />
+                <Route
+                  path="/accounting/bootstrap-tokens"
+                  element={<BootstrapTokenManagement />}
+                />
+                <Route path="/accounting/ai-analytics" element={<AIAccuracyAnalytics />} />
+                <Route path="/analytics" element={<ExpenseAnalytics />} />
+                <Route path="/orgadmin" element={<OrgAdminDashboard />} />
+                <Route
+                  path="/orgadmin/invitation-codes"
+                  element={<InvitationCodesManagement />}
+                />
+                <Route path="/orgadmin/users" element={<OrgUsersManagement />} />
+                <Route path="/orgadmin/analytics" element={<OrgAnalytics />} />
+                <Route path="/orgadmin/travel-policy" element={<TravelPolicyBuilder />} />
+                <Route path="/my-travel-policy" element={<MyTravelPolicy />} />
+                <Route path="/travel-requests" element={<TravelRequestsList />} />
+                <Route path="/travel-requests/new" element={<NewTravelRequest />} />
+                <Route path="/travel-requests/:id" element={<TravelRequestDetails />} />
+                <Route path="/travel-requests/pending" element={<PendingTravelApprovals />} />
+                <Route path="/travel/pending-approvals" element={<PendingTravelApprovals />} />
+                <Route
+                  path="/travel/my-approval-history"
+                  element={<MyApprovalHistory />}
+                />
+                <Route path="/approved-travels" element={<ApprovedTravels />} />
+                <Route path="/install" element={<InstallApp />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AppErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
