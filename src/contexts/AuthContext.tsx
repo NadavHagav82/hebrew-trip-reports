@@ -111,11 +111,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    // Retry a couple times on transient backend timeouts (e.g. 504 / request_timeout)
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (!error) return { error: null };
+
+      const msg = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+      const transient =
+        msg.includes('504') ||
+        msg.includes('request_timeout') ||
+        msg.includes('context deadline exceeded') ||
+        msg.includes('timeout') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('network');
+
+      if (!transient || attempt === 3) {
+        return { error };
+      }
+
+      await sleep(600 * attempt);
+    }
+
+    return { error: new Error('Unknown sign-in error') };
   };
 
   const signUp = async (email: string, password: string, userData: {
