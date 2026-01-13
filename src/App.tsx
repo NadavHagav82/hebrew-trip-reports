@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import InstallBanner from "./components/InstallBanner";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { RequireAuth } from "./components/RequireAuth";
 
 // Keep auth pages eager (fastest route to a working login)
 import Login from "./pages/auth/Login";
@@ -87,8 +88,8 @@ const App = () => (
               }
             >
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+                <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/register" element={<RegisterSelection />} />
                 <Route path="/auth/register/employee" element={<RegisterEmployee />} />
