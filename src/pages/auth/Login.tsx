@@ -274,6 +274,15 @@ export default function Login() {
                 הקמה ראשונית
               </Link>
             </div>
+            <div className="mt-4 text-center">
+              <Link 
+                to="/about" 
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <span>📋</span>
+                <span>אודות המערכת</span>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
