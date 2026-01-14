@@ -68,6 +68,7 @@ const MyApprovalHistory = lazy(() => import("./pages/travel/MyApprovalHistory"))
 
 const InstallApp = lazy(() => import("./pages/InstallApp"));
 const AboutSystem = lazy(() => import("./pages/AboutSystem"));
+const DatabaseDiagram = lazy(() => import("./pages/admin/DatabaseDiagram"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -158,7 +159,9 @@ const App = () => (
                 <Route path="/approved-travels" element={<ApprovedTravels />} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/about" element={<AboutSystem />} />
+                <Route path="/admin/database-diagram" element={<DatabaseDiagram />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
