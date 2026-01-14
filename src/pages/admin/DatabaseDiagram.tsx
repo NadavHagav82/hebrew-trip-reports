@@ -1,10 +1,117 @@
+import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Database, Link, Key, Shield, Table2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Database, Link, Key, Shield, Table2, FileImage, FileText, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+
+interface Column {
+  name: string;
+  type: string;
+  pk?: boolean;
+  fk?: string;
+}
+
+interface TableData {
+  name: string;
+  description: string;
+  color: string;
+  columns: Column[];
+  rls: string[];
+}
+
+interface Relationship {
+  from: string;
+  to: string;
+  label: string;
+}
+
+interface EnumType {
+  name: string;
+  values: string[];
+}
 
 const DatabaseDiagram = () => {
-  const tables = [
+  const navigate = useNavigate();
+  const diagramRef = useRef<HTMLDivElement>(null);
+
+  const exportAsPNG = async () => {
+    if (!diagramRef.current) return;
+    
+    const toastId = toast.loading("מייצא כ-PNG...");
+    try {
+      const canvas = await html2canvas(diagramRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      
+      const link = document.createElement("a");
+      link.download = "database-diagram.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      
+      toast.dismiss(toastId);
+      toast.success("הקובץ יורד בהצלחה!");
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error("שגיאה בייצוא הקובץ");
+      console.error(error);
+    }
+  };
+
+  const exportAsPDF = async () => {
+    if (!diagramRef.current) return;
+    
+    const toastId = toast.loading("מייצא כ-PDF...");
+    try {
+      const canvas = await html2canvas(diagramRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+      
+      const imgWidth = 190;
+      const pageHeight = 277;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 10;
+
+      pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save("database-diagram.pdf");
+      
+      toast.dismiss(toastId);
+      toast.success("הקובץ יורד בהצלחה!");
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error("שגיאה בייצוא הקובץ");
+      console.error(error);
+    }
+  };
+
+  const tables: TableData[] = [
     {
       name: "profiles",
       description: "פרופילי משתמשים",
@@ -265,7 +372,7 @@ const DatabaseDiagram = () => {
     },
   ];
 
-  const relationships = [
+  const relationships: Relationship[] = [
     { from: "profiles", to: "organizations", label: "שייך ל" },
     { from: "profiles", to: "profiles", label: "מנהל של" },
     { from: "profiles", to: "employee_grades", label: "דרגה" },
@@ -284,7 +391,7 @@ const DatabaseDiagram = () => {
     { from: "approval_chain_levels", to: "approval_chain_configs", label: "בשרשרת" },
   ];
 
-  const enums = [
+  const enums: EnumType[] = [
     { name: "app_role", values: ["admin", "manager", "user", "accounting_manager", "org_admin"] },
     { name: "expense_status", values: ["draft", "open", "closed", "pending_approval"] },
     { name: "expense_category", values: ["flights", "accommodation", "food", "transportation", "miscellaneous"] },
@@ -298,172 +405,192 @@ const DatabaseDiagram = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-3">
-            <Database className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-bold">מבנה בסיס הנתונים</h1>
+        {/* Header with Export Buttons */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <Database className="h-10 w-10 text-primary" />
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">מבנה בסיס הנתונים</h1>
+                <p className="text-muted-foreground text-sm">
+                  דיאגרמה ויזואלית של כל הטבלאות והקשרים במערכת
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-muted-foreground">
-            דיאגרמה ויזואלית של כל הטבלאות והקשרים במערכת
-          </p>
+          
+          <div className="flex gap-2">
+            <Button onClick={exportAsPNG} variant="outline" className="gap-2">
+              <FileImage className="h-4 w-4" />
+              ייצא PNG
+            </Button>
+            <Button onClick={exportAsPDF} variant="default" className="gap-2">
+              <FileText className="h-4 w-4" />
+              ייצא PDF
+            </Button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Table2 className="h-8 w-8 mx-auto text-blue-500 mb-2" />
-              <div className="text-2xl font-bold">{tables.length}</div>
-              <div className="text-sm text-muted-foreground">טבלאות</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Link className="h-8 w-8 mx-auto text-green-500 mb-2" />
-              <div className="text-2xl font-bold">{relationships.length}</div>
-              <div className="text-sm text-muted-foreground">קשרים</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Key className="h-8 w-8 mx-auto text-amber-500 mb-2" />
-              <div className="text-2xl font-bold">{enums.length}</div>
-              <div className="text-sm text-muted-foreground">ENUMs</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Shield className="h-8 w-8 mx-auto text-red-500 mb-2" />
-              <div className="text-2xl font-bold">100%</div>
-              <div className="text-sm text-muted-foreground">RLS מופעל</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Relationships Diagram */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Link className="h-5 w-5" />
-              קשרים בין טבלאות
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {relationships.map((rel, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 p-3 bg-muted rounded-lg text-sm"
-                >
-                  <Badge variant="outline" className="font-mono">
-                    {rel.from}
-                  </Badge>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="text-xs text-muted-foreground">{rel.label}</span>
-                  <span className="text-muted-foreground">→</span>
-                  <Badge variant="outline" className="font-mono">
-                    {rel.to}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ENUMs */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              טיפוסי ENUM
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {enums.map((e) => (
-                <div key={e.name} className="p-3 bg-muted rounded-lg">
-                  <div className="font-mono font-semibold text-primary mb-2">
-                    {e.name}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {e.values.map((v) => (
-                      <Badge key={v} variant="secondary" className="text-xs">
-                        {v}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tables Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tables.map((table) => (
-            <Card key={table.name} className="overflow-hidden">
-              <CardHeader className={`${table.color} text-white py-3`}>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Table2 className="h-5 w-5" />
-                  {table.name}
-                </CardTitle>
-                <p className="text-white/80 text-sm">{table.description}</p>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[200px]">
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {table.columns.map((col) => (
-                        <tr key={col.name} className="border-b last:border-0">
-                          <td className="p-2 font-mono text-xs">
-                            {col.pk && <Key className="h-3 w-3 inline ml-1 text-amber-500" />}
-                            {col.fk && <Link className="h-3 w-3 inline ml-1 text-blue-500" />}
-                            {col.name}
-                          </td>
-                          <td className="p-2 text-muted-foreground text-xs">
-                            {col.type}
-                          </td>
-                          {col.fk && (
-                            <td className="p-2">
-                              <Badge variant="outline" className="text-xs">
-                                → {col.fk}
-                              </Badge>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </ScrollArea>
-                {table.rls && (
-                  <div className="p-3 bg-muted/50 border-t">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                      <Shield className="h-3 w-3" />
-                      RLS:
-                    </div>
-                    <div className="space-y-1">
-                      {table.rls.map((rule, idx) => (
-                        <div key={idx} className="text-xs">
-                          • {rule}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        {/* Exportable Content */}
+        <div ref={diagramRef} className="space-y-8 bg-background p-4">
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Table2 className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+                <div className="text-2xl font-bold">{tables.length}</div>
+                <div className="text-sm text-muted-foreground">טבלאות</div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Link className="h-8 w-8 mx-auto text-green-500 mb-2" />
+                <div className="text-2xl font-bold">{relationships.length}</div>
+                <div className="text-sm text-muted-foreground">קשרים</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Key className="h-8 w-8 mx-auto text-amber-500 mb-2" />
+                <div className="text-2xl font-bold">{enums.length}</div>
+                <div className="text-sm text-muted-foreground">ENUMs</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Shield className="h-8 w-8 mx-auto text-red-500 mb-2" />
+                <div className="text-2xl font-bold">100%</div>
+                <div className="text-sm text-muted-foreground">RLS מופעל</div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Visual ER Diagram */}
-        <Card>
-          <CardHeader>
-            <CardTitle>דיאגרמת ER ויזואלית</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted p-6 rounded-lg overflow-x-auto">
-              <pre className="text-xs md:text-sm font-mono whitespace-pre leading-relaxed" dir="ltr">
+          {/* Relationships Diagram */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link className="h-5 w-5" />
+                קשרים בין טבלאות
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {relationships.map((rel, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 p-3 bg-muted rounded-lg text-sm"
+                  >
+                    <Badge variant="outline" className="font-mono">
+                      {rel.from}
+                    </Badge>
+                    <span className="text-muted-foreground">→</span>
+                    <span className="text-xs text-muted-foreground">{rel.label}</span>
+                    <span className="text-muted-foreground">→</span>
+                    <Badge variant="outline" className="font-mono">
+                      {rel.to}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ENUMs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                טיפוסי ENUM
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {enums.map((e) => (
+                  <div key={e.name} className="p-3 bg-muted rounded-lg">
+                    <div className="font-mono font-semibold text-primary mb-2">
+                      {e.name}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {e.values.map((v) => (
+                        <Badge key={v} variant="secondary" className="text-xs">
+                          {v}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tables Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tables.map((table) => (
+              <Card key={table.name} className="overflow-hidden">
+                <CardHeader className={`${table.color} text-white py-3`}>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Table2 className="h-5 w-5" />
+                    {table.name}
+                  </CardTitle>
+                  <p className="text-white/80 text-sm">{table.description}</p>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[200px]">
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {table.columns.map((col) => (
+                          <tr key={col.name} className="border-b last:border-0">
+                            <td className="p-2 font-mono text-xs">
+                              {col.pk && <Key className="h-3 w-3 inline ml-1 text-amber-500" />}
+                              {col.fk && <Link className="h-3 w-3 inline ml-1 text-blue-500" />}
+                              {col.name}
+                            </td>
+                            <td className="p-2 text-muted-foreground text-xs">
+                              {col.type}
+                            </td>
+                            {col.fk && (
+                              <td className="p-2">
+                                <Badge variant="outline" className="text-xs">
+                                  → {col.fk}
+                                </Badge>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </ScrollArea>
+                  {table.rls && (
+                    <div className="p-3 bg-muted/50 border-t">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Shield className="h-3 w-3" />
+                        RLS:
+                      </div>
+                      <div className="space-y-1">
+                        {table.rls.map((rule, idx) => (
+                          <div key={idx} className="text-xs">
+                            • {rule}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Visual ER Diagram */}
+          <Card>
+            <CardHeader>
+              <CardTitle>דיאגרמת ER ויזואלית</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted p-6 rounded-lg overflow-x-auto">
+                <pre className="text-xs md:text-sm font-mono whitespace-pre leading-relaxed" dir="ltr">
 {`
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  organizations  │────▶│     profiles     │◀────│  employee_grades│
@@ -530,10 +657,11 @@ const DatabaseDiagram = () => {
 │ • max_amount        │     │ • expires_at        │
 └─────────────────────┘     └─────────────────────┘
 `}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
