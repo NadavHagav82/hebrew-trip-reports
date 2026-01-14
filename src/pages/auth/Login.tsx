@@ -173,19 +173,6 @@ export default function Login() {
         </CardHeader>
         
         <CardContent className="px-6 sm:px-8 pb-8 relative">
-          <div className="mb-4 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            {backendStatus === 'checking'
-              ? 'בודק חיבור לשרת...'
-              : backendStatus === 'ok'
-                ? 'חיבור לשרת תקין'
-                : 'לא מצליח להתחבר לשרת כרגע (נסה רענון/רשת אחרת)'}
-            {backendStatus === 'error' && backendDetails ? (
-              <div className="mt-1 text-[11px] text-muted-foreground/80 break-words">
-                פרטים: {backendDetails}
-              </div>
-            ) : null}
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">אימייל</Label>
