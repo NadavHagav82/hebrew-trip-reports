@@ -111,8 +111,8 @@ export default function IndependentNewReport() {
     return null;
   };
 
-  const analyzeFile = async (doc: UploadedDoc): Promise<Partial<UploadedDoc>> => {
-    // Only analyze image files - skip PDFs and other non-image types
+  const analyzeFile = async (doc: UploadedDoc, tripDestination: string, tripStartDate: string): Promise<Partial<UploadedDoc>> => {
+    // Only analyze image files — PDFs and other non-image types are skipped
     const isImage = doc.file.type.startsWith('image/');
     if (!isImage) {
       return {
@@ -123,7 +123,7 @@ export default function IndependentNewReport() {
     }
 
     try {
-      // Send full data URI (with prefix) so edge function can validate the mime type
+      // Read as full Data URI (including prefix) — the edge function requires it for format validation
       const dataUri = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => resolve(e.target?.result as string);
@@ -136,7 +136,7 @@ export default function IndependentNewReport() {
           imageBase64: dataUri,
           mimeType: doc.file.type,
           fileName: doc.file.name,
-          tripDestination: data.tripDestination,
+          tripDestination,
         },
       });
 
@@ -147,12 +147,12 @@ export default function IndependentNewReport() {
       return {
         analyzed: true,
         analyzing: false,
-        amount: result.amount || null,
-        amountIls: result.amount_in_ils || null,
+        amount: result.amount ?? null,
+        amountIls: result.amount_in_ils ?? result.amount ?? null,
         currency: result.currency || 'ILS',
         description: result.description || doc.file.name,
-        category: result.category || 'other',
-        expenseDate: result.date || data.tripStartDate,
+        category: result.category || 'miscellaneous',
+        expenseDate: result.date || tripStartDate,
       };
     } catch {
       return {
@@ -172,6 +172,10 @@ export default function IndependentNewReport() {
       return;
     }
 
+    // Snapshot destination & start date at the moment of upload
+    const destination = data.tripDestination;
+    const startDate = data.tripStartDate;
+
     const newDocs: UploadedDoc[] = [];
     for (let i = 0; i < allowedCount; i++) {
       const file = files[i];
@@ -187,17 +191,17 @@ export default function IndependentNewReport() {
         amountIls: null,
         currency: 'ILS',
         description: file.name,
-        category: 'other',
-        expenseDate: data.tripStartDate,
+        category: 'miscellaneous',
+        expenseDate: startDate,
         error: null,
       });
     }
 
     setData(prev => ({ ...prev, [target]: [...prev[target], ...newDocs] }));
 
-    // Analyze each doc
+    // Analyze each doc concurrently — pass snapshotted values to avoid stale closure
     newDocs.forEach(async (doc) => {
-      const result = await analyzeFile(doc);
+      const result = await analyzeFile(doc, destination, startDate);
       setData(prev => ({
         ...prev,
         [target]: prev[target].map(d => d.id === doc.id ? { ...d, ...result } : d),
