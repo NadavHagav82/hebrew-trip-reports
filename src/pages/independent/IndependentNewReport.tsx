@@ -112,20 +112,28 @@ export default function IndependentNewReport() {
   };
 
   const analyzeFile = async (doc: UploadedDoc): Promise<Partial<UploadedDoc>> => {
+    // Only analyze image files - skip PDFs and other non-image types
+    const isImage = doc.file.type.startsWith('image/');
+    if (!isImage) {
+      return {
+        analyzed: true,
+        analyzing: false,
+        description: doc.file.name,
+      };
+    }
+
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
+      // Send full data URI (with prefix) so edge function can validate the mime type
+      const dataUri = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = e => {
-          const result = e.target?.result as string;
-          resolve(result.split(',')[1]);
-        };
+        reader.onload = e => resolve(e.target?.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(doc.file);
       });
 
       const { data: fnData, error } = await supabase.functions.invoke('analyze-receipt', {
         body: {
-          imageBase64: base64,
+          imageBase64: dataUri,
           mimeType: doc.file.type,
           fileName: doc.file.name,
           tripDestination: data.tripDestination,
@@ -134,7 +142,8 @@ export default function IndependentNewReport() {
 
       if (error) throw error;
 
-      const result = fnData?.result || {};
+      // Edge function returns { data: { date, amount, currency, category, description } }
+      const result = fnData?.data || fnData?.result || {};
       return {
         analyzed: true,
         analyzing: false,
