@@ -86,13 +86,14 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Wait for auth to finish loading before checking user
     if (authLoading) return;
-    
-    if (!user) {
-      navigate('/auth/login');
-      return;
-    }
+    if (!user) { navigate('/auth/login'); return; }
+
+    // Redirect independent users to their own dashboard
+    supabase.rpc('has_role', { _user_id: user.id, _role: 'independent' as any }).then(({ data }) => {
+      if (data) { navigate('/independent'); return; }
+    });
+
     fetchReports();
     fetchProfile();
     fetchManagers();

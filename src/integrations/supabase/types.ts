@@ -2010,6 +2010,7 @@ export type Database = {
         | "user"
         | "accounting_manager"
         | "org_admin"
+        | "independent"
       approval_level_type:
         | "direct_manager"
         | "org_admin"
@@ -2222,7 +2223,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "user", "accounting_manager", "org_admin"],
+      app_role: [
+        "admin",
+        "manager",
+        "user",
+        "accounting_manager",
+        "org_admin",
+        "independent",
+      ],
       approval_level_type: [
         "direct_manager",
         "org_admin",

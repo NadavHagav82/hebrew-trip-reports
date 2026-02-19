@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,10 +72,10 @@ export default function RegisterIndependent() {
       full_name: formData.full_name,
       employee_id: formData.employee_id || null,
       department: formData.department,
-      is_manager: true, // Independent users have manager privileges
-      manager_id: null, // No manager - they are independent
+      is_manager: false,
+      manager_id: null,
       accounting_manager_email: formData.accounting_manager_email || null,
-      organization_id: null, // No organization
+      organization_id: null,
     });
 
     if (error) {
@@ -96,6 +97,12 @@ export default function RegisterIndependent() {
       });
       setLoading(false);
     } else {
+      // Assign independent role after sign up
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (userId) {
+        await supabase.from('user_roles').insert({ user_id: userId, role: 'independent' as any });
+      }
       toast({
         title: 'הרשמה הצליחה',
         description: 'החשבון נוצר בהצלחה. ניתן להתחבר למערכת',
