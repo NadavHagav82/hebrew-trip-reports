@@ -198,25 +198,27 @@ export default function ManageUsersRoles() {
   };
 
   const getRoleLabel = (role: AppRole): string => {
-    const labels: Record<AppRole, string> = {
+    const labels: Partial<Record<AppRole, string>> = {
       admin: "אדמין",
       manager: "מנהל",
       user: "משתמש",
       accounting_manager: "מנהל הנה\"ח",
       org_admin: "מנהל ארגון",
+      independent: "עצמאי",
     };
-    return labels[role];
+    return labels[role] ?? role;
   };
 
   const getRoleBadgeColor = (role: AppRole): string => {
-    const colors: Record<AppRole, string> = {
+    const colors: Partial<Record<AppRole, string>> = {
       admin: "bg-red-500/10 text-red-700 border-red-200",
       manager: "bg-blue-500/10 text-blue-700 border-blue-200",
       user: "bg-gray-500/10 text-gray-700 border-gray-200",
       accounting_manager: "bg-purple-500/10 text-purple-700 border-purple-200",
       org_admin: "bg-green-500/10 text-green-700 border-green-200",
+      independent: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
     };
-    return colors[role];
+    return colors[role] ?? "bg-gray-500/10 text-gray-700 border-gray-200";
   };
 
   if (loading) {
