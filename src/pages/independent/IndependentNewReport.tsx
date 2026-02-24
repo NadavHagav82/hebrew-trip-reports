@@ -66,7 +66,7 @@ const STEP_LABELS = [
   'סיכום',
 ];
 
-const DEFAULT_DAILY_ALLOWANCE = 260;
+const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane; emoji: string }> = {
   flights: { label: 'טיסות', icon: Plane, emoji: '✈️' },
@@ -104,6 +104,8 @@ export default function IndependentNewReport() {
     accommodationTotal: 0,
   });
 
+  const [usdToIls, setUsdToIls] = useState(3.7); // fallback rate
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +117,18 @@ export default function IndependentNewReport() {
   const tripDays = data.tripStartDate && data.tripEndDate
     ? Math.max(1, Math.ceil((new Date(data.tripEndDate).getTime() - new Date(data.tripStartDate).getTime()) / 86400000) + 1)
     : 0;
+
+  const allowanceTotalUsd = data.allowanceDays * data.dailyAllowance;
+  const allowanceTotalIls = Math.round(allowanceTotalUsd * usdToIls);
+
+  // Fetch USD→ILS exchange rate on mount
+  useEffect(() => {
+    supabase.functions.invoke('get-exchange-rates').then(({ data: rateData }) => {
+      if (rateData?.rates?.USD) {
+        setUsdToIls(rateData.rates.USD);
+      }
+    }).catch(() => {});
+  }, []);
 
   // ──── Draft: Load from URL or localStorage on mount ────
   useEffect(() => {
@@ -304,7 +318,7 @@ export default function IndependentNewReport() {
   const saveDraftToDb = async () => {
     if (!user) return;
     const totalIls = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0)
-      + (data.addAllowance ? data.allowanceDays * data.dailyAllowance : 0)
+      + (data.addAllowance ? allowanceTotalIls : 0)
       + (data.addFlights ? data.flightTotal : 0)
       + (data.addAccommodation ? data.accommodationTotal : 0);
 
@@ -534,12 +548,10 @@ export default function IndependentNewReport() {
     setSaving(true);
 
     try {
-      const allowanceTotal = data.addAllowance
-        ? data.allowanceDays * data.dailyAllowance
-        : 0;
+      const allowanceIls = data.addAllowance ? allowanceTotalIls : 0;
 
       const docsTotal = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0);
-      const totalIls = docsTotal + allowanceTotal + data.flightTotal + data.accommodationTotal;
+      const totalIls = docsTotal + allowanceIls + data.flightTotal + data.accommodationTotal;
 
       let reportId = draftReportId;
 
@@ -642,7 +654,7 @@ export default function IndependentNewReport() {
         } catch (e) { console.error('Storage upload error:', e); }
       }
 
-      if (data.addAllowance && allowanceTotal > 0) {
+      if (data.addAllowance && allowanceIls > 0) {
         // Delete old allowance expense if it exists, then recreate
         await supabase.from('expenses')
           .delete()
@@ -653,10 +665,10 @@ export default function IndependentNewReport() {
           report_id: report.id,
           expense_date: data.tripStartDate,
           category: 'other' as any,
-          amount: allowanceTotal,
-          currency: 'ILS' as any,
-          amount_in_ils: allowanceTotal,
-          description: `ימי שהייה: ${data.allowanceDays} ימים x ${data.dailyAllowance} ש"ח`,
+          amount: allowanceTotalUsd,
+          currency: 'USD' as any,
+          amount_in_ils: allowanceIls,
+          description: `ימי שהייה: ${data.allowanceDays} ימים x $${data.dailyAllowance} (שער ${usdToIls.toFixed(2)})`,
           payment_method: 'out_of_pocket' as any,
           approval_status: 'approved' as any,
         } as any);
@@ -1019,7 +1031,7 @@ export default function IndependentNewReport() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="daily" className="text-sm">תשלום יומי (₪)</Label>
+              <Label htmlFor="daily" className="text-sm">תשלום יומי ($)</Label>
               <Input
                 id="daily"
                 type="number"
@@ -1030,10 +1042,13 @@ export default function IndependentNewReport() {
               />
             </div>
           </div>
-          <div className="bg-amber-100 dark:bg-amber-900/30 rounded-xl p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">סה"כ ימי שהייה</p>
+          <div className="bg-amber-100 dark:bg-amber-900/30 rounded-xl p-4 text-center space-y-1">
+            <p className="text-xs text-muted-foreground">סה"כ ימי שהייה</p>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-              ₪{(data.allowanceDays * data.dailyAllowance).toLocaleString()}
+              ${allowanceTotalUsd.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              ≈ ₪{allowanceTotalIls.toLocaleString()} (שער {usdToIls.toFixed(2)})
             </p>
           </div>
         </div>
@@ -1203,9 +1218,9 @@ export default function IndependentNewReport() {
           <div className="flex justify-between text-sm py-1">
             <span className="text-muted-foreground">
               <Sun className="w-3.5 h-3.5 inline ml-1" />
-              ימי שהייה ({data.allowanceDays}×₪{data.dailyAllowance})
+              ימי שהייה ({data.allowanceDays}×${data.dailyAllowance})
             </span>
-            <span className="font-medium">₪{(data.allowanceDays * data.dailyAllowance).toLocaleString()}</span>
+            <span className="font-medium">₪{allowanceTotalIls.toLocaleString()}</span>
           </div>
         )}
         {data.addFlights && data.flightTotal > 0 && (
@@ -1232,7 +1247,7 @@ export default function IndependentNewReport() {
             <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
               ₪{(
                 data.docs.reduce((s, d) => s + (d.amountIls || 0), 0) +
-                (data.addAllowance ? data.allowanceDays * data.dailyAllowance : 0) +
+                (data.addAllowance ? allowanceTotalIls : 0) +
                 (data.addFlights ? data.flightTotal : 0) +
                 (data.addAccommodation ? data.accommodationTotal : 0)
               ).toLocaleString()}
