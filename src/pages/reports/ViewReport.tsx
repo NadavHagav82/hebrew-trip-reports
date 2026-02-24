@@ -131,6 +131,51 @@ const ViewReport = () => {
   // Receipt preview modal state
   const [previewReceipts, setPreviewReceipts] = useState<{ url: string; name: string; type: string }[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+
+  const toAbsoluteStorageUrl = (url?: string | null) => {
+    if (!url) return null;
+    return url.startsWith('http')
+      ? url
+      : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${url}`;
+  };
+
+  const extractReceiptStoragePath = (fileUrl?: string | null): string | null => {
+    if (!fileUrl) return null;
+
+    const source = decodeURIComponent(String(fileUrl).trim());
+    if (!source || source.startsWith('data:') || source.startsWith('blob:')) {
+      return null;
+    }
+
+    if (!source.startsWith('http') && !source.includes('/storage/v1/')) {
+      return source.replace(/^\/+/, '');
+    }
+
+    const match =
+      source.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i) ||
+      source.match(/\/receipts\/([^?#]+)/i);
+
+    return match?.[1] ? match[1].replace(/^\/+/, '') : null;
+  };
+
+  const resolveReceiptUrl = async (fileUrl?: string | null): Promise<string> => {
+    if (!fileUrl) return '';
+    if (fileUrl.startsWith('data:') || fileUrl.startsWith('blob:')) return fileUrl;
+
+    const storagePath = extractReceiptStoragePath(fileUrl);
+    if (!storagePath) return fileUrl;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(storagePath, 60 * 60);
+
+      if (error) return fileUrl;
+      return toAbsoluteStorageUrl(data?.signedUrl) || fileUrl;
+    } catch {
+      return fileUrl;
+    }
+  };
   
   useEffect(() => {
     if (authLoading) return;
@@ -209,25 +254,10 @@ const ViewReport = () => {
               const receiptsResults = await Promise.allSettled(
                 (expense.receipts || []).map(async (receipt: any) => {
                   try {
-                    const { data } = await withTimeout(
-                      supabase.storage
-                        .from('receipts')
-                        .createSignedUrl(receipt.file_url, 60 * 60),
-                      6000
-                    );
-
-                    const signedUrl = (data as any)?.signedUrl as string | undefined;
-                    const absoluteSignedUrl = signedUrl
-                      ? signedUrl.startsWith('http')
-                        ? signedUrl
-                        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`
-                      : null;
-
+                    const resolvedUrl = await resolveReceiptUrl(receipt.file_url);
                     return {
                       ...receipt,
-                      file_url:
-                        absoluteSignedUrl ||
-                        `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/receipts/${receipt.file_url}`,
+                      file_url: resolvedUrl || receipt.file_url,
                     };
                   } catch {
                     // Keep original path; UI will show placeholder if it can't load.
@@ -2214,23 +2244,9 @@ const ViewReport = () => {
                                   // Build receipt list, generating signed URLs for any that are still raw paths
                                   const allReceipts = await Promise.all(
                                     expense.receipts.map(async (r: any, i: number) => {
-                                      let url = r.file_url;
-                                      if (url && !url.startsWith('http') && !url.startsWith('data:')) {
-                                        try {
-                                          const { data } = await supabase.storage
-                                            .from('receipts')
-                                            .createSignedUrl(url, 60 * 60);
-                                          if (data?.signedUrl) {
-                                            url = data.signedUrl.startsWith('http')
-                                              ? data.signedUrl
-                                              : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${data.signedUrl}`;
-                                          }
-                                        } catch {
-                                          // keep original
-                                        }
-                                      }
+                                      const resolvedUrl = await resolveReceiptUrl(r.file_url);
                                       return {
-                                        url,
+                                        url: resolvedUrl || r.file_url || '',
                                         name: r.file_name || `חשבונית ${i + 1}`,
                                         type: r.file_type || 'image'
                                       };
