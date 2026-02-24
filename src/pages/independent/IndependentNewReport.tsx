@@ -93,9 +93,12 @@ export default function IndependentNewReport() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const flightInputRef = useRef<HTMLInputElement>(null);
+  const flightPdfInputRef = useRef<HTMLInputElement>(null);
   const accommodationInputRef = useRef<HTMLInputElement>(null);
+  const accommodationPdfInputRef = useRef<HTMLInputElement>(null);
 
   const tripDays = data.tripStartDate && data.tripEndDate
     ? Math.max(1, Math.ceil((new Date(data.tripEndDate).getTime() - new Date(data.tripStartDate).getTime()) / 86400000) + 1)
@@ -289,21 +292,32 @@ export default function IndependentNewReport() {
     const startDate = data.tripStartDate;
 
     const newDocs: UploadedDoc[] = [];
+    let skippedUnsupported = 0;
+
     for (let i = 0; i < allowedCount; i++) {
       const rawFile = files[i];
-      // On mobile, file.type may be empty for PDFs — detect by extension
-      let file = rawFile;
+      const isImage = rawFile.type.startsWith('image/') || /\.(heic|heif|jpg|jpeg|png|gif|webp|bmp)$/i.test(rawFile.name);
       const isPdf = rawFile.type === 'application/pdf' || /\.pdf$/i.test(rawFile.name);
-      if (!rawFile.type && isPdf) {
+
+      if (!isImage && !isPdf) {
+        skippedUnsupported += 1;
+        continue;
+      }
+
+      // On mobile, file.type may be empty or generic for PDFs — detect by extension
+      let file = rawFile;
+      if ((!rawFile.type || rawFile.type === 'application/octet-stream') && isPdf) {
         // Re-wrap with correct MIME so storage upload works
         file = new File([rawFile], rawFile.name, { type: 'application/pdf' });
       }
+
       let preview: string | null = null;
       try {
         preview = await fileToPreview(file);
       } catch {
         // preview generation failed - still add the file
       }
+
       newDocs.push({
         id: `${Date.now()}-${i}`,
         file,
@@ -321,10 +335,26 @@ export default function IndependentNewReport() {
       });
     }
 
+    if (newDocs.length === 0) {
+      toast({
+        title: 'סוג קובץ לא נתמך',
+        description: 'אפשר להעלות רק תמונות או PDF',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setData(prev => ({ ...prev, [target]: [...prev[target], ...newDocs] }));
 
     // Show toast confirmation on mobile
     toast({ title: `${newDocs.length} קבצים נוספו`, description: 'מנתח...' });
+
+    if (skippedUnsupported > 0) {
+      toast({
+        title: `${skippedUnsupported} קבצים נדחו`,
+        description: 'נתמכים רק תמונות או PDF',
+      });
+    }
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
@@ -640,9 +670,10 @@ export default function IndependentNewReport() {
   );
 
   // ──── Upload zone component ────
-  const UploadZone = ({ target, inputRef, color = 'emerald', label = 'העלה חשבוניות' }: {
+  const UploadZone = ({ target, inputRef, pdfInputRef, color = 'emerald', label = 'העלה תמונות' }: {
     target: 'docs' | 'flightDocs' | 'accommodationDocs';
     inputRef: React.RefObject<HTMLInputElement>;
+    pdfInputRef: React.RefObject<HTMLInputElement>;
     color?: string;
     label?: string;
   }) => (
@@ -657,11 +688,28 @@ export default function IndependentNewReport() {
           ref={inputRef}
           type="file"
           multiple
-          accept="image/*,.pdf,application/pdf"
+          accept="image/*"
           className="hidden"
           onChange={e => { e.target.files && handleFilesAdded(e.target.files, target); e.target.value = ''; }}
         />
       </button>
+
+      <button
+        className={`flex items-center justify-center gap-2 border-2 border-dashed rounded-xl py-4 px-3 transition-colors active:scale-[0.98] border-${color}-300 dark:border-${color}-700 hover:bg-${color}-50/50`}
+        onClick={() => pdfInputRef.current?.click()}
+      >
+        <FileText className={`w-5 h-5 text-${color}-500`} />
+        <span className={`text-sm font-medium text-${color}-700 dark:text-${color}-300`}>PDF</span>
+        <input
+          ref={pdfInputRef}
+          type="file"
+          multiple
+          accept=".pdf,application/pdf"
+          className="hidden"
+          onChange={e => { e.target.files && handleFilesAdded(e.target.files, target); e.target.value = ''; }}
+        />
+      </button>
+
       {target === 'docs' && (
         <button
           className="flex items-center justify-center gap-1 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl px-4 py-4 hover:bg-emerald-50/50 active:scale-[0.98] transition-colors"
@@ -741,7 +789,7 @@ export default function IndependentNewReport() {
         עד 10 קבצים בכל העלאה · ללא הגבלה על סה״כ
       </p>
 
-      <UploadZone target="docs" inputRef={fileInputRef} label="העלה קבצים" />
+      <UploadZone target="docs" inputRef={fileInputRef} pdfInputRef={pdfInputRef} label="העלה תמונות" />
 
       {data.docs.length > 0 && (
         <>
@@ -872,7 +920,7 @@ export default function IndependentNewReport() {
 
       {data.addFlights && (
         <div className="space-y-3">
-          <UploadZone target="flightDocs" inputRef={flightInputRef} color="blue" label="העלה כרטיסי טיסה" />
+          <UploadZone target="flightDocs" inputRef={flightInputRef} pdfInputRef={flightPdfInputRef} color="blue" label="העלה תמונות טיסה" />
 
           {data.flightDocs.length > 0 && (
             <div className="grid grid-cols-2 gap-2.5">
@@ -935,7 +983,7 @@ export default function IndependentNewReport() {
 
       {data.addAccommodation && (
         <div className="space-y-3">
-          <UploadZone target="accommodationDocs" inputRef={accommodationInputRef} color="purple" label="העלה קבלות לינה" />
+          <UploadZone target="accommodationDocs" inputRef={accommodationInputRef} pdfInputRef={accommodationPdfInputRef} color="purple" label="העלה תמונות לינה" />
 
           {data.accommodationDocs.length > 0 && (
             <div className="grid grid-cols-2 gap-2.5">
