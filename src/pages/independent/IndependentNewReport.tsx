@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
   Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus, Check,
-  UtensilsCrossed, Car, ShoppingBag, ChevronDown
+  UtensilsCrossed, Car, ShoppingBag, ChevronDown, Globe, Calendar, Target, Wallet, Building2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -756,13 +756,13 @@ export default function IndependentNewReport() {
               className="flex-1 py-2 rounded-lg text-xs font-medium border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 active:bg-emerald-100"
               onClick={() => setPaymentMethod(doc.id, 'out_of_pocket', target)}
             >
-              💰 מכיסי
+              <Wallet className="w-3.5 h-3.5 inline-block ml-0.5" /> מכיסי
             </button>
             <button
               className="flex-1 py-2 rounded-lg text-xs font-medium border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 active:bg-blue-100"
               onClick={() => setPaymentMethod(doc.id, 'company_card', target)}
             >
-              🏢 חברה
+              <Building2 className="w-3.5 h-3.5 inline-block ml-0.5" /> חברה
             </button>
           </div>
         )}
@@ -772,7 +772,7 @@ export default function IndependentNewReport() {
             <div className="flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                {doc.paymentMethod === 'out_of_pocket' ? '💰 מכיסי' : '🏢 חברה'}
+                {doc.paymentMethod === 'out_of_pocket' ? <><Wallet className="w-3 h-3 inline-block ml-0.5" /> מכיסי</> : <><Building2 className="w-3 h-3 inline-block ml-0.5" /> חברה</>}
               </span>
             </div>
             <button
@@ -1187,18 +1187,18 @@ export default function IndependentNewReport() {
       {/* Trip info */}
       <div className="bg-muted/30 rounded-xl p-4 space-y-2.5 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">🌍 יעד</span>
+          <span className="text-muted-foreground flex items-center gap-1"><Globe className="w-4 h-4" /> יעד</span>
           <span className="font-medium">{data.tripDestination}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">📅 תאריכים</span>
+          <span className="text-muted-foreground flex items-center gap-1"><Calendar className="w-4 h-4" /> תאריכים</span>
           <span className="font-medium text-xs">
             {data.tripStartDate && format(new Date(data.tripStartDate), 'dd/MM/yy', { locale: he })} –{' '}
             {data.tripEndDate && format(new Date(data.tripEndDate), 'dd/MM/yy', { locale: he })}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">🎯 מטרה</span>
+          <span className="text-muted-foreground flex items-center gap-1"><Target className="w-4 h-4" /> מטרה</span>
           <span className="font-medium text-xs">{data.tripPurpose}</span>
         </div>
       </div>
@@ -1265,11 +1265,11 @@ export default function IndependentNewReport() {
         return (
           <div className="grid grid-cols-2 gap-2.5">
             <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-muted-foreground">💰 מכיסי (להחזר)</p>
+              <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1"><Wallet className="w-3 h-3" /> מכיסי (להחזר)</p>
               <p className="font-bold text-emerald-700 dark:text-emerald-400">₪{pocket.toFixed(2)}</p>
             </div>
             <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-muted-foreground">🏢 חברה</p>
+              <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1"><Building2 className="w-3 h-3" /> חברה</p>
               <p className="font-bold text-blue-700 dark:text-blue-400">₪{company.toFixed(2)}</p>
             </div>
           </div>
