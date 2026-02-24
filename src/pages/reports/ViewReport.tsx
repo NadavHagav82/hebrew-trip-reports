@@ -98,6 +98,7 @@ const ViewReport = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAccountingUser, setIsAccountingUser] = useState(false);
   const [isManagerOfThisReport, setIsManagerOfThisReport] = useState(false);
+  const [isIndependentUser, setIsIndependentUser] = useState(false);
   
   // Share dialog state
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -336,6 +337,14 @@ const ViewReport = () => {
           
           setIsAccountingUser(roles && roles.length > 0);
 
+          // Check if user is independent
+          const { data: indRoles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'independent');
+          setIsIndependentUser(indRoles && indRoles.length > 0);
+
           // Check if current user is the manager of this report's owner
           const { data: currentUserProfile } = await supabase
             .from('profiles')
@@ -371,8 +380,15 @@ const ViewReport = () => {
     }
   };
 
+  const navigateToEdit = (reportId: string) => {
+    if (isIndependentUser) {
+      navigate(`/independent/new-report?draft=${reportId}`);
+    } else {
+      navigate(`/reports/edit/${reportId}`);
+    }
+  };
+
   const calculateTripDuration = () => {
-    if (!report) return 0;
     const start = new Date(report.trip_start_date);
     const end = new Date(report.trip_end_date);
     const diffTime = Math.abs(end.getTime() - start.getTime());
@@ -1602,7 +1618,7 @@ const ViewReport = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/reports/edit/${report.id}`)}
+                      onClick={() => navigateToEdit(report.id)}
                       className="whitespace-nowrap bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all rounded-xl"
                     >
                       <Edit className="w-4 h-4 ml-1" />
@@ -1648,7 +1664,7 @@ const ViewReport = () => {
                   <Button 
                     size="sm"
                     variant="outline"
-                    onClick={() => navigate(`/reports/edit/${report.id}`)}
+                    onClick={() => navigateToEdit(report.id)}
                     className="whitespace-nowrap bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all rounded-xl"
                   >
                     <Edit className="w-4 h-4 ml-1" />
@@ -1697,7 +1713,7 @@ const ViewReport = () => {
                   <>
                     <Button 
                       variant="outline" 
-                      onClick={() => navigate(`/reports/edit/${report.id}`)}
+                      onClick={() => navigateToEdit(report.id)}
                       className="bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all rounded-xl"
                     >
                       <Edit className="w-4 h-4 ml-2" />
@@ -1739,7 +1755,7 @@ const ViewReport = () => {
                 {report.status === 'closed' && (
                   <Button 
                     variant="outline"
-                    onClick={() => navigate(`/reports/edit/${report.id}`)}
+                    onClick={() => navigateToEdit(report.id)}
                     className="bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-700 shadow-sm hover:shadow-md transition-all rounded-xl"
                   >
                     <Edit className="w-4 h-4 ml-2" />
@@ -3262,7 +3278,7 @@ const ViewReport = () => {
           <DialogFooter className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 gap-2">
             <Button 
               variant="outline" 
-              onClick={() => navigate(`/reports/edit/${report?.id}`)}
+              onClick={() => report?.id && navigateToEdit(report.id)}
               disabled={isSubmittingForApproval}
               className="h-11 px-5 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all gap-2"
             >
