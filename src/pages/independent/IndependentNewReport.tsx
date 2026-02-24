@@ -114,6 +114,9 @@ export default function IndependentNewReport() {
         });
       }
     }
+    // For PDFs return a marker so we can show an icon
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (isPdf) return 'pdf';
     return null;
   };
 
@@ -165,7 +168,14 @@ export default function IndependentNewReport() {
 
     const newDocs: UploadedDoc[] = [];
     for (let i = 0; i < allowedCount; i++) {
-      const file = files[i];
+      const rawFile = files[i];
+      // On mobile, file.type may be empty for PDFs — detect by extension
+      let file = rawFile;
+      const isPdf = rawFile.type === 'application/pdf' || /\.pdf$/i.test(rawFile.name);
+      if (!rawFile.type && isPdf) {
+        // Re-wrap with correct MIME so storage upload works
+        file = new File([rawFile], rawFile.name, { type: 'application/pdf' });
+      }
       let preview: string | null = null;
       try {
         preview = await fileToPreview(file);
@@ -349,11 +359,12 @@ export default function IndependentNewReport() {
       </button>
 
       {/* Preview – compact */}
-      {doc.preview ? (
+      {doc.preview && doc.preview !== 'pdf' ? (
         <img src={doc.preview} alt="preview" className="w-full h-20 sm:h-24 object-cover" />
       ) : (
         <div className="w-full h-20 sm:h-24 bg-muted flex items-center justify-center">
           <FileText className="w-7 h-7 text-muted-foreground" />
+          {doc.preview === 'pdf' && <span className="text-xs text-muted-foreground mt-1">PDF</span>}
         </div>
       )}
 
@@ -462,7 +473,7 @@ export default function IndependentNewReport() {
           ref={inputRef}
           type="file"
           multiple
-          accept="image/*,application/pdf"
+          accept="image/*,.pdf,application/pdf"
           className="hidden"
           onChange={e => { e.target.files && handleFilesAdded(e.target.files, target); e.target.value = ''; }}
         />
