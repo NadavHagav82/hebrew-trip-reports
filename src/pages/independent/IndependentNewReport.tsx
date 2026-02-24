@@ -164,11 +164,9 @@ export default function IndependentNewReport() {
   };
 
   const handleFilesAdded = useCallback(async (files: FileList, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    const maxFiles = 20;
-    const currentCount = data[target].length;
-    const allowedCount = Math.min(files.length, maxFiles - currentCount);
+    const maxPerBatch = 10;
+    const allowedCount = Math.min(files.length, maxPerBatch);
     if (allowedCount <= 0) {
-      toast({ title: 'מגבלה', description: `ניתן להעלות עד ${maxFiles} קבצים`, variant: 'destructive' });
       return;
     }
 
@@ -478,7 +476,7 @@ export default function IndependentNewReport() {
     // Step 1: Upload docs
     <div className="space-y-4" key="step1">
       <p className="text-sm text-muted-foreground">
-        העלה חשבוניות והוצאות שונות (עד 20 קבצים). לאחר ההעלאה, ציין עבור כל הוצאה אם שולמה מכיסך האישי או מחשבון החברה.
+        העלה חשבוניות והוצאות שונות (עד 10 קבצים בכל העלאה, ללא הגבלה על סה״כ). לאחר ההעלאה, ציין עבור כל הוצאה אם שולמה מכיסך האישי או מחשבון החברה.
       </p>
 
       {/* Upload zone */}
@@ -493,7 +491,7 @@ export default function IndependentNewReport() {
       >
         <Upload className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
         <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">גרור קבצים לכאן או לחץ להעלאה</p>
-        <p className="text-xs text-muted-foreground mt-1">תמונות, PDF – עד 20 קבצים</p>
+        <p className="text-xs text-muted-foreground mt-1">תמונות, PDF – עד 10 קבצים בכל העלאה</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -514,7 +512,7 @@ export default function IndependentNewReport() {
         <div className="bg-muted/50 rounded-lg p-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">קבצים:</span>
-            <span className="font-medium">{data.docs.length} / 20</span>
+            <span className="font-medium">{data.docs.length}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">סה"כ מנותח:</span>
