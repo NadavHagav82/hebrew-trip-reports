@@ -452,15 +452,28 @@ export default function IndependentNewReport() {
       }
 
       let preview: string | null = null;
+      let finalFile = file;
       try {
-        preview = await fileToPreview(file);
+        if (isPdf) {
+          // Convert PDF to image so it can be displayed in the report PDF
+          const pdfImages = await convertPdfToImages(file);
+          if (pdfImages.length > 0) {
+            finalFile = pdfImages[0]; // Use the image version for storage
+            preview = await blobToOrientedImageDataUrl(pdfImages[0], { maxSize: 600, quality: 0.7 });
+          } else {
+            preview = 'pdf';
+          }
+        } else {
+          preview = await fileToPreview(file);
+        }
       } catch {
         // preview generation failed - still add the file
+        if (isPdf) preview = 'pdf';
       }
 
       newDocs.push({
         id: `${Date.now()}-${i}`,
-        file,
+        file: finalFile,
         preview,
         paymentMethod: null,
         analyzed: false,
@@ -649,7 +662,8 @@ export default function IndependentNewReport() {
         if (expenseError) { console.error('Expense error:', expenseError); continue; }
 
         try {
-          const ext = doc.file.name.split('.').pop();
+          const isImageFile = doc.file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(doc.file.name);
+          const ext = isImageFile ? doc.file.name.split('.').pop() : 'jpg';
           const filePath = `${user.id}/${report.id}/${expense.id}.${ext}`;
           const { error: storageError } = await supabase.storage
             .from('receipts')
@@ -661,7 +675,7 @@ export default function IndependentNewReport() {
               expense_id: expense.id,
               file_name: doc.file.name,
               file_size: doc.file.size,
-              file_type: doc.file.type.startsWith('image/') ? 'image' as any : 'pdf' as any,
+              file_type: 'image' as any,
               file_url: urlData.publicUrl,
             });
           }
