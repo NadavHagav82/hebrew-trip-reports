@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { blobToOrientedImageDataUrl } from '@/utils/imageDataUrl';
 
 // ──────────────── Types ────────────────
 type PaymentMethod = 'out_of_pocket' | 'company_card';
@@ -98,34 +99,38 @@ export default function IndependentNewReport() {
 
   // ──── File helpers ────
   const fileToPreview = async (file: File): Promise<string | null> => {
-    if (file.type.startsWith('image/')) {
-      return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      });
+    // Handle images (including HEIC from iOS)
+    const isImage = file.type.startsWith('image/') || /\.(heic|heif|jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name);
+    if (isImage) {
+      try {
+        return await blobToOrientedImageDataUrl(file, { maxSize: 600, quality: 0.7 });
+      } catch {
+        // Fallback to basic reader
+        return new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target?.result as string);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(file);
+        });
+      }
     }
     return null;
   };
 
   const analyzeFile = async (doc: UploadedDoc, tripDestination: string, tripStartDate: string): Promise<Partial<UploadedDoc>> => {
-    const isImage = doc.file.type.startsWith('image/');
+    const isImage = doc.file.type.startsWith('image/') || /\.(heic|heif|jpg|jpeg|png|gif|webp|bmp)$/i.test(doc.file.name);
     if (!isImage) {
       return { analyzed: true, analyzing: false, description: doc.file.name };
     }
 
     try {
-      const dataUri = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(doc.file);
-      });
+      // Use oriented & compressed data URI for analysis (max 1800px)
+      const dataUri = await blobToOrientedImageDataUrl(doc.file, { maxSize: 1800, quality: 0.85 });
 
       const { data: fnData, error } = await supabase.functions.invoke('analyze-receipt', {
         body: {
           imageBase64: dataUri,
-          mimeType: doc.file.type,
+          mimeType: doc.file.type || 'image/jpeg',
           fileName: doc.file.name,
           tripDestination,
         },
@@ -144,7 +149,8 @@ export default function IndependentNewReport() {
         category: result.category || 'miscellaneous',
         expenseDate: result.date || tripStartDate,
       };
-    } catch {
+    } catch (err) {
+      console.error('Analyze error:', err);
       return { analyzed: true, analyzing: false, error: 'לא ניתן לנתח את המסמך' };
     }
   };
@@ -160,7 +166,12 @@ export default function IndependentNewReport() {
     const newDocs: UploadedDoc[] = [];
     for (let i = 0; i < allowedCount; i++) {
       const file = files[i];
-      const preview = await fileToPreview(file);
+      let preview: string | null = null;
+      try {
+        preview = await fileToPreview(file);
+      } catch {
+        // preview generation failed - still add the file
+      }
       newDocs.push({
         id: `${Date.now()}-${i}`,
         file,
@@ -179,6 +190,9 @@ export default function IndependentNewReport() {
     }
 
     setData(prev => ({ ...prev, [target]: [...prev[target], ...newDocs] }));
+
+    // Show toast confirmation on mobile
+    toast({ title: `${newDocs.length} קבצים נוספו`, description: 'מנתח...' });
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
