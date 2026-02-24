@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
-  Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus
+  Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -51,6 +51,8 @@ interface WizardData {
   accommodationTotal: number;
 }
 
+const DRAFT_KEY = 'independent_draft_wizard';
+
 const STEP_ICONS = [FileText, Upload, Sun, Plane, Hotel, CheckCircle2];
 const STEP_LABELS = [
   'פרטי הנסיעה',
@@ -67,9 +69,11 @@ const DEFAULT_DAILY_ALLOWANCE = 260;
 export default function IndependentNewReport() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [draftReportId, setDraftReportId] = useState<string | null>(null);
 
   const [data, setData] = useState<WizardData>({
     tripStartDate: '',
@@ -96,6 +100,124 @@ export default function IndependentNewReport() {
   const tripDays = data.tripStartDate && data.tripEndDate
     ? Math.max(1, Math.ceil((new Date(data.tripEndDate).getTime() - new Date(data.tripStartDate).getTime()) / 86400000) + 1)
     : 0;
+
+  // ──── Draft: Load from URL or localStorage on mount ────
+  useEffect(() => {
+    const draftId = searchParams.get('draft');
+    if (draftId) {
+      // Load draft from DB
+      setDraftReportId(draftId);
+      supabase.from('reports').select('*').eq('id', draftId).single().then(({ data: report }) => {
+        if (report) {
+          setData(prev => ({
+            ...prev,
+            tripStartDate: report.trip_start_date || '',
+            tripEndDate: report.trip_end_date || '',
+            tripDestination: report.trip_destination || '',
+            tripPurpose: report.trip_purpose || '',
+            dailyAllowance: report.daily_allowance || DEFAULT_DAILY_ALLOWANCE,
+            allowanceDays: report.allowance_days || 0,
+            addAllowance: report.allowance_days ? true : null,
+          }));
+          // Load saved step from localStorage
+          const saved = localStorage.getItem(DRAFT_KEY);
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed.draftReportId === draftId && parsed.step) {
+                setStep(parsed.step);
+                // Restore non-file settings
+                if (parsed.addFlights !== undefined) setData(p => ({ ...p, addFlights: parsed.addFlights, flightTotal: parsed.flightTotal || 0 }));
+                if (parsed.addAccommodation !== undefined) setData(p => ({ ...p, addAccommodation: parsed.addAccommodation, accommodationTotal: parsed.accommodationTotal || 0 }));
+              }
+            } catch {}
+          }
+          toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
+        }
+      });
+    } else {
+      // Check localStorage for unsaved draft
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.tripDestination && parsed.draftReportId) {
+            setDraftReportId(parsed.draftReportId);
+            setStep(parsed.step || 0);
+            setData(prev => ({
+              ...prev,
+              tripStartDate: parsed.tripStartDate || '',
+              tripEndDate: parsed.tripEndDate || '',
+              tripDestination: parsed.tripDestination || '',
+              tripPurpose: parsed.tripPurpose || '',
+              addAllowance: parsed.addAllowance ?? null,
+              allowanceDays: parsed.allowanceDays || 0,
+              dailyAllowance: parsed.dailyAllowance || DEFAULT_DAILY_ALLOWANCE,
+              addFlights: parsed.addFlights ?? null,
+              flightTotal: parsed.flightTotal || 0,
+              addAccommodation: parsed.addAccommodation ?? null,
+              accommodationTotal: parsed.accommodationTotal || 0,
+            }));
+            toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
+          }
+        } catch {}
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ──── Draft: Auto-save to localStorage on change ────
+  useEffect(() => {
+    const toSave = {
+      tripStartDate: data.tripStartDate,
+      tripEndDate: data.tripEndDate,
+      tripDestination: data.tripDestination,
+      tripPurpose: data.tripPurpose,
+      addAllowance: data.addAllowance,
+      allowanceDays: data.allowanceDays,
+      dailyAllowance: data.dailyAllowance,
+      addFlights: data.addFlights,
+      flightTotal: data.flightTotal,
+      addAccommodation: data.addAccommodation,
+      accommodationTotal: data.accommodationTotal,
+      step,
+      draftReportId,
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
+  }, [data, step, draftReportId]);
+
+  // ──── Draft: Create/update in DB ────
+  const saveDraftToDb = async () => {
+    if (!user) return;
+    const totalIls = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0)
+      + (data.addAllowance ? data.allowanceDays * data.dailyAllowance : 0)
+      + (data.addFlights ? data.flightTotal : 0)
+      + (data.addAccommodation ? data.accommodationTotal : 0);
+
+    if (draftReportId) {
+      await supabase.from('reports').update({
+        trip_start_date: data.tripStartDate,
+        trip_end_date: data.tripEndDate,
+        trip_destination: data.tripDestination,
+        trip_purpose: data.tripPurpose,
+        total_amount_ils: totalIls,
+        daily_allowance: data.addAllowance ? data.dailyAllowance : null,
+        allowance_days: data.addAllowance ? data.allowanceDays : null,
+      }).eq('id', draftReportId);
+    } else {
+      const { data: report } = await supabase.from('reports').insert({
+        user_id: user.id,
+        trip_start_date: data.tripStartDate || new Date().toISOString().split('T')[0],
+        trip_end_date: data.tripEndDate || new Date().toISOString().split('T')[0],
+        trip_destination: data.tripDestination || 'טיוטא',
+        trip_purpose: data.tripPurpose || 'טיוטא',
+        status: 'draft',
+        total_amount_ils: 0,
+      }).select().single();
+      if (report) {
+        setDraftReportId(report.id);
+      }
+    }
+  };
 
   // ──── File helpers ────
   const fileToPreview = async (file: File): Promise<string | null> => {
@@ -225,16 +347,30 @@ export default function IndependentNewReport() {
   };
 
   // ──── Step validation ────
-  const canProceed = (): boolean => {
-    if (step === 0) return !!(data.tripStartDate && data.tripEndDate && data.tripDestination && data.tripPurpose);
-    if (step === 1) {
+  const isStepComplete = (s: number): boolean => {
+    if (s === 0) return !!(data.tripStartDate && data.tripEndDate && data.tripDestination && data.tripPurpose);
+    if (s === 1) {
       const allHavePayment = data.docs.every(d => d.paymentMethod !== null);
       return data.docs.length > 0 && allHavePayment;
     }
-    if (step === 2) return data.addAllowance !== null;
-    if (step === 3) return data.addFlights !== null;
-    if (step === 4) return data.addAccommodation !== null;
+    if (s === 2) return data.addAllowance !== null;
+    if (s === 3) return data.addFlights !== null;
+    if (s === 4) return data.addAccommodation !== null;
     return true;
+  };
+  const canProceed = () => isStepComplete(step);
+
+  // ──── Navigate to step (with auto-save draft) ────
+  const goToStep = async (targetStep: number) => {
+    // Save draft to DB on first forward navigation from step 0
+    if (step === 0 && targetStep > 0 && !draftReportId && isStepComplete(0)) {
+      await saveDraftToDb();
+    }
+    // Save draft on any forward step
+    if (targetStep > step && draftReportId) {
+      saveDraftToDb();
+    }
+    setStep(targetStep);
   };
 
   // ──── Final save ────
@@ -250,26 +386,53 @@ export default function IndependentNewReport() {
       const docsTotal = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0);
       const totalIls = docsTotal + allowanceTotal + data.flightTotal + data.accommodationTotal;
 
-      const { data: report, error: reportError } = await supabase
-        .from('reports')
-        .insert({
-          user_id: user.id,
-          trip_start_date: data.tripStartDate,
-          trip_end_date: data.tripEndDate,
-          trip_destination: data.tripDestination,
-          trip_purpose: data.tripPurpose,
-          status: 'closed',
-          total_amount_ils: totalIls,
-          daily_allowance: data.addAllowance ? data.dailyAllowance : null,
-          allowance_days: data.addAllowance ? data.allowanceDays : null,
-          submitted_at: new Date().toISOString(),
-          approved_at: new Date().toISOString(),
-          approved_by: user.id,
-        })
-        .select()
-        .single();
+      let reportId = draftReportId;
 
-      if (reportError) throw reportError;
+      if (draftReportId) {
+        // Update existing draft → closed
+        const { error: updateError } = await supabase
+          .from('reports')
+          .update({
+            trip_start_date: data.tripStartDate,
+            trip_end_date: data.tripEndDate,
+            trip_destination: data.tripDestination,
+            trip_purpose: data.tripPurpose,
+            status: 'closed',
+            total_amount_ils: totalIls,
+            daily_allowance: data.addAllowance ? data.dailyAllowance : null,
+            allowance_days: data.addAllowance ? data.allowanceDays : null,
+            submitted_at: new Date().toISOString(),
+            approved_at: new Date().toISOString(),
+            approved_by: user.id,
+          })
+          .eq('id', draftReportId);
+        if (updateError) throw updateError;
+      } else {
+        // Create new report (no draft existed)
+        const { data: report, error: reportError } = await supabase
+          .from('reports')
+          .insert({
+            user_id: user.id,
+            trip_start_date: data.tripStartDate,
+            trip_end_date: data.tripEndDate,
+            trip_destination: data.tripDestination,
+            trip_purpose: data.tripPurpose,
+            status: 'closed',
+            total_amount_ils: totalIls,
+            daily_allowance: data.addAllowance ? data.dailyAllowance : null,
+            allowance_days: data.addAllowance ? data.allowanceDays : null,
+            submitted_at: new Date().toISOString(),
+            approved_at: new Date().toISOString(),
+            approved_by: user.id,
+          })
+          .select()
+          .single();
+        if (reportError) throw reportError;
+        reportId = report.id;
+      }
+
+      if (!reportId) throw new Error('No report ID');
+      const report = { id: reportId };
 
       const allDocs = [
         ...data.docs.map(d => ({ ...d, docType: 'expense' as const })),
@@ -336,8 +499,10 @@ export default function IndependentNewReport() {
         } as any);
       }
 
+      // Clear draft from localStorage
+      localStorage.removeItem(DRAFT_KEY);
       toast({ title: 'הדוח נוצר בהצלחה!', description: 'הדוח הושלם וניתן לצפות בו' });
-      navigate(`/reports/${report.id}`);
+      navigate(`/reports/${reportId}`);
     } catch (error) {
       console.error('Error creating report:', error);
       toast({ title: 'שגיאה', description: 'לא ניתן ליצור את הדוח', variant: 'destructive' });
@@ -427,29 +592,48 @@ export default function IndependentNewReport() {
     </div>
   );
 
-  // ──── Step indicators ────
+  // ──── Step indicators – free navigation with progress line ────
   const StepIndicator = () => (
-    <div className="flex items-center gap-1 sm:gap-2 px-1 overflow-x-auto scrollbar-none">
+    <div className="flex items-center justify-between px-1">
       {STEP_LABELS.map((label, i) => {
         const Icon = STEP_ICONS[i];
         const isActive = i === step;
         const isDone = i < step;
+        const isComplete = isStepComplete(i);
         return (
-          <button
-            key={i}
-            onClick={() => i < step && setStep(i)}
-            disabled={i > step}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
-              isActive
-                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/30'
-                : isDone
-                ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 cursor-pointer'
-                : 'bg-muted/60 text-muted-foreground'
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">{label}</span>
-          </button>
+          <div key={i} className="flex items-center flex-1 last:flex-none">
+            <button
+              onClick={() => goToStep(i)}
+              className={`relative flex flex-col items-center gap-0.5 transition-all active:scale-95 ${
+                isActive ? 'scale-105' : ''
+              }`}
+            >
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all border-2 ${
+                isActive
+                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200/60 dark:shadow-emerald-900/40'
+                  : isDone
+                  ? 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400'
+                  : isComplete
+                  ? 'bg-muted border-emerald-300 dark:border-emerald-700 text-emerald-500'
+                  : 'bg-muted border-muted-foreground/20 text-muted-foreground'
+              }`}>
+                {isDone ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+              </div>
+              <span className={`text-[10px] font-medium max-w-[52px] text-center leading-tight ${
+                isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'
+              }`}>
+                {label}
+              </span>
+            </button>
+            {/* Connector line */}
+            {i < STEP_LABELS.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-1 rounded-full transition-colors ${
+                i < step
+                  ? 'bg-emerald-400 dark:bg-emerald-600'
+                  : 'bg-muted-foreground/15'
+              }`} />
+            )}
+          </div>
         );
       })}
     </div>
@@ -887,24 +1071,32 @@ export default function IndependentNewReport() {
         <div className="px-3 py-2.5 flex items-center justify-between">
           <button
             className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground py-1 px-1"
-            onClick={() => step === 0 ? navigate('/independent') : setStep(s => s - 1)}
+            onClick={() => {
+              if (step === 0) {
+                navigate('/independent');
+              } else {
+                goToStep(step - 1);
+              }
+            }}
           >
             <ArrowRight className="w-4 h-4" />
-            <span>{step === 0 ? 'חזרה' : 'חזרה'}</span>
+            <span>חזרה</span>
           </button>
-          <h1 className="text-sm font-bold">דוח הוצאות חדש</h1>
+          <h1 className="text-sm font-bold">
+            {draftReportId ? '✏️ טיוטא' : 'דוח הוצאות חדש'}
+          </h1>
           <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
             {step + 1}/{STEP_LABELS.length}
           </span>
         </div>
-        {/* Step chips */}
+        {/* Step navigation */}
         <div className="px-3 pb-2.5">
           <StepIndicator />
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-3 sm:px-4 pt-4 pb-28 max-w-lg mx-auto">
+      <div className="px-3 sm:px-4 pt-4 pb-32 max-w-lg mx-auto">
         <Card className="border-0 shadow-md bg-card/95 backdrop-blur-sm">
           <CardContent className="p-4 sm:p-5">
             {steps[step]}
@@ -914,19 +1106,30 @@ export default function IndependentNewReport() {
 
       {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t safe-bottom z-50">
-        <div className="px-3 py-3 max-w-lg mx-auto">
+        <div className="px-3 py-3 max-w-lg mx-auto flex gap-2">
+          {/* Back button */}
+          {step > 0 && (
+            <Button
+              variant="outline"
+              className="h-13 px-4 rounded-xl text-sm font-medium"
+              onClick={() => goToStep(step - 1)}
+            >
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          )}
+
           {step < STEP_LABELS.length - 1 ? (
             <Button
-              className="w-full h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 active:scale-[0.98] transition-transform"
+              className="flex-1 h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 active:scale-[0.98] transition-transform"
               disabled={!canProceed()}
-              onClick={() => setStep(s => s + 1)}
+              onClick={() => goToStep(step + 1)}
             >
               המשך
               <ArrowLeft className="w-5 h-5 mr-2" />
             </Button>
           ) : (
             <Button
-              className="w-full h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 active:scale-[0.98] transition-transform"
+              className="flex-1 h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 active:scale-[0.98] transition-transform"
               disabled={saving}
               onClick={handleFinish}
             >
