@@ -15,6 +15,7 @@ import {
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { blobToOrientedImageDataUrl } from '@/utils/imageDataUrl';
+import { convertPdfToImages } from '@/utils/pdfToImage';
 
 // ──────────────── Types ────────────────
 type PaymentMethod = 'out_of_pocket' | 'company_card';
@@ -373,18 +374,31 @@ export default function IndependentNewReport() {
 
   const analyzeFile = async (doc: UploadedDoc, tripDestination: string, tripStartDate: string): Promise<Partial<UploadedDoc>> => {
     const isImage = doc.file.type.startsWith('image/') || /\.(heic|heif|jpg|jpeg|png|gif|webp|bmp)$/i.test(doc.file.name);
-    if (!isImage) {
+    const isPdf = doc.file.type === 'application/pdf' || /\.pdf$/i.test(doc.file.name);
+
+    if (!isImage && !isPdf) {
       return { analyzed: true, analyzing: false, description: doc.file.name };
     }
 
     try {
-      // Use oriented & compressed data URI for analysis (max 1800px)
-      const dataUri = await blobToOrientedImageDataUrl(doc.file, { maxSize: 1800, quality: 0.85 });
+      let dataUri: string;
+
+      if (isPdf) {
+        // Convert first page of PDF to image, then analyze
+        const images = await convertPdfToImages(doc.file);
+        if (images.length === 0) {
+          return { analyzed: true, analyzing: false, description: doc.file.name, error: 'לא ניתן להמיר PDF לתמונה' };
+        }
+        dataUri = await blobToOrientedImageDataUrl(images[0], { maxSize: 1800, quality: 0.85 });
+      } else {
+        // Use oriented & compressed data URI for analysis (max 1800px)
+        dataUri = await blobToOrientedImageDataUrl(doc.file, { maxSize: 1800, quality: 0.85 });
+      }
 
       const { data: fnData, error } = await supabase.functions.invoke('analyze-receipt', {
         body: {
           imageBase64: dataUri,
-          mimeType: doc.file.type || 'image/jpeg',
+          mimeType: 'image/jpeg',
           fileName: doc.file.name,
           tripDestination,
         },
