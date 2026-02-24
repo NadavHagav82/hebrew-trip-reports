@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
-  Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus, Check
+  Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus, Check,
+  UtensilsCrossed, Car, ShoppingBag, ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -64,6 +65,15 @@ const STEP_LABELS = [
 ];
 
 const DEFAULT_DAILY_ALLOWANCE = 260;
+
+const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane; emoji: string }> = {
+  flights: { label: 'טיסות', icon: Plane, emoji: '✈️' },
+  accommodation: { label: 'לינה', icon: Hotel, emoji: '🏨' },
+  food: { label: 'אוכל', icon: UtensilsCrossed, emoji: '🍽️' },
+  transportation: { label: 'תחבורה', icon: Car, emoji: '🚗' },
+  miscellaneous: { label: 'שונות', icon: ShoppingBag, emoji: '📦' },
+};
+const CATEGORY_OPTIONS = Object.keys(CATEGORY_CONFIG);
 
 // ──────────────── Component ────────────────
 export default function IndependentNewReport() {
@@ -376,6 +386,13 @@ export default function IndependentNewReport() {
     setData(prev => ({ ...prev, [target]: prev[target].filter(d => d.id !== docId) }));
   };
 
+  const setDocCategory = (docId: string, category: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
+    setData(prev => ({
+      ...prev,
+      [target]: prev[target].map(d => d.id === docId ? { ...d, category } : d),
+    }));
+  };
+
   // ──── Step validation ────
   const isStepComplete = (s: number): boolean => {
     if (s === 0) return !!(data.tripStartDate && data.tripEndDate && data.tripDestination && data.tripPurpose);
@@ -576,10 +593,30 @@ export default function IndependentNewReport() {
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{doc.error}</span>
           </div>
-        ) : doc.amount ? (
-          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-            {doc.currency} {doc.amount?.toFixed(2)}
-          </p>
+        ) : doc.analyzed ? (
+          <>
+            {doc.amount ? (
+              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                {doc.currency} {doc.amount?.toFixed(2)}
+              </p>
+            ) : null}
+
+            {/* Category badge with dropdown */}
+            <div className="relative">
+              <select
+                value={doc.category}
+                onChange={(e) => setDocCategory(doc.id, e.target.value, target)}
+                className="w-full appearance-none text-[11px] font-medium py-1.5 px-2.5 pr-6 rounded-lg border cursor-pointer transition-colors bg-accent/50 border-border text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+              >
+                {CATEGORY_OPTIONS.map(cat => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_CONFIG[cat].emoji} {CATEGORY_CONFIG[cat].label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+            </div>
+          </>
         ) : null}
 
         <p className="text-[11px] text-muted-foreground truncate">{doc.description || doc.file.name}</p>
