@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
-  Plane, Hotel, Sun, FileText, Loader2, Receipt
+  Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -38,29 +38,26 @@ interface WizardData {
   tripEndDate: string;
   tripDestination: string;
   tripPurpose: string;
-  // Step 2 – docs
   docs: UploadedDoc[];
-  // Step 3 – daily allowance
   addAllowance: boolean | null;
   allowanceDays: number;
   dailyAllowance: number;
-  // Step 4 – flights
   addFlights: boolean | null;
   flightDocs: UploadedDoc[];
   flightTotal: number;
-  // Step 5 – accommodation
   addAccommodation: boolean | null;
   accommodationDocs: UploadedDoc[];
   accommodationTotal: number;
 }
 
+const STEP_ICONS = [FileText, Upload, Sun, Plane, Hotel, CheckCircle2];
 const STEP_LABELS = [
   'פרטי הנסיעה',
-  'העלאת חשבוניות',
+  'חשבוניות',
   'ימי שהייה',
-  'כרטיסי טיסה',
+  'טיסות',
   'לינה',
-  'סיכום וסגירה',
+  'סיכום',
 ];
 
 const DEFAULT_DAILY_ALLOWANCE = 260;
@@ -91,10 +88,10 @@ export default function IndependentNewReport() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const flightInputRef = useRef<HTMLInputElement>(null);
   const accommodationInputRef = useRef<HTMLInputElement>(null);
 
-  // Compute trip days from dates
   const tripDays = data.tripStartDate && data.tripEndDate
     ? Math.max(1, Math.ceil((new Date(data.tripEndDate).getTime() - new Date(data.tripStartDate).getTime()) / 86400000) + 1)
     : 0;
@@ -112,18 +109,12 @@ export default function IndependentNewReport() {
   };
 
   const analyzeFile = async (doc: UploadedDoc, tripDestination: string, tripStartDate: string): Promise<Partial<UploadedDoc>> => {
-    // Only analyze image files — PDFs and other non-image types are skipped
     const isImage = doc.file.type.startsWith('image/');
     if (!isImage) {
-      return {
-        analyzed: true,
-        analyzing: false,
-        description: doc.file.name,
-      };
+      return { analyzed: true, analyzing: false, description: doc.file.name };
     }
 
     try {
-      // Read as full Data URI (including prefix) — the edge function requires it for format validation
       const dataUri = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => resolve(e.target?.result as string);
@@ -142,7 +133,6 @@ export default function IndependentNewReport() {
 
       if (error) throw error;
 
-      // Edge function returns { data: { date, amount, currency, category, description } }
       const result = fnData?.data || fnData?.result || {};
       return {
         analyzed: true,
@@ -155,22 +145,15 @@ export default function IndependentNewReport() {
         expenseDate: result.date || tripStartDate,
       };
     } catch {
-      return {
-        analyzed: true,
-        analyzing: false,
-        error: 'לא ניתן לנתח את המסמך',
-      };
+      return { analyzed: true, analyzing: false, error: 'לא ניתן לנתח את המסמך' };
     }
   };
 
   const handleFilesAdded = useCallback(async (files: FileList, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
     const maxPerBatch = 10;
     const allowedCount = Math.min(files.length, maxPerBatch);
-    if (allowedCount <= 0) {
-      return;
-    }
+    if (allowedCount <= 0) return;
 
-    // Snapshot destination & start date at the moment of upload
     const destination = data.tripDestination;
     const startDate = data.tripStartDate;
 
@@ -197,7 +180,6 @@ export default function IndependentNewReport() {
 
     setData(prev => ({ ...prev, [target]: [...prev[target], ...newDocs] }));
 
-    // Analyze each doc concurrently — pass snapshotted values to avoid stale closure
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
       setData(prev => ({
@@ -237,16 +219,13 @@ export default function IndependentNewReport() {
     setSaving(true);
 
     try {
-      // Calculate allowance
       const allowanceTotal = data.addAllowance
         ? data.allowanceDays * data.dailyAllowance
         : 0;
 
-      // Calculate totals
       const docsTotal = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0);
       const totalIls = docsTotal + allowanceTotal + data.flightTotal + data.accommodationTotal;
 
-      // Create report
       const { data: report, error: reportError } = await supabase
         .from('reports')
         .insert({
@@ -268,7 +247,6 @@ export default function IndependentNewReport() {
 
       if (reportError) throw reportError;
 
-      // Upload docs to storage + create expense records
       const allDocs = [
         ...data.docs.map(d => ({ ...d, docType: 'expense' as const })),
         ...data.flightDocs.map(d => ({ ...d, docType: 'flight' as const })),
@@ -300,7 +278,6 @@ export default function IndependentNewReport() {
 
         if (expenseError) { console.error('Expense error:', expenseError); continue; }
 
-        // Upload file to storage
         try {
           const ext = doc.file.name.split('.').pop();
           const filePath = `${user.id}/${report.id}/${expense.id}.${ext}`;
@@ -321,7 +298,6 @@ export default function IndependentNewReport() {
         } catch (e) { console.error('Storage upload error:', e); }
       }
 
-      // Add daily allowance as an expense row if applicable
       if (data.addAllowance && allowanceTotal > 0) {
         await supabase.from('expenses').insert({
           report_id: report.id,
@@ -346,79 +322,152 @@ export default function IndependentNewReport() {
     }
   };
 
-  // ──── Render helpers ────
+  // ──── DocCard – mobile-optimized ────
   const DocCard = ({ doc, target }: { doc: UploadedDoc; target: 'docs' | 'flightDocs' | 'accommodationDocs' }) => (
-    <div className="border rounded-xl p-3 bg-white dark:bg-slate-900 relative group">
+    <div className="relative rounded-xl border bg-card overflow-hidden shadow-sm active:scale-[0.98] transition-transform">
+      {/* Delete button – always visible on mobile */}
       <button
-        className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-0.5"
+        className="absolute top-1.5 left-1.5 z-10 bg-destructive/90 text-destructive-foreground rounded-full p-1 shadow-md"
         onClick={() => removeDoc(doc.id, target)}
+        aria-label="הסר"
       >
-        <X className="w-3 h-3" />
+        <X className="w-3.5 h-3.5" />
       </button>
 
-      {/* Preview */}
+      {/* Preview – compact */}
       {doc.preview ? (
-        <img src={doc.preview} alt="preview" className="w-full h-24 object-cover rounded-lg mb-2" />
+        <img src={doc.preview} alt="preview" className="w-full h-20 sm:h-24 object-cover" />
       ) : (
-        <div className="w-full h-24 bg-muted rounded-lg mb-2 flex items-center justify-center">
-          <FileText className="w-8 h-8 text-muted-foreground" />
+        <div className="w-full h-20 sm:h-24 bg-muted flex items-center justify-center">
+          <FileText className="w-7 h-7 text-muted-foreground" />
         </div>
       )}
 
-      {/* Analysis status */}
-      {doc.analyzing ? (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          מנתח...
-        </div>
-      ) : doc.error ? (
-        <div className="flex items-center gap-1 text-xs text-destructive mb-2">
-          <AlertCircle className="w-3 h-3" />
-          {doc.error}
-        </div>
-      ) : doc.amount ? (
-        <div className="text-xs font-medium text-emerald-600 mb-2">
-          {doc.currency} {doc.amount?.toFixed(2)} {doc.currency !== 'ILS' && doc.amountIls ? `(₪${doc.amountIls?.toFixed(2)})` : ''}
-        </div>
-      ) : null}
+      {/* Info */}
+      <div className="p-2.5 space-y-1.5">
+        {/* Analysis status */}
+        {doc.analyzing ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>מנתח...</span>
+          </div>
+        ) : doc.error ? (
+          <div className="flex items-center gap-1 text-xs text-destructive">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{doc.error}</span>
+          </div>
+        ) : doc.amount ? (
+          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            {doc.currency} {doc.amount?.toFixed(2)}
+          </p>
+        ) : null}
 
-      <p className="text-xs text-muted-foreground truncate mb-2">{doc.file.name}</p>
+        <p className="text-[11px] text-muted-foreground truncate">{doc.description || doc.file.name}</p>
 
-      {/* Payment method question */}
-      {!doc.analyzing && !doc.paymentMethod && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-center">מי שילם?</p>
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs h-7 border-emerald-300 hover:bg-emerald-50"
+        {/* Payment method – large touch targets */}
+        {!doc.analyzing && !doc.paymentMethod && (
+          <div className="flex gap-1.5 pt-1">
+            <button
+              className="flex-1 py-2 rounded-lg text-xs font-medium border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 active:bg-emerald-100"
               onClick={() => setPaymentMethod(doc.id, 'out_of_pocket', target)}
             >
-              מכיסי
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs h-7 border-blue-300 hover:bg-blue-50"
+              💰 מכיסי
+            </button>
+            <button
+              className="flex-1 py-2 rounded-lg text-xs font-medium border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 active:bg-blue-100"
               onClick={() => setPaymentMethod(doc.id, 'company_card', target)}
             >
-              חברה
-            </Button>
+              🏢 חברה
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {doc.paymentMethod && (
-        <div className="flex items-center gap-1">
-          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-          <span className="text-xs text-emerald-600">
-            {doc.paymentMethod === 'out_of_pocket' ? 'מכיסי' : 'חברה'}
-          </span>
-          <button className="text-xs text-muted-foreground underline mr-auto" onClick={() => setPaymentMethod(doc.id, null as any, target)}>
-            שנה
+        {doc.paymentMethod && (
+          <div className="flex items-center justify-between pt-0.5">
+            <div className="flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                {doc.paymentMethod === 'out_of_pocket' ? '💰 מכיסי' : '🏢 חברה'}
+              </span>
+            </div>
+            <button
+              className="text-[11px] text-muted-foreground underline py-1 px-1"
+              onClick={() => setPaymentMethod(doc.id, null as any, target)}
+            >
+              שנה
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ──── Step indicators ────
+  const StepIndicator = () => (
+    <div className="flex items-center gap-1 sm:gap-2 px-1 overflow-x-auto scrollbar-none">
+      {STEP_LABELS.map((label, i) => {
+        const Icon = STEP_ICONS[i];
+        const isActive = i === step;
+        const isDone = i < step;
+        return (
+          <button
+            key={i}
+            onClick={() => i < step && setStep(i)}
+            disabled={i > step}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
+              isActive
+                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/30'
+                : isDone
+                ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 cursor-pointer'
+                : 'bg-muted/60 text-muted-foreground'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">{label}</span>
           </button>
-        </div>
+        );
+      })}
+    </div>
+  );
+
+  // ──── Upload zone component ────
+  const UploadZone = ({ target, inputRef, color = 'emerald', label = 'העלה חשבוניות' }: {
+    target: 'docs' | 'flightDocs' | 'accommodationDocs';
+    inputRef: React.RefObject<HTMLInputElement>;
+    color?: string;
+    label?: string;
+  }) => (
+    <div className="flex gap-2">
+      <button
+        className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-xl py-4 px-3 transition-colors active:scale-[0.98] border-${color}-300 dark:border-${color}-700 hover:bg-${color}-50/50`}
+        onClick={() => inputRef.current?.click()}
+      >
+        <Upload className={`w-5 h-5 text-${color}-500`} />
+        <span className={`text-sm font-medium text-${color}-700 dark:text-${color}-300`}>{label}</span>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="image/*,application/pdf"
+          className="hidden"
+          onChange={e => { e.target.files && handleFilesAdded(e.target.files, target); e.target.value = ''; }}
+        />
+      </button>
+      {target === 'docs' && (
+        <button
+          className="flex items-center justify-center gap-1 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl px-4 py-4 hover:bg-emerald-50/50 active:scale-[0.98] transition-colors"
+          onClick={() => cameraInputRef.current?.click()}
+        >
+          <Camera className="w-5 h-5 text-emerald-500" />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={e => { e.target.files && handleFilesAdded(e.target.files, 'docs'); e.target.value = ''; }}
+          />
+        </button>
       )}
     </div>
   );
@@ -427,21 +476,23 @@ export default function IndependentNewReport() {
   const steps = [
     // Step 0: Trip details
     <div className="space-y-4" key="step0">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="startDate">תאריך יציאה *</Label>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="startDate" className="text-sm">תאריך יציאה *</Label>
           <Input
             id="startDate"
             type="date"
+            className="h-12 text-base"
             value={data.tripStartDate}
             onChange={e => setData(p => ({ ...p, tripStartDate: e.target.value }))}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="endDate">תאריך חזרה *</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="endDate" className="text-sm">תאריך חזרה *</Label>
           <Input
             id="endDate"
             type="date"
+            className="h-12 text-base"
             min={data.tripStartDate}
             value={data.tripEndDate}
             onChange={e => setData(p => ({ ...p, tripEndDate: e.target.value }))}
@@ -449,24 +500,26 @@ export default function IndependentNewReport() {
         </div>
       </div>
       {tripDays > 0 && (
-        <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
-          משך הנסיעה: <strong>{tripDays} ימים</strong>
+        <div className="text-sm text-center bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-3 py-2.5 rounded-xl font-medium">
+          🗓️ משך הנסיעה: {tripDays} ימים
         </div>
       )}
-      <div className="space-y-2">
-        <Label htmlFor="dest">יעד הנסיעה *</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="dest" className="text-sm">יעד הנסיעה *</Label>
         <Input
           id="dest"
-          placeholder="לדוגמה: ניו יורק, ארהב"
+          className="h-12 text-base"
+          placeholder="לדוגמה: ניו יורק, ארה״ב"
           value={data.tripDestination}
           onChange={e => setData(p => ({ ...p, tripDestination: e.target.value }))}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="purpose">מטרת הנסיעה *</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="purpose" className="text-sm">מטרת הנסיעה *</Label>
         <Input
           id="purpose"
-          placeholder="לדוגמה: כנס מקצועי, פגישות עם לקוחות"
+          className="h-12 text-base"
+          placeholder="לדוגמה: כנס מקצועי"
           value={data.tripPurpose}
           onChange={e => setData(p => ({ ...p, tripPurpose: e.target.value }))}
         />
@@ -474,111 +527,101 @@ export default function IndependentNewReport() {
     </div>,
 
     // Step 1: Upload docs
-    <div className="space-y-4" key="step1">
-      <p className="text-sm text-muted-foreground">
-        העלה חשבוניות והוצאות שונות (עד 10 קבצים בכל העלאה, ללא הגבלה על סה״כ). לאחר ההעלאה, ציין עבור כל הוצאה אם שולמה מכיסך האישי או מחשבון החברה.
+    <div className="space-y-3" key="step1">
+      <p className="text-xs text-muted-foreground text-center">
+        עד 10 קבצים בכל העלאה · ללא הגבלה על סה״כ
       </p>
 
-      {/* Upload zone */}
-      <div
-        className="border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl p-6 text-center cursor-pointer hover:bg-emerald-50/50 transition-colors"
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={e => e.preventDefault()}
-        onDrop={e => {
-          e.preventDefault();
-          if (e.dataTransfer.files) handleFilesAdded(e.dataTransfer.files, 'docs');
-        }}
-      >
-        <Upload className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">גרור קבצים לכאן או לחץ להעלאה</p>
-        <p className="text-xs text-muted-foreground mt-1">תמונות, PDF – עד 10 קבצים בכל העלאה</p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,application/pdf"
-          className="hidden"
-          onChange={e => e.target.files && handleFilesAdded(e.target.files, 'docs')}
-        />
-      </div>
+      <UploadZone target="docs" inputRef={fileInputRef} label="העלה קבצים" />
 
       {data.docs.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {data.docs.map(doc => <DocCard key={doc.id} doc={doc} target="docs" />)}
-        </div>
-      )}
-
-      {data.docs.length > 0 && (
-        <div className="bg-muted/50 rounded-lg p-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">קבצים:</span>
-            <span className="font-medium">{data.docs.length}</span>
+        <>
+          <div className="grid grid-cols-2 gap-2.5">
+            {data.docs.map(doc => <DocCard key={doc.id} doc={doc} target="docs" />)}
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">סה"כ מנותח:</span>
-            <span className="font-medium text-emerald-600">
+
+          {/* Add more button */}
+          <button
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-muted-foreground/20 text-muted-foreground text-sm hover:border-emerald-300 hover:text-emerald-600 transition-colors active:scale-[0.98]"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Plus className="w-4 h-4" />
+            הוסף עוד חשבוניות
+          </button>
+
+          {/* Summary bar */}
+          <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/20 rounded-xl px-4 py-3">
+            <span className="text-sm text-muted-foreground">{data.docs.length} קבצים</span>
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
               ₪{data.docs.reduce((s, d) => s + (d.amountIls || 0), 0).toFixed(2)}
             </span>
           </div>
-        </div>
+        </>
       )}
     </div>,
 
     // Step 2: Daily allowance
     <div className="space-y-4" key="step2">
       <div className="flex justify-center">
-        <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center">
-          <Sun className="w-7 h-7 text-amber-600" />
+        <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center">
+          <Sun className="w-8 h-8 text-amber-600" />
         </div>
       </div>
-      <h3 className="text-center font-semibold">האם להוסיף ימי שהייה לדוח?</h3>
-      <p className="text-center text-sm text-muted-foreground">
-        ימי שהייה הם סכום יומי קבוע שמגיע לך עבור כל יום בנסיעה
+      <h3 className="text-center font-semibold text-lg">ימי שהייה</h3>
+      <p className="text-center text-sm text-muted-foreground px-2">
+        סכום יומי קבוע שמגיע לך עבור כל יום בנסיעה
       </p>
       <div className="flex gap-3 justify-center">
-        <Button
-          variant={data.addAllowance === true ? 'default' : 'outline'}
-          className={data.addAllowance === true ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+        <button
+          className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+            data.addAllowance === true
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50'
+              : 'bg-muted text-foreground'
+          }`}
           onClick={() => setData(p => ({ ...p, addAllowance: true, allowanceDays: tripDays }))}
         >
-          <CheckCircle2 className="w-4 h-4 ml-1" />
-          כן, הוסף
-        </Button>
-        <Button
-          variant={data.addAllowance === false ? 'default' : 'outline'}
+          ✅ כן, הוסף
+        </button>
+        <button
+          className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+            data.addAllowance === false
+              ? 'bg-muted-foreground text-background shadow-lg'
+              : 'bg-muted text-foreground'
+          }`}
           onClick={() => setData(p => ({ ...p, addAllowance: false }))}
         >
           לא
-        </Button>
+        </button>
       </div>
 
       {data.addAllowance && (
         <div className="space-y-3 border rounded-xl p-4 bg-amber-50/50 dark:bg-amber-950/20">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="allowDays">מספר ימים</Label>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="allowDays" className="text-sm">מספר ימים</Label>
               <Input
                 id="allowDays"
                 type="number"
+                className="h-12 text-base text-center"
                 min={1}
                 value={data.allowanceDays}
                 onChange={e => setData(p => ({ ...p, allowanceDays: Number(e.target.value) }))}
               />
-              <p className="text-xs text-muted-foreground">ברירת מחדל: {tripDays} ימים</p>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="daily">תשלום יומי (₪)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="daily" className="text-sm">תשלום יומי (₪)</Label>
               <Input
                 id="daily"
                 type="number"
+                className="h-12 text-base text-center"
                 min={0}
                 value={data.dailyAllowance}
                 onChange={e => setData(p => ({ ...p, dailyAllowance: Number(e.target.value) }))}
               />
             </div>
           </div>
-          <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 text-center">
-            <p className="text-sm text-muted-foreground">סה"כ ימי שהייה:</p>
+          <div className="bg-amber-100 dark:bg-amber-900/30 rounded-xl p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">סה"כ ימי שהייה</p>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
               ₪{(data.allowanceDays * data.dailyAllowance).toLocaleString()}
             </p>
@@ -590,58 +633,50 @@ export default function IndependentNewReport() {
     // Step 3: Flights
     <div className="space-y-4" key="step3">
       <div className="flex justify-center">
-        <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
-          <Plane className="w-7 h-7 text-blue-600" />
+        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
+          <Plane className="w-8 h-8 text-blue-600" />
         </div>
       </div>
-      <h3 className="text-center font-semibold">האם היו הוצאות כרטיסי טיסה?</h3>
+      <h3 className="text-center font-semibold text-lg">כרטיסי טיסה</h3>
       <div className="flex gap-3 justify-center">
-        <Button
-          variant={data.addFlights === true ? 'default' : 'outline'}
-          className={data.addFlights === true ? 'bg-blue-600 hover:bg-blue-700' : ''}
+        <button
+          className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+            data.addFlights === true
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/50'
+              : 'bg-muted text-foreground'
+          }`}
           onClick={() => setData(p => ({ ...p, addFlights: true }))}
         >
-          <CheckCircle2 className="w-4 h-4 ml-1" />
-          כן
-        </Button>
-        <Button
-          variant={data.addFlights === false ? 'default' : 'outline'}
+          ✈️ כן
+        </button>
+        <button
+          className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+            data.addFlights === false
+              ? 'bg-muted-foreground text-background shadow-lg'
+              : 'bg-muted text-foreground'
+          }`}
           onClick={() => setData(p => ({ ...p, addFlights: false }))}
         >
           לא
-        </Button>
+        </button>
       </div>
 
       {data.addFlights && (
         <div className="space-y-3">
-          <div
-            className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl p-5 text-center cursor-pointer hover:bg-blue-50/50 transition-colors"
-            onClick={() => flightInputRef.current?.click()}
-          >
-            <Upload className="w-6 h-6 text-blue-500 mx-auto mb-1" />
-            <p className="text-sm font-medium text-blue-700">העלה קבוצת כרטיסי טיסה</p>
-            <p className="text-xs text-muted-foreground">ניתן להעלות מספר קבצים</p>
-            <input
-              ref={flightInputRef}
-              type="file"
-              multiple
-              accept="image/*,application/pdf"
-              className="hidden"
-              onChange={e => e.target.files && handleFilesAdded(e.target.files, 'flightDocs')}
-            />
-          </div>
+          <UploadZone target="flightDocs" inputRef={flightInputRef} color="blue" label="העלה כרטיסי טיסה" />
 
           {data.flightDocs.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               {data.flightDocs.map(doc => <DocCard key={doc.id} doc={doc} target="flightDocs" />)}
             </div>
           )}
 
-          <div className="space-y-1">
-            <Label htmlFor="flightTotal">סה"כ עלות טיסות (₪)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="flightTotal" className="text-sm">סה"כ עלות טיסות (₪)</Label>
             <Input
               id="flightTotal"
               type="number"
+              className="h-12 text-base"
               min={0}
               placeholder="0"
               value={data.flightTotal || ''}
@@ -660,57 +695,51 @@ export default function IndependentNewReport() {
     // Step 4: Accommodation
     <div className="space-y-4" key="step4">
       <div className="flex justify-center">
-        <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center">
-          <Hotel className="w-7 h-7 text-purple-600" />
+        <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center">
+          <Hotel className="w-8 h-8 text-purple-600" />
         </div>
       </div>
-      <h3 className="text-center font-semibold">האם היו הוצאות לינה שלא הוספת עדיין?</h3>
+      <h3 className="text-center font-semibold text-lg">לינה</h3>
+      <p className="text-center text-sm text-muted-foreground">הוצאות לינה שלא הוספת עדיין</p>
       <div className="flex gap-3 justify-center">
-        <Button
-          variant={data.addAccommodation === true ? 'default' : 'outline'}
-          className={data.addAccommodation === true ? 'bg-purple-600 hover:bg-purple-700' : ''}
+        <button
+          className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+            data.addAccommodation === true
+              ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/50'
+              : 'bg-muted text-foreground'
+          }`}
           onClick={() => setData(p => ({ ...p, addAccommodation: true }))}
         >
-          <CheckCircle2 className="w-4 h-4 ml-1" />
-          כן
-        </Button>
-        <Button
-          variant={data.addAccommodation === false ? 'default' : 'outline'}
+          🏨 כן
+        </button>
+        <button
+          className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+            data.addAccommodation === false
+              ? 'bg-muted-foreground text-background shadow-lg'
+              : 'bg-muted text-foreground'
+          }`}
           onClick={() => setData(p => ({ ...p, addAccommodation: false }))}
         >
           לא
-        </Button>
+        </button>
       </div>
 
       {data.addAccommodation && (
         <div className="space-y-3">
-          <div
-            className="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-xl p-5 text-center cursor-pointer hover:bg-purple-50/50 transition-colors"
-            onClick={() => accommodationInputRef.current?.click()}
-          >
-            <Upload className="w-6 h-6 text-purple-500 mx-auto mb-1" />
-            <p className="text-sm font-medium text-purple-700">העלה קבלות לינה</p>
-            <input
-              ref={accommodationInputRef}
-              type="file"
-              multiple
-              accept="image/*,application/pdf"
-              className="hidden"
-              onChange={e => e.target.files && handleFilesAdded(e.target.files, 'accommodationDocs')}
-            />
-          </div>
+          <UploadZone target="accommodationDocs" inputRef={accommodationInputRef} color="purple" label="העלה קבלות לינה" />
 
           {data.accommodationDocs.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               {data.accommodationDocs.map(doc => <DocCard key={doc.id} doc={doc} target="accommodationDocs" />)}
             </div>
           )}
 
-          <div className="space-y-1">
-            <Label htmlFor="accTotal">סה"כ עלות לינה (₪)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="accTotal" className="text-sm">סה"כ עלות לינה (₪)</Label>
             <Input
               id="accTotal"
               type="number"
+              className="h-12 text-base"
               min={0}
               placeholder="0"
               value={data.accommodationTotal || ''}
@@ -723,31 +752,36 @@ export default function IndependentNewReport() {
 
     // Step 5: Summary
     <div className="space-y-4" key="step5">
-      <h3 className="font-semibold text-center text-lg">סיכום הדוח</h3>
+      <div className="text-center mb-2">
+        <div className="inline-flex w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl items-center justify-center mb-2">
+          <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+        </div>
+        <h3 className="font-bold text-lg">סיכום הדוח</h3>
+      </div>
 
       {/* Trip info */}
-      <div className="bg-muted/30 rounded-xl p-4 space-y-2 text-sm">
+      <div className="bg-muted/30 rounded-xl p-4 space-y-2.5 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">יעד</span>
+          <span className="text-muted-foreground">🌍 יעד</span>
           <span className="font-medium">{data.tripDestination}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">תאריכים</span>
-          <span className="font-medium">
-            {data.tripStartDate && format(new Date(data.tripStartDate), 'dd/MM/yyyy', { locale: he })} –{' '}
-            {data.tripEndDate && format(new Date(data.tripEndDate), 'dd/MM/yyyy', { locale: he })}
+          <span className="text-muted-foreground">📅 תאריכים</span>
+          <span className="font-medium text-xs">
+            {data.tripStartDate && format(new Date(data.tripStartDate), 'dd/MM/yy', { locale: he })} –{' '}
+            {data.tripEndDate && format(new Date(data.tripEndDate), 'dd/MM/yy', { locale: he })}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">מטרה</span>
-          <span className="font-medium">{data.tripPurpose}</span>
+          <span className="text-muted-foreground">🎯 מטרה</span>
+          <span className="font-medium text-xs">{data.tripPurpose}</span>
         </div>
       </div>
 
       {/* Breakdown */}
       <div className="space-y-2">
         {data.docs.length > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm py-1">
             <span className="text-muted-foreground">
               <Receipt className="w-3.5 h-3.5 inline ml-1" />
               חשבוניות ({data.docs.length})
@@ -756,16 +790,16 @@ export default function IndependentNewReport() {
           </div>
         )}
         {data.addAllowance && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm py-1">
             <span className="text-muted-foreground">
               <Sun className="w-3.5 h-3.5 inline ml-1" />
-              ימי שהייה ({data.allowanceDays} × ₪{data.dailyAllowance})
+              ימי שהייה ({data.allowanceDays}×₪{data.dailyAllowance})
             </span>
             <span className="font-medium">₪{(data.allowanceDays * data.dailyAllowance).toLocaleString()}</span>
           </div>
         )}
         {data.addFlights && data.flightTotal > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm py-1">
             <span className="text-muted-foreground">
               <Plane className="w-3.5 h-3.5 inline ml-1" />
               טיסות
@@ -774,7 +808,7 @@ export default function IndependentNewReport() {
           </div>
         )}
         {data.addAccommodation && data.accommodationTotal > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm py-1">
             <span className="text-muted-foreground">
               <Hotel className="w-3.5 h-3.5 inline ml-1" />
               לינה
@@ -782,16 +816,18 @@ export default function IndependentNewReport() {
             <span className="font-medium">₪{data.accommodationTotal.toLocaleString()}</span>
           </div>
         )}
-        <div className="border-t pt-2 flex justify-between font-bold">
-          <span>סה"כ לתשלום</span>
-          <span className="text-emerald-600 text-lg">
-            ₪{(
-              data.docs.reduce((s, d) => s + (d.amountIls || 0), 0) +
-              (data.addAllowance ? data.allowanceDays * data.dailyAllowance : 0) +
-              (data.addFlights ? data.flightTotal : 0) +
-              (data.addAccommodation ? data.accommodationTotal : 0)
-            ).toLocaleString()}
-          </span>
+        <div className="border-t pt-3 mt-2">
+          <div className="flex justify-between items-center">
+            <span className="font-bold">סה"כ לתשלום</span>
+            <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+              ₪{(
+                data.docs.reduce((s, d) => s + (d.amountIls || 0), 0) +
+                (data.addAllowance ? data.allowanceDays * data.dailyAllowance : 0) +
+                (data.addFlights ? data.flightTotal : 0) +
+                (data.addAccommodation ? data.accommodationTotal : 0)
+              ).toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -802,14 +838,14 @@ export default function IndependentNewReport() {
         const company = allDocs.filter(d => d.paymentMethod === 'company_card').reduce((s, d) => s + (d.amountIls || 0), 0);
         if (pocket === 0 && company === 0) return null;
         return (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground">מכיסי (להחזר)</p>
-              <p className="font-bold text-emerald-700">₪{pocket.toFixed(2)}</p>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-muted-foreground">💰 מכיסי (להחזר)</p>
+              <p className="font-bold text-emerald-700 dark:text-emerald-400">₪{pocket.toFixed(2)}</p>
             </div>
-            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground">חברה</p>
-              <p className="font-bold text-blue-700">₪{company.toFixed(2)}</p>
+            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-muted-foreground">🏢 חברה</p>
+              <p className="font-bold text-blue-700 dark:text-blue-400">₪{company.toFixed(2)}</p>
             </div>
           </div>
         );
@@ -819,83 +855,69 @@ export default function IndependentNewReport() {
 
   // ──── Render ────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/20 to-teal-50/10 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" dir="rtl">
-      {/* Header */}
-      <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 fixed top-0 left-0 right-0 z-50" />
-
-      <div className="container mx-auto px-4 pt-6 pb-24 max-w-2xl">
-        {/* Back */}
-        <button
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 mt-2"
-          onClick={() => step === 0 ? navigate('/independent') : setStep(s => s - 1)}
-        >
-          <ArrowRight className="w-4 h-4" />
-          {step === 0 ? 'חזרה לדשבורד' : 'חזרה'}
-        </button>
-
-        {/* Progress */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold">דוח הוצאות חדש</h1>
-            <span className="text-sm text-muted-foreground">{step + 1} / {STEP_LABELS.length}</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300"
-              style={{ width: `${((step + 1) / STEP_LABELS.length) * 100}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-1">
-            {STEP_LABELS.map((label, i) => (
-              <span key={i} className={`text-xs ${i === step ? 'text-emerald-600 font-medium' : i < step ? 'text-emerald-400' : 'text-muted-foreground'}`}>
-                {i < 3 ? label.slice(0, 5) : label.slice(0, 4)}
-              </span>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30" dir="rtl">
+      {/* Top bar */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b safe-top">
+        <div className="h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+        <div className="px-3 py-2.5 flex items-center justify-between">
+          <button
+            className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground py-1 px-1"
+            onClick={() => step === 0 ? navigate('/independent') : setStep(s => s - 1)}
+          >
+            <ArrowRight className="w-4 h-4" />
+            <span>{step === 0 ? 'חזרה' : 'חזרה'}</span>
+          </button>
+          <h1 className="text-sm font-bold">דוח הוצאות חדש</h1>
+          <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+            {step + 1}/{STEP_LABELS.length}
+          </span>
         </div>
+        {/* Step chips */}
+        <div className="px-3 pb-2.5">
+          <StepIndicator />
+        </div>
+      </div>
 
-        {/* Step content */}
-        <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-base">{STEP_LABELS[step]}</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Content */}
+      <div className="px-3 sm:px-4 pt-4 pb-28 max-w-lg mx-auto">
+        <Card className="border-0 shadow-md bg-card/95 backdrop-blur-sm">
+          <CardContent className="p-4 sm:p-5">
             {steps[step]}
           </CardContent>
         </Card>
+      </div>
 
-        {/* Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4">
-          <div className="container mx-auto max-w-2xl flex gap-3">
-            {step < STEP_LABELS.length - 1 ? (
-              <Button
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
-                disabled={!canProceed()}
-                onClick={() => setStep(s => s + 1)}
-              >
-                המשך
-                <ArrowLeft className="w-4 h-4 mr-2" />
-              </Button>
-            ) : (
-              <Button
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
-                disabled={saving}
-                onClick={handleFinish}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    יוצר דוח...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 ml-2" />
-                    סגור והפק PDF
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+      {/* Bottom nav */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t safe-bottom z-50">
+        <div className="px-3 py-3 max-w-lg mx-auto">
+          {step < STEP_LABELS.length - 1 ? (
+            <Button
+              className="w-full h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 active:scale-[0.98] transition-transform"
+              disabled={!canProceed()}
+              onClick={() => setStep(s => s + 1)}
+            >
+              המשך
+              <ArrowLeft className="w-5 h-5 mr-2" />
+            </Button>
+          ) : (
+            <Button
+              className="w-full h-13 text-base font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30 active:scale-[0.98] transition-transform"
+              disabled={saving}
+              onClick={handleFinish}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                  יוצר דוח...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-5 h-5 ml-2" />
+                  סגור והפק דוח
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
