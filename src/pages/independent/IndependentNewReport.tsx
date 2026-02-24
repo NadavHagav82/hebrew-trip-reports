@@ -1002,7 +1002,7 @@ export default function IndependentNewReport() {
           }`}
           onClick={() => setData(p => ({ ...p, addAllowance: true, allowanceDays: tripDays }))}
         >
-          ✅ כן, הוסף
+          <CheckCircle2 className="w-4 h-4 inline-block ml-1" /> כן, הוסף
         </button>
         <button
           className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
@@ -1072,7 +1072,7 @@ export default function IndependentNewReport() {
           }`}
           onClick={() => setData(p => ({ ...p, addFlights: true }))}
         >
-          ✈️ כן
+          <Plane className="w-4 h-4 inline-block ml-1" /> כן
         </button>
         <button
           className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
@@ -1135,7 +1135,7 @@ export default function IndependentNewReport() {
           }`}
           onClick={() => setData(p => ({ ...p, addAccommodation: true }))}
         >
-          🏨 כן
+          <Hotel className="w-4 h-4 inline-block ml-1" /> כן
         </button>
         <button
           className={`flex-1 max-w-[140px] py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
