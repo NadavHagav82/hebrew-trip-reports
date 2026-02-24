@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import {
   Plus, FileText, LogOut, User, Eye, BarChart3,
-  Wallet, FileCheck, Clock
+  Wallet, FileCheck, Clock, Edit3, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -125,21 +125,71 @@ export default function IndependentDashboard() {
           </div>
         </button>
 
-        {/* Reports List */}
+        {/* Draft Reports */}
+        {reports.filter(r => r.status === 'draft').length > 0 && (
+          <div>
+            <h2 className="text-sm font-bold flex items-center gap-1.5 mb-3 text-amber-600 dark:text-amber-400">
+              <Edit3 className="w-4 h-4" />
+              טיוטות ({reports.filter(r => r.status === 'draft').length})
+            </h2>
+            <div className="space-y-2">
+              {reports.filter(r => r.status === 'draft').map(report => (
+                <div
+                  key={report.id}
+                  className="bg-card rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-700 shadow-sm p-3.5 flex items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm truncate">{report.trip_destination || 'טיוטא'}</h3>
+                      <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">טיוטא</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{report.trip_purpose || 'לא הוגדרה מטרה'}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {format(new Date(report.created_at), 'dd/MM/yy HH:mm', { locale: he })}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-2 text-xs font-medium active:scale-95 transition-transform"
+                      onClick={() => navigate(`/independent/new-report?draft=${report.id}`)}
+                    >
+                      המשך
+                    </button>
+                    <button
+                      className="bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg p-2 active:scale-95 transition-all"
+                      onClick={async () => {
+                        if (confirm('למחוק טיוטא זו?')) {
+                          await supabase.from('reports').delete().eq('id', report.id);
+                          localStorage.removeItem('independent_draft_wizard');
+                          fetchData();
+                          toast({ title: 'הטיוטא נמחקה' });
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Completed Reports List */}
         <div>
           <h2 className="text-sm font-bold flex items-center gap-1.5 mb-3 text-muted-foreground">
             <BarChart3 className="w-4 h-4" />
-            הדוחות שלי ({reports.length})
+            הדוחות שלי ({reports.filter(r => r.status !== 'draft').length})
           </h2>
 
-          {reports.length === 0 ? (
+          {reports.filter(r => r.status !== 'draft').length === 0 ? (
             <div className="bg-card rounded-xl border p-8 text-center">
               <FileText className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">אין עדיין דוחות</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {reports.map(report => (
+              {reports.filter(r => r.status !== 'draft').map(report => (
                 <button
                   key={report.id}
                   className="w-full bg-card rounded-xl border shadow-sm p-3.5 flex items-center gap-3 text-right active:scale-[0.99] transition-transform hover:shadow-md"
