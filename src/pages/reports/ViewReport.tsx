@@ -2194,12 +2194,32 @@ const ViewReport = () => {
                             {expense.receipts.map((receipt: any, idx: number) => (
                               <button
                                 key={receipt.id || idx}
-                                onClick={() => {
-                                  const allReceipts = expense.receipts.map((r: any, i: number) => ({
-                                    url: r.file_url,
-                                    name: r.file_name || `חשבונית ${i + 1}`,
-                                    type: r.file_type || 'image'
-                                  }));
+                                onClick={async () => {
+                                  // Build receipt list, generating signed URLs for any that are still raw paths
+                                  const allReceipts = await Promise.all(
+                                    expense.receipts.map(async (r: any, i: number) => {
+                                      let url = r.file_url;
+                                      if (url && !url.startsWith('http') && !url.startsWith('data:')) {
+                                        try {
+                                          const { data } = await supabase.storage
+                                            .from('receipts')
+                                            .createSignedUrl(url, 60 * 60);
+                                          if (data?.signedUrl) {
+                                            url = data.signedUrl.startsWith('http')
+                                              ? data.signedUrl
+                                              : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${data.signedUrl}`;
+                                          }
+                                        } catch {
+                                          // keep original
+                                        }
+                                      }
+                                      return {
+                                        url,
+                                        name: r.file_name || `חשבונית ${i + 1}`,
+                                        type: r.file_type || 'image'
+                                      };
+                                    })
+                                  );
                                   setPreviewReceipts(allReceipts);
                                   setPreviewIndex(idx);
                                 }}
