@@ -33,6 +33,8 @@ interface UploadedDoc {
   category: string;
   expenseDate: string;
   error: string | null;
+  /** If set, this doc already exists in DB and should not be re-created */
+  existingExpenseId?: string;
 }
 
 interface WizardData {
@@ -120,7 +122,7 @@ export default function IndependentNewReport() {
     if (draftId) {
       // Load draft from DB
       setDraftReportId(draftId);
-      supabase.from('reports').select('*').eq('id', draftId).single().then(({ data: report }) => {
+      supabase.from('reports').select('*').eq('id', draftId).single().then(async ({ data: report }) => {
         if (report) {
           setData(prev => ({
             ...prev,
@@ -132,6 +134,86 @@ export default function IndependentNewReport() {
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
           }));
+
+          // Load existing expenses from DB
+          const { data: expenses } = await supabase
+            .from('expenses')
+            .select('*, receipts(*)')
+            .eq('report_id', draftId)
+            .order('expense_date', { ascending: true });
+
+          if (expenses && expenses.length > 0) {
+            const existingDocs: UploadedDoc[] = [];
+            let hasAllowanceExpense = false;
+
+            for (const exp of expenses) {
+              // Skip per-diem expense (it's managed by the wizard's allowance step)
+              if (exp.description?.startsWith('ימי שהייה:')) {
+                hasAllowanceExpense = true;
+                continue;
+              }
+
+              // Create a placeholder File for existing expenses
+              const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
+
+              // Try to get receipt preview
+              let preview: string | null = null;
+              if (exp.receipts && exp.receipts.length > 0) {
+                const receipt = exp.receipts[0];
+                const fileUrl = receipt.file_url || '';
+                // Try to use public URL directly or generate signed URL
+                if (fileUrl.includes('/object/public/')) {
+                  preview = fileUrl;
+                } else {
+                  // Extract path and get signed URL
+                  const pathMatch = fileUrl.match(/\/receipts\/(.+)$/);
+                  if (pathMatch) {
+                    const { data: signedData } = await supabase.storage
+                      .from('receipts')
+                      .createSignedUrl(pathMatch[1], 3600);
+                    if (signedData?.signedUrl) preview = signedData.signedUrl;
+                  }
+                }
+              }
+
+              existingDocs.push({
+                id: exp.id,
+                file: placeholderFile,
+                preview,
+                paymentMethod: exp.payment_method as PaymentMethod || 'out_of_pocket',
+                analyzed: true,
+                analyzing: false,
+                amount: exp.amount,
+                amountIls: exp.amount_in_ils,
+                currency: exp.currency || 'ILS',
+                description: exp.description || '',
+                category: exp.category || 'miscellaneous',
+                expenseDate: exp.expense_date || '',
+                error: null,
+                existingExpenseId: exp.id,
+              });
+            }
+
+            if (existingDocs.length > 0) {
+              // Separate by category
+              const flightDocs = existingDocs.filter(d => d.category === 'flights');
+              const accDocs = existingDocs.filter(d => d.category === 'accommodation');
+              const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
+
+              setData(prev => ({
+                ...prev,
+                docs: [...prev.docs, ...regularDocs],
+                flightDocs: [...prev.flightDocs, ...flightDocs],
+                accommodationDocs: [...prev.accommodationDocs, ...accDocs],
+                addFlights: flightDocs.length > 0 ? true : prev.addFlights,
+                flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
+                addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
+                accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
+                addAllowance: hasAllowanceExpense ? true : prev.addAllowance,
+              }));
+            }
+          }
+
           // Load saved step from localStorage
           const saved = localStorage.getItem(DRAFT_KEY);
           if (saved) {
@@ -140,8 +222,8 @@ export default function IndependentNewReport() {
               if (parsed.draftReportId === draftId && parsed.step) {
                 setStep(parsed.step);
                 // Restore non-file settings
-                if (parsed.addFlights !== undefined) setData(p => ({ ...p, addFlights: parsed.addFlights, flightTotal: parsed.flightTotal || 0 }));
-                if (parsed.addAccommodation !== undefined) setData(p => ({ ...p, addAccommodation: parsed.addAccommodation, accommodationTotal: parsed.accommodationTotal || 0 }));
+                if (parsed.addFlights !== undefined) setData(p => ({ ...p, addFlights: parsed.addFlights, flightTotal: parsed.flightTotal || p.flightTotal }));
+                if (parsed.addAccommodation !== undefined) setData(p => ({ ...p, addAccommodation: parsed.addAccommodation, accommodationTotal: parsed.accommodationTotal || p.accommodationTotal }));
               }
             } catch {}
           }
@@ -382,7 +464,13 @@ export default function IndependentNewReport() {
     }));
   };
 
-  const removeDoc = (docId: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
+  const removeDoc = async (docId: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
+    const doc = data[target].find(d => d.id === docId);
+    // If this is an existing expense from DB, delete it
+    if (doc?.existingExpenseId) {
+      await supabase.from('receipts').delete().eq('expense_id', doc.existingExpenseId);
+      await supabase.from('expenses').delete().eq('id', doc.existingExpenseId);
+    }
     setData(prev => ({ ...prev, [target]: prev[target].filter(d => d.id !== docId) }));
   };
 
@@ -489,6 +577,8 @@ export default function IndependentNewReport() {
 
       for (const doc of allDocs) {
         if (!doc.paymentMethod) continue;
+        // Skip docs that already exist in DB (loaded from edit)
+        if (doc.existingExpenseId) continue;
 
         const category = doc.docType === 'flight' ? 'flights'
           : doc.docType === 'accommodation' ? 'accommodation'
@@ -533,6 +623,12 @@ export default function IndependentNewReport() {
       }
 
       if (data.addAllowance && allowanceTotal > 0) {
+        // Delete old allowance expense if it exists, then recreate
+        await supabase.from('expenses')
+          .delete()
+          .eq('report_id', report.id)
+          .like('description', 'ימי שהייה:%');
+
         await supabase.from('expenses').insert({
           report_id: report.id,
           expense_date: data.tripStartDate,
