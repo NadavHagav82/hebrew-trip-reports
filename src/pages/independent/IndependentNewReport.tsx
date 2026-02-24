@@ -156,22 +156,42 @@ export default function IndependentNewReport() {
               // Create a placeholder File for existing expenses
               const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
 
-              // Try to get receipt preview
+              // Try to get receipt preview (always resolve via signed URL for private bucket)
               let preview: string | null = null;
               if (exp.receipts && exp.receipts.length > 0) {
                 const receipt = exp.receipts[0];
-                const fileUrl = receipt.file_url || '';
-                // Try to use public URL directly or generate signed URL
-                if (fileUrl.includes('/object/public/')) {
-                  preview = fileUrl;
-                } else {
-                  // Extract path and get signed URL
-                  const pathMatch = fileUrl.match(/\/receipts\/(.+)$/);
-                  if (pathMatch) {
-                    const { data: signedData } = await supabase.storage
-                      .from('receipts')
-                      .createSignedUrl(pathMatch[1], 3600);
-                    if (signedData?.signedUrl) preview = signedData.signedUrl;
+                const rawUrl = String(receipt.file_url || '').trim();
+
+                if (receipt.file_type === 'pdf') {
+                  preview = 'pdf';
+                } else if (rawUrl) {
+                  try {
+                    const decodedUrl = decodeURIComponent(rawUrl);
+                    const storagePath =
+                      decodedUrl.startsWith('http') || decodedUrl.includes('/storage/v1/')
+                        ? (
+                            decodedUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] ||
+                            decodedUrl.match(/\/receipts\/([^?#]+)/i)?.[1] ||
+                            ''
+                          )
+                        : decodedUrl.replace(/^\/+/, '');
+
+                    if (storagePath) {
+                      const { data: signedData } = await supabase.storage
+                        .from('receipts')
+                        .createSignedUrl(storagePath, 3600);
+
+                      const signedUrl = signedData?.signedUrl;
+                      preview = signedUrl
+                        ? (signedUrl.startsWith('http')
+                            ? signedUrl
+                            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`)
+                        : null;
+                    } else if (decodedUrl.startsWith('http')) {
+                      preview = decodedUrl;
+                    }
+                  } catch {
+                    preview = null;
                   }
                 }
               }
