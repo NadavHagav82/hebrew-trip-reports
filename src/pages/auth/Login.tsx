@@ -141,21 +141,34 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-background to-indigo-50 dark:from-blue-950/20 dark:via-background dark:to-indigo-950/20 p-3 sm:p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-3 sm:p-4">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
       
       <Card className="w-full max-w-md relative shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-lg" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg" />
         
         <CardHeader className="text-center space-y-4 relative">
+          {/* Backend connectivity warning */}
+          {backendStatus === 'error' && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+              <p className="font-medium">⚠️ בעיית חיבור לשרת</p>
+              <p className="text-xs mt-1 text-destructive/80">{backendDetails || 'לא ניתן להגיע לשרת. נסה לרענן את הדף.'}</p>
+            </div>
+          )}
+          {backendStatus === 'checking' && (
+            <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>בודק חיבור לשרת...</span>
+            </div>
+          )}
           <div className="flex justify-center mb-2">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-primary to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 rotate-3 hover:rotate-0 transition-transform duration-300">
-                <Plane className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-gradient-to-br from-primary via-primary to-accent rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 rotate-3 hover:rotate-0 transition-transform duration-300">
+                <Plane className="w-10 h-10 text-primary-foreground" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-card flex items-center justify-center">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
@@ -163,7 +176,7 @@ export default function Login() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               כניסה למערכת
             </CardTitle>
             <CardDescription className="text-sm sm:text-base mt-2 text-muted-foreground">
@@ -228,8 +241,8 @@ export default function Login() {
             
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-500 via-primary to-indigo-600 hover:from-blue-600 hover:via-primary hover:to-indigo-700 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]" 
-              disabled={loading}
+              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]" 
+              disabled={loading || backendStatus === 'error'}
             >
               {loading ? (
                 <span className="flex items-center gap-2">

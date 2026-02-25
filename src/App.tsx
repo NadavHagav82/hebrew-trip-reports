@@ -22,7 +22,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 
 // Lazy-load heavy pages to prevent mobile freezes/crashes during initial load
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const NewReport = lazy(() => import("./pages/reports/NewReport"));
+// NewReport removed – all users now use IndependentNewReport (unified wizard)
 const ViewReport = lazy(() => import("./pages/reports/ViewReport"));
 const ApproveReport = lazy(() => import("./pages/ApproveReport"));
 
@@ -110,65 +110,49 @@ const App = () => (
                 <Route path="/reports/:id" element={<ViewReport />} />
                 <Route path="/reports/view/:id" element={<ViewReport />} />
                 <Route path="/approve-report/:token" element={<ApproveReport />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/roles" element={<ManageRoles />} />
-                <Route path="/admin/manage-users" element={<ManageUsersRoles />} />
-                <Route path="/admin/organizations" element={<ManageOrganizations />} />
-                <Route path="/admin/org-dashboard" element={<OrganizationDashboard />} />
-                <Route path="/admin/org-users" element={<OrgAdminUsers />} />
-                <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+                <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
+                <Route path="/admin/roles" element={<RequireAuth><ManageRoles /></RequireAuth>} />
+                <Route path="/admin/manage-users" element={<RequireAuth><ManageUsersRoles /></RequireAuth>} />
+                <Route path="/admin/organizations" element={<RequireAuth><ManageOrganizations /></RequireAuth>} />
+                <Route path="/admin/org-dashboard" element={<RequireAuth><OrganizationDashboard /></RequireAuth>} />
+                <Route path="/admin/org-users" element={<RequireAuth><OrgAdminUsers /></RequireAuth>} />
+                <Route path="/manager/dashboard" element={<RequireAuth><ManagerDashboard /></RequireAuth>} />
                 <Route path="/independent" element={<RequireAuth><IndependentDashboard /></RequireAuth>} />
                 <Route path="/independent/new-report" element={<RequireAuth><IndependentNewReport /></RequireAuth>} />
                 <Route path="/independent/stats" element={<RequireAuth><IndependentStats /></RequireAuth>} />
-                <Route path="/manager/team" element={<MyTeam />} />
-                <Route path="/manager/stats" element={<ManagerStats />} />
-                <Route path="/manager/personal-stats" element={<ManagerPersonalStats />} />
-                <Route path="/manager/advanced-reports" element={<AdvancedReports />} />
-                <Route path="/manager/travel-stats" element={<ManagerTravelStats />} />
-                <Route path="/accounting" element={<AccountingHome />} />
-                <Route path="/accounting/home" element={<AccountingHome />} />
-                <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
-                <Route path="/accounting/stats" element={<AccountingStats />} />
-                <Route
-                  path="/accounting/organizational-analytics"
-                  element={<OrganizationalAnalytics />}
-                />
-                <Route
-                  path="/accounting/reimbursements"
-                  element={<ReimbursementSummary />}
-                />
-                <Route path="/accounting/users" element={<ManageUsers />} />
-                <Route path="/accounting/templates" element={<ExpenseTemplates />} />
-                <Route
-                  path="/accounting/bootstrap-tokens"
-                  element={<BootstrapTokenManagement />}
-                />
-                <Route path="/accounting/ai-analytics" element={<AIAccuracyAnalytics />} />
-                <Route path="/analytics" element={<ExpenseAnalytics />} />
-                <Route path="/orgadmin" element={<OrgAdminDashboard />} />
-                <Route
-                  path="/orgadmin/invitation-codes"
-                  element={<InvitationCodesManagement />}
-                />
-                <Route path="/orgadmin/users" element={<OrgUsersManagement />} />
-                <Route path="/orgadmin/analytics" element={<OrgAnalytics />} />
-                <Route path="/orgadmin/travel-policy" element={<TravelPolicyBuilder />} />
-                <Route path="/my-travel-policy" element={<MyTravelPolicy />} />
-                <Route path="/travel-requests" element={<TravelRequestsList />} />
-                <Route path="/travel-requests/new" element={<NewTravelRequest />} />
-                <Route path="/travel-requests/:id" element={<TravelRequestDetails />} />
-                <Route path="/travel-requests/pending" element={<PendingTravelApprovals />} />
-                <Route path="/travel/pending-approvals" element={<PendingTravelApprovals />} />
-                <Route
-                  path="/travel/my-approval-history"
-                  element={<MyApprovalHistory />}
-                />
-                <Route path="/approved-travels" element={<ApprovedTravels />} />
+                <Route path="/manager/team" element={<RequireAuth><MyTeam /></RequireAuth>} />
+                <Route path="/manager/stats" element={<RequireAuth><ManagerStats /></RequireAuth>} />
+                <Route path="/manager/personal-stats" element={<RequireAuth><ManagerPersonalStats /></RequireAuth>} />
+                <Route path="/manager/advanced-reports" element={<RequireAuth><AdvancedReports /></RequireAuth>} />
+                <Route path="/manager/travel-stats" element={<RequireAuth><ManagerTravelStats /></RequireAuth>} />
+                <Route path="/accounting" element={<RequireAuth><AccountingHome /></RequireAuth>} />
+                <Route path="/accounting/home" element={<RequireAuth><AccountingHome /></RequireAuth>} />
+                <Route path="/accounting/dashboard" element={<RequireAuth><AccountingDashboard /></RequireAuth>} />
+                <Route path="/accounting/stats" element={<RequireAuth><AccountingStats /></RequireAuth>} />
+                <Route path="/accounting/organizational-analytics" element={<RequireAuth><OrganizationalAnalytics /></RequireAuth>} />
+                <Route path="/accounting/reimbursements" element={<RequireAuth><ReimbursementSummary /></RequireAuth>} />
+                <Route path="/accounting/users" element={<RequireAuth><ManageUsers /></RequireAuth>} />
+                <Route path="/accounting/templates" element={<RequireAuth><ExpenseTemplates /></RequireAuth>} />
+                <Route path="/accounting/bootstrap-tokens" element={<RequireAuth><BootstrapTokenManagement /></RequireAuth>} />
+                <Route path="/accounting/ai-analytics" element={<RequireAuth><AIAccuracyAnalytics /></RequireAuth>} />
+                <Route path="/analytics" element={<RequireAuth><ExpenseAnalytics /></RequireAuth>} />
+                <Route path="/orgadmin" element={<RequireAuth><OrgAdminDashboard /></RequireAuth>} />
+                <Route path="/orgadmin/invitation-codes" element={<RequireAuth><InvitationCodesManagement /></RequireAuth>} />
+                <Route path="/orgadmin/users" element={<RequireAuth><OrgUsersManagement /></RequireAuth>} />
+                <Route path="/orgadmin/analytics" element={<RequireAuth><OrgAnalytics /></RequireAuth>} />
+                <Route path="/orgadmin/travel-policy" element={<RequireAuth><TravelPolicyBuilder /></RequireAuth>} />
+                <Route path="/my-travel-policy" element={<RequireAuth><MyTravelPolicy /></RequireAuth>} />
+                <Route path="/travel-requests" element={<RequireAuth><TravelRequestsList /></RequireAuth>} />
+                <Route path="/travel-requests/new" element={<RequireAuth><NewTravelRequest /></RequireAuth>} />
+                <Route path="/travel-requests/:id" element={<RequireAuth><TravelRequestDetails /></RequireAuth>} />
+                <Route path="/travel-requests/pending" element={<RequireAuth><PendingTravelApprovals /></RequireAuth>} />
+                <Route path="/travel/pending-approvals" element={<RequireAuth><PendingTravelApprovals /></RequireAuth>} />
+                <Route path="/travel/my-approval-history" element={<RequireAuth><MyApprovalHistory /></RequireAuth>} />
+                <Route path="/approved-travels" element={<RequireAuth><ApprovedTravels /></RequireAuth>} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/about" element={<AboutSystem />} />
-                <Route path="/admin/database-diagram" element={<DatabaseDiagram />} />
+                <Route path="/admin/database-diagram" element={<RequireAuth><DatabaseDiagram /></RequireAuth>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
