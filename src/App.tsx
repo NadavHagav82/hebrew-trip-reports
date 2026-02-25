@@ -105,8 +105,8 @@ const App = () => (
                 <Route path="/auth/register/code" element={<RegisterWithCode />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
-                <Route path="/reports/new" element={<NewReport />} />
-                <Route path="/reports/edit/:id" element={<NewReport />} />
+                <Route path="/reports/new" element={<RequireAuth><IndependentNewReport /></RequireAuth>} />
+                <Route path="/reports/edit/:id" element={<RequireAuth><IndependentNewReport /></RequireAuth>} />
                 <Route path="/reports/:id" element={<ViewReport />} />
                 <Route path="/reports/view/:id" element={<ViewReport />} />
                 <Route path="/approve-report/:token" element={<ApproveReport />} />
