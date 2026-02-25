@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart3, Loader2, ArrowRight, Download, TrendingUp, AlertTriangle, Users, Calendar, Filter, PieChartIcon } from "lucide-react";
+import { BarChart3, Loader2, ArrowRight, Download, TrendingUp, AlertTriangle, Users, Calendar, Filter, PieChartIcon, Plus } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subMonths, subQuarters } from "date-fns";
 import { he } from "date-fns/locale";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -673,11 +673,42 @@ export default function ExpenseAnalytics() {
         {reports.length === 0 ? (
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg rounded-2xl">
             <CardContent className="py-16 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                <BarChart3 className="w-10 h-10 text-slate-400" />
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/20 flex items-center justify-center">
+                <BarChart3 className="w-12 h-12 text-indigo-400" />
               </div>
-              <h3 className="text-xl font-bold mb-2 text-slate-700">אין נתונים לתקופה זו</h3>
-              <p className="text-muted-foreground">לא נמצאו דוחות מאושרים ב{periodLabel}</p>
+              <h3 className="text-xl font-bold mb-2 text-foreground">אין נתונים לתקופה זו</h3>
+              <p className="text-muted-foreground mb-6">לא נמצאו דוחות מאושרים ב{periodLabel}</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <Button 
+                  onClick={() => navigate('/reports/new')}
+                  className="rounded-xl bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-500 shadow-md"
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  צור דוח חדש
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setSelectedPeriod(prev => prev + 1)}
+                  className="rounded-xl"
+                >
+                  <Calendar className="w-4 h-4 ml-2" />
+                  בדוק תקופה קודמת
+                </Button>
+              </div>
+              <div className="mt-8 grid grid-cols-3 gap-4 max-w-md mx-auto">
+                <div className="p-3 bg-muted/30 rounded-xl">
+                  <p className="text-2xl font-bold text-muted-foreground">0</p>
+                  <p className="text-xs text-muted-foreground">דוחות</p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-xl">
+                  <p className="text-2xl font-bold text-muted-foreground">₪0</p>
+                  <p className="text-xs text-muted-foreground">סה״כ הוצאות</p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-xl">
+                  <p className="text-2xl font-bold text-muted-foreground">0</p>
+                  <p className="text-xs text-muted-foreground">קטגוריות</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : (
