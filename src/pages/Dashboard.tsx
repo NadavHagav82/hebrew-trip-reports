@@ -56,6 +56,7 @@ export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roleChecked, setRoleChecked] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -89,10 +90,13 @@ export default function Dashboard() {
     if (authLoading) return;
     if (!user) { navigate('/auth/login'); return; }
 
-    // Redirect independent users to their own dashboard
-    supabase.rpc('has_role', { _user_id: user.id, _role: 'independent' as any }).then(({ data }) => {
-      if (data) { navigate('/independent'); return; }
-    });
+    // Redirect independent users to their own dashboard BEFORE rendering anything
+    const checkIndependent = async () => {
+      const { data } = await supabase.rpc('has_role', { _user_id: user.id, _role: 'independent' as any });
+      if (data) { navigate('/independent', { replace: true }); return; }
+      setRoleChecked(true);
+    };
+    checkIndependent();
 
     fetchReports();
     fetchProfile();
@@ -538,6 +542,15 @@ export default function Dashboard() {
     const diffTime = Math.abs(now.getTime() - submitted.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
+
+  // Don't render the dashboard until we've confirmed this user is NOT independent
+  if (!roleChecked || authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-background to-blue-50/30 dark:from-slate-950 dark:via-background dark:to-blue-950/20">
