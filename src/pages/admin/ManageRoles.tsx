@@ -17,6 +17,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, ShieldCheck, User, Loader2, Search, Filter, ArrowLeft, Briefcase, Building2 } from "lucide-react";
 
@@ -54,6 +64,15 @@ export default function ManageRoles() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    userId: string;
+    role: 'admin' | 'manager' | 'accounting_manager' | 'org_admin';
+    action: 'add' | 'remove';
+    userName: string;
+  }>({ open: false, userId: '', role: 'admin', action: 'add', userName: '' });
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -206,7 +225,14 @@ export default function ManageRoles() {
     }
   };
 
-  const toggleRole = async (userId: string, role: 'admin' | 'manager' | 'accounting_manager' | 'org_admin') => {
+  const roleLabels: Record<string, string> = {
+    admin: 'אדמין',
+    manager: 'מנהל',
+    accounting_manager: 'מנהל חשבונות',
+    org_admin: 'אדמין ארגון'
+  };
+
+  const requestToggleRole = (userId: string, role: 'admin' | 'manager' | 'accounting_manager' | 'org_admin') => {
     // For org_admin, open dialog if adding role
     if (role === 'org_admin') {
       const currentRoles = userRoles.get(userId) || new Set();
@@ -216,18 +242,25 @@ export default function ManageRoles() {
       }
     }
 
+    const currentRoles = userRoles.get(userId) || new Set();
+    const hasRole = currentRoles.has(role);
+    const userName = users.find(u => u.id === userId)?.full_name || '';
+
+    setConfirmDialog({
+      open: true,
+      userId,
+      role,
+      action: hasRole ? 'remove' : 'add',
+      userName,
+    });
+  };
+
+  const executeToggleRole = async () => {
+    const { userId, role, action } = confirmDialog;
+    setConfirmDialog(prev => ({ ...prev, open: false }));
+
     try {
-      const currentRoles = userRoles.get(userId) || new Set();
-      const hasRole = currentRoles.has(role);
-
-      const roleLabels: Record<string, string> = {
-        admin: 'אדמין',
-        manager: 'מנהל',
-        accounting_manager: 'מנהל חשבונות',
-        org_admin: 'אדמין ארגון'
-      };
-
-      if (hasRole) {
+      if (action === 'remove') {
         const { error } = await supabase
           .from('user_roles')
           .delete()
@@ -458,7 +491,7 @@ export default function ManageRoles() {
                             <Button
                               size="sm"
                               variant={isAdminUser ? "destructive" : "outline"}
-                              onClick={() => toggleRole(userProfile.id, 'admin')}
+                              onClick={() => requestToggleRole(userProfile.id, 'admin')}
                               disabled={userProfile.id === user?.id}
                             >
                               {isAdminUser ? "הסר אדמין" : "הפוך לאדמין"}
@@ -466,7 +499,7 @@ export default function ManageRoles() {
                             <Button
                               size="sm"
                               variant={isOrgAdmin ? "default" : "outline"}
-                              onClick={() => toggleRole(userProfile.id, 'org_admin')}
+                              onClick={() => requestToggleRole(userProfile.id, 'org_admin')}
                               className={isOrgAdmin ? "bg-purple-500 hover:bg-purple-600" : ""}
                             >
                               {isOrgAdmin ? "הסר אדמין ארגון" : "הפוך לאדמין ארגון"}
@@ -474,14 +507,14 @@ export default function ManageRoles() {
                             <Button
                               size="sm"
                               variant={isManager ? "secondary" : "outline"}
-                              onClick={() => toggleRole(userProfile.id, 'manager')}
+                              onClick={() => requestToggleRole(userProfile.id, 'manager')}
                             >
                               {isManager ? "הסר מנהל" : "הפוך למנהל"}
                             </Button>
                             <Button
                               size="sm"
                               variant={isAccountingManager ? "default" : "outline"}
-                              onClick={() => toggleRole(userProfile.id, 'accounting_manager')}
+                              onClick={() => requestToggleRole(userProfile.id, 'accounting_manager')}
                               className={isAccountingManager ? "bg-blue-500 hover:bg-blue-600" : ""}
                             >
                               {isAccountingManager ? "הסר מנהל חשבונות" : "הפוך למנהל חשבונות"}
@@ -565,6 +598,33 @@ export default function ManageRoles() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Role Change Confirmation Dialog */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog.action === 'add' ? 'הקצאת תפקיד' : 'הסרת תפקיד'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.action === 'add' 
+                ? `האם אתה בטוח שברצונך להקצות את תפקיד "${roleLabels[confirmDialog.role]}" למשתמש ${confirmDialog.userName}?`
+                : `האם אתה בטוח שברצונך להסיר את תפקיד "${roleLabels[confirmDialog.role]}" מהמשתמש ${confirmDialog.userName}?`
+              }
+              {confirmDialog.role === 'admin' && (
+                <span className="block mt-2 font-semibold text-destructive">
+                  ⚠️ שים לב: תפקיד אדמין מעניק גישה מלאה למערכת
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={executeToggleRole}>
+              {confirmDialog.action === 'add' ? 'הקצה תפקיד' : 'הסר תפקיד'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

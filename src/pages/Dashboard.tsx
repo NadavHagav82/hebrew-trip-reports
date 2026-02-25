@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Shield, Plane, History } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -573,117 +574,179 @@ export default function Dashboard() {
                 <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </button>
               <div className="hidden sm:block">
-                <h1 className="text-lg font-rubik font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
-                  {profile?.full_name || 'דוחות נסיעה'}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-rubik font-bold bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">
+                    {profile?.full_name || 'דוחות נסיעה'}
+                  </h1>
+                  {isAdmin && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-destructive text-destructive-foreground shadow-sm">
+                      אדמין
+                    </span>
+                  )}
+                  {isOrgAdmin && !isAdmin && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-500 text-white shadow-sm">
+                      אדמין ארגון
+                    </span>
+                  )}
+                  {isManager && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-500 text-white shadow-sm">
+                      מנהל
+                    </span>
+                  )}
+                  {isAccountingManager && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-500 text-white shadow-sm">
+                      הנה״ח
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">{profile?.department}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               {isAccountingManager && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/accounting')}
-                  className="h-9 w-9 sm:h-10 sm:w-10 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl"
-                  title="דשבורד הנהלת חשבונות"
-                >
-                  <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => navigate('/accounting')}
+                      className="h-9 w-9 sm:h-10 sm:w-10 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl"
+                    >
+                      <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>הנהלת חשבונות</TooltipContent>
+                </Tooltip>
               )}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/travel-requests')}
-                className="h-9 w-9 sm:h-10 sm:w-10 bg-sky-500/10 hover:bg-sky-500/20 rounded-xl relative"
-                title="בקשות נסיעה"
-              >
-                <Plane className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600" />
-                {pendingTravelApprovalsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {pendingTravelApprovalsCount}
-                  </span>
-                )}
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/my-travel-policy')}
-                className="h-9 w-9 sm:h-10 sm:w-10 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl"
-                title="מדיניות הנסיעות שלי"
-              >
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/analytics')}
-                className="h-9 w-9 sm:h-10 sm:w-10 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl"
-                title="אנליטיקה"
-              >
-                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-              </Button>
-                {isManager && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/travel-requests')}
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-sky-500/10 hover:bg-sky-500/20 rounded-xl relative"
+                  >
+                    <Plane className="w-4 h-4 sm:w-5 sm:h-5 text-sky-600" />
+                    {pendingTravelApprovalsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {pendingTravelApprovalsCount}
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>בקשות נסיעה</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/my-travel-policy')}
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl"
+                  >
+                    <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>מדיניות נסיעות</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate('/analytics')}
+                    className="h-9 w-9 sm:h-10 sm:w-10 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl"
+                  >
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>אנליטיקה</TooltipContent>
+              </Tooltip>
+              {isManager && (
                 <>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => navigate('/manager/dashboard')}
-                    className="h-9 w-9 sm:h-10 sm:w-10 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl"
-                    title="דשבורד מנהלים"
-                  >
-                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => navigate('/travel/my-approval-history')}
-                    className="h-9 w-9 sm:h-10 sm:w-10 bg-violet-500/10 hover:bg-violet-500/20 rounded-xl"
-                    title="היסטוריית אישורים"
-                  >
-                    <History className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => navigate('/manager/team')}
-                    className="h-9 w-9 sm:h-10 sm:w-10 bg-green-500/10 hover:bg-green-500/20 rounded-xl"
-                    title="הצוות שלי"
-                  >
-                    <FileStack className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => navigate('/manager/stats')}
-                    className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-xl hidden sm:flex"
-                    title="סטטיסטיקות"
-                  >
-                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => navigate('/manager/dashboard')}
+                        className="h-9 w-9 sm:h-10 sm:w-10 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl"
+                      >
+                        <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>דשבורד מנהלים</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => navigate('/travel/my-approval-history')}
+                        className="h-9 w-9 sm:h-10 sm:w-10 bg-violet-500/10 hover:bg-violet-500/20 rounded-xl"
+                      >
+                        <History className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>היסטוריית אישורים</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => navigate('/manager/team')}
+                        className="h-9 w-9 sm:h-10 sm:w-10 bg-green-500/10 hover:bg-green-500/20 rounded-xl"
+                      >
+                        <FileStack className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>הצוות שלי</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => navigate('/manager/stats')}
+                        className="h-9 w-9 sm:h-10 sm:w-10 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-xl hidden sm:flex"
+                      >
+                        <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>סטטיסטיקות</TooltipContent>
+                  </Tooltip>
                 </>
               )}
               {isOrgAdmin && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/orgadmin')}
-                  className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl"
-                  title="ניהול ארגון"
-                >
-                  <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => navigate('/orgadmin')}
+                      className="h-9 w-9 sm:h-10 sm:w-10 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl"
+                    >
+                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>ניהול ארגון</TooltipContent>
+                </Tooltip>
               )}
               {isAdmin && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/admin/roles')}
-                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl"
-                  title="ניהול משתמשים"
-                >
-                  <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => navigate('/admin/roles')}
+                      className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl"
+                    >
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>ניהול משתמשים</TooltipContent>
+                </Tooltip>
               )}
               <div className="bg-amber-500/10 hover:bg-amber-500/20 rounded-xl">
                 <NotificationBell />
@@ -723,6 +786,21 @@ export default function Dashboard() {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Greeting Message */}
+        <div className="mb-6 p-4 sm:p-6 bg-gradient-to-r from-primary/5 via-indigo-500/5 to-purple-500/5 dark:from-primary/10 dark:via-indigo-500/10 dark:to-purple-500/10 rounded-2xl border border-primary/10">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+            שלום {profile?.full_name?.split(' ')[0] || 'לך'} 👋
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {stats.open > 0 
+              ? `יש לך ${stats.open} דוחות פתוחים ו-${stats.draft} טיוטות`
+              : stats.draft > 0
+              ? `יש לך ${stats.draft} טיוטות ממתינות`
+              : 'אין דוחות פתוחים כרגע'}
+            {isManager && pendingReportsCount > 0 ? ` • ${pendingReportsCount} דוחות ממתינים לאישורך` : ''}
+          </p>
+        </div>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
