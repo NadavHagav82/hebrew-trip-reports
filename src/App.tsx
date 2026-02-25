@@ -42,6 +42,7 @@ const ManagerTravelStats = lazy(() => import("./pages/manager/ManagerTravelStats
 
 const IndependentDashboard = lazy(() => import("./pages/independent/IndependentDashboard"));
 const IndependentNewReport = lazy(() => import("./pages/independent/IndependentNewReport"));
+const IndependentStats = lazy(() => import("./pages/independent/IndependentStats"));
 
 const AccountingDashboard = lazy(() => import("./pages/accounting/AccountingDashboard"));
 const AccountingStats = lazy(() => import("./pages/accounting/AccountingStats"));
@@ -118,6 +119,7 @@ const App = () => (
                 <Route path="/manager/dashboard" element={<ManagerDashboard />} />
                 <Route path="/independent" element={<RequireAuth><IndependentDashboard /></RequireAuth>} />
                 <Route path="/independent/new-report" element={<RequireAuth><IndependentNewReport /></RequireAuth>} />
+                <Route path="/independent/stats" element={<RequireAuth><IndependentStats /></RequireAuth>} />
                 <Route path="/manager/team" element={<MyTeam />} />
                 <Route path="/manager/stats" element={<ManagerStats />} />
                 <Route path="/manager/personal-stats" element={<ManagerPersonalStats />} />
