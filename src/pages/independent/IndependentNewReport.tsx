@@ -643,8 +643,10 @@ export default function IndependentNewReport() {
   const isStepComplete = (s: number): boolean => {
     if (s === 0) return !!(data.tripStartDate && data.tripEndDate && data.tripDestination && data.tripPurpose);
     if (s === 1) {
+      // Step 1 is optional – user may have no receipts (e.g. allowance-only report)
+      if (data.docs.length === 0) return true;
       const allHavePayment = data.docs.every(d => d.paymentMethod !== null);
-      return data.docs.length > 0 && allHavePayment;
+      return allHavePayment;
     }
     if (s === 2) return data.addAllowance !== null;
     if (s === 3) return data.addFlights !== null;
@@ -829,7 +831,7 @@ export default function IndependentNewReport() {
       // Create history record
       await supabase.from('report_history').insert({
         report_id: report.id,
-        action: isPending ? 'submitted' : 'submitted',
+        action: isPending ? 'submitted' : 'approved',
         performed_by: user.id,
         notes: isPending ? 'הדוח נשלח לאישור מנהל' : 'הדוח סגור והופק',
       });
