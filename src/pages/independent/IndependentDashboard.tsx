@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { StatusBadge } from '@/components/StatusBadge';
 import { NotificationBell } from '@/components/NotificationBell';
+import { IndependentProfileDialog } from '@/components/independent/IndependentProfileDialog';
+import { IndependentCharts } from '@/components/independent/IndependentCharts';
 
 interface Report {
   id: string;
@@ -81,6 +83,7 @@ export default function IndependentDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
+              <IndependentProfileDialog onUpdate={fetchData} />
               <NotificationBell />
               <Button variant="ghost" size="icon" onClick={signOut} title="התנתק" className="w-9 h-9">
                 <LogOut className="w-4 h-4" />
@@ -174,6 +177,9 @@ export default function IndependentDashboard() {
             </div>
           </div>
         )}
+
+        {/* Charts */}
+        <IndependentCharts reports={reports} />
 
         {/* Completed Reports List */}
         <div>
