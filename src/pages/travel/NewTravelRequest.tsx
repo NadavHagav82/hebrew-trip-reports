@@ -723,32 +723,37 @@ export default function NewTravelRequest() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/travel-requests')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {editRequestId ? 'עריכת בקשה לאישור נסיעה' : 'בקשה לאישור נסיעה'}
-            </h1>
-            <p className="text-muted-foreground">
-              {editRequestId ? 'ערוך את הבקשה ושלח מחדש לאישור' : 'מלא את פרטי הנסיעה המתוכננת'}
-            </p>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Hero Header */}
+      <div className="bg-gradient-to-l from-primary/90 to-primary px-4 md:px-8 py-6 md:py-10 shadow-lg">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/travel-requests')} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">
+                {editRequestId ? 'עריכת בקשה לאישור נסיעה' : '✈️ בקשה לאישור נסיעה'}
+              </h1>
+              <p className="text-primary-foreground/80 mt-1">
+                {editRequestId ? 'ערוך את הבקשה ושלח מחדש לאישור' : 'מלא את פרטי הנסיעה המתוכננת לקבלת אישור'}
+              </p>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 space-y-6 -mt-4">
 
         {/* Destination & Dates */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="shadow-md border-0 bg-card">
+          <CardHeader className="bg-accent/30 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-primary">
               <Plane className="h-5 w-5" />
               פרטי הנסיעה
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">עיר יעד *</Label>
@@ -820,12 +825,12 @@ export default function NewTravelRequest() {
         </Card>
 
         {/* Cost Estimates */}
-        <Card>
-          <CardHeader>
-            <CardTitle>צפי עלויות</CardTitle>
+        <Card className="shadow-md border-0 bg-card">
+          <CardHeader className="bg-accent/30 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-primary">💰 צפי עלויות</CardTitle>
             <CardDescription>הזן את העלויות המשוערות לכל קטגוריה</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             {/* Flights */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -974,10 +979,10 @@ export default function NewTravelRequest() {
             </div>
 
             {/* Total */}
-            <div className="pt-4 border-t">
-              <div className="flex justify-between items-center text-lg font-semibold">
-                <span>סה"כ משוער:</span>
-                <span>${estimatedTotal.toLocaleString()}</span>
+            <div className="pt-4 border-t border-border">
+              <div className="flex justify-between items-center text-lg font-bold bg-primary/5 rounded-lg p-4">
+                <span className="text-foreground">סה"כ משוער:</span>
+                <span className="text-primary text-xl">${estimatedTotal.toLocaleString()}</span>
               </div>
             </div>
           </CardContent>
@@ -1034,10 +1039,10 @@ export default function NewTravelRequest() {
 
         {/* No Violations */}
         {policyRules.length > 0 && violations.length === 0 && estimatedTotal > 0 && (
-          <Alert className="bg-green-500/10 border-green-500 text-green-700">
-            <CheckCircle className="h-4 w-4" />
+          <Alert className="bg-accent/30 border-primary/30 text-foreground">
+            <CheckCircle className="h-4 w-4 text-primary" />
             <AlertDescription>
-              כל הסכומים תואמים את מדיניות הנסיעות של הארגון
+              ✅ כל הסכומים תואמים את מדיניות הנסיעות של הארגון
             </AlertDescription>
           </Alert>
         )}
@@ -1050,11 +1055,11 @@ export default function NewTravelRequest() {
         />
 
         {/* Employee Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>הערות נוספות</CardTitle>
+        <Card className="shadow-md border-0 bg-card">
+          <CardHeader className="bg-accent/30 rounded-t-lg">
+            <CardTitle className="text-primary">📝 הערות נוספות</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <Textarea
               placeholder="הערות או בקשות מיוחדות..."
               value={employeeNotes}
@@ -1064,8 +1069,8 @@ export default function NewTravelRequest() {
         </Card>
 
         {/* Approver Selection / Approval Chain Display */}
-        <Card className="border-primary/30">
-          <CardHeader>
+        <Card className="shadow-md border-primary/20 bg-card">
+          <CardHeader className="bg-primary/5 rounded-t-lg">
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
               {useApprovalChain ? 'שרשרת אישורים' : 'בחירת מאשר'}
@@ -1154,15 +1159,15 @@ export default function NewTravelRequest() {
         </Card>
 
         {/* Actions */}
-        <div className="flex gap-4 justify-end">
-          <Button variant="outline" onClick={() => navigate('/travel-requests')}>
+        <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pb-8">
+          <Button variant="outline" onClick={() => navigate('/travel-requests')} className="order-3 sm:order-1">
             ביטול
           </Button>
-          <Button variant="secondary" onClick={() => handleSave(false)} disabled={loading}>
+          <Button variant="secondary" onClick={() => handleSave(false)} disabled={loading} className="order-2">
             <Save className="h-4 w-4 ml-2" />
             שמור טיוטה
           </Button>
-          <Button onClick={() => handleSave(true)} disabled={loading}>
+          <Button onClick={() => handleSave(true)} disabled={loading} className="order-1 sm:order-3 bg-primary hover:bg-primary/90 shadow-md">
             <Send className="h-4 w-4 ml-2" />
             שלח לאישור
           </Button>
