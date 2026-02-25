@@ -22,7 +22,6 @@ import ResetPassword from "./pages/auth/ResetPassword";
 
 // Lazy-load heavy pages to prevent mobile freezes/crashes during initial load
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-// NewReport removed – all users now use IndependentNewReport (unified wizard)
 const ViewReport = lazy(() => import("./pages/reports/ViewReport"));
 const ApproveReport = lazy(() => import("./pages/ApproveReport"));
 
