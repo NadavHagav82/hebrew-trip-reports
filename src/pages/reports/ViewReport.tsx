@@ -411,11 +411,7 @@ const ViewReport = () => {
   };
 
   const navigateToEdit = (reportId: string) => {
-    if (isIndependentUser) {
-      navigate(`/independent/new-report?draft=${reportId}`);
-    } else {
-      navigate(`/reports/edit/${reportId}`);
-    }
+    navigate(`/reports/edit/${reportId}`);
   };
 
   const calculateTripDuration = () => {

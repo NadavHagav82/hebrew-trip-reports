@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
   Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus, Check,
-  UtensilsCrossed, Car, ShoppingBag, ChevronDown, Globe, Calendar, Target, Wallet, Building2
+  UtensilsCrossed, Car, ShoppingBag, ChevronDown, Globe, Calendar, Target, Wallet, Building2, Send, User
 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { blobToOrientedImageDataUrl } from '@/utils/imageDataUrl';
@@ -83,10 +86,14 @@ export default function IndependentNewReport() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { id: editId } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [draftReportId, setDraftReportId] = useState<string | null>(null);
+  const [isIndependent, setIsIndependent] = useState<boolean | null>(null);
+  const [managerInfo, setManagerInfo] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [showManagerDialog, setShowManagerDialog] = useState(false);
 
   const [data, setData] = useState<WizardData>({
     tripStartDate: '',
@@ -130,6 +137,96 @@ export default function IndependentNewReport() {
       }
     }).catch(() => {});
   }, []);
+
+  // ──── Detect user role ────
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('has_role', { _user_id: user.id, _role: 'independent' as any })
+      .then(({ data }) => setIsIndependent(!!data));
+  }, [user]);
+
+  // ──── Support /reports/edit/:id for organizational users ────
+  useEffect(() => {
+    if (editId && user && !searchParams.get('draft')) {
+      setDraftReportId(editId);
+      // Load the report data - reuse the same loading logic as draft
+      supabase.from('reports').select('*').eq('id', editId).single().then(async ({ data: report }) => {
+        if (report) {
+          setData(prev => ({
+            ...prev,
+            tripStartDate: report.trip_start_date || '',
+            tripEndDate: report.trip_end_date || '',
+            tripDestination: report.trip_destination || '',
+            tripPurpose: report.trip_purpose || '',
+            dailyAllowance: report.daily_allowance || DEFAULT_DAILY_ALLOWANCE,
+            allowanceDays: report.allowance_days || 0,
+            addAllowance: report.allowance_days ? true : null,
+          }));
+
+          // Load existing expenses
+          const { data: expenses } = await supabase
+            .from('expenses')
+            .select('*, receipts(*)')
+            .eq('report_id', editId)
+            .order('expense_date', { ascending: true });
+
+          if (expenses && expenses.length > 0) {
+            const existingDocs: UploadedDoc[] = [];
+            for (const exp of expenses) {
+              if (exp.description?.startsWith('ימי שהייה:')) continue;
+              const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
+              let preview: string | null = null;
+              if (exp.receipts && exp.receipts.length > 0) {
+                const receipt = exp.receipts[0];
+                const rawUrl = String(receipt.file_url || '').trim();
+                if (receipt.file_type === 'pdf') {
+                  preview = 'pdf';
+                } else if (rawUrl) {
+                  try {
+                    const decodedUrl = decodeURIComponent(rawUrl);
+                    const storagePath = decodedUrl.startsWith('http') || decodedUrl.includes('/storage/v1/')
+                      ? (decodedUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] || decodedUrl.match(/\/receipts\/([^?#]+)/i)?.[1] || '')
+                      : decodedUrl.replace(/^\/+/, '');
+                    if (storagePath) {
+                      const { data: signedData } = await supabase.storage.from('receipts').createSignedUrl(storagePath, 3600);
+                      const signedUrl = signedData?.signedUrl;
+                      preview = signedUrl ? (signedUrl.startsWith('http') ? signedUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`) : null;
+                    } else if (decodedUrl.startsWith('http')) {
+                      preview = decodedUrl;
+                    }
+                  } catch { preview = null; }
+                }
+              }
+              existingDocs.push({
+                id: exp.id, file: placeholderFile, preview,
+                paymentMethod: exp.payment_method as PaymentMethod || 'out_of_pocket',
+                analyzed: true, analyzing: false,
+                amount: exp.amount, amountIls: exp.amount_in_ils,
+                currency: exp.currency || 'ILS', description: exp.description || '',
+                category: exp.category || 'miscellaneous', expenseDate: exp.expense_date || '',
+                error: null, existingExpenseId: exp.id,
+              });
+            }
+            if (existingDocs.length > 0) {
+              const flightDocs = existingDocs.filter(d => d.category === 'flights');
+              const accDocs = existingDocs.filter(d => d.category === 'accommodation');
+              const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
+              setData(prev => ({
+                ...prev,
+                docs: [...prev.docs, ...regularDocs],
+                flightDocs: [...prev.flightDocs, ...flightDocs],
+                accommodationDocs: [...prev.accommodationDocs, ...accDocs],
+                addFlights: flightDocs.length > 0 ? true : prev.addFlights,
+                flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
+                addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
+                accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
+              }));
+            }
+          }
+        }
+      });
+    }
+  }, [editId, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ──── Draft: Load from URL or localStorage on mount ────
   useEffect(() => {
@@ -569,56 +666,85 @@ export default function IndependentNewReport() {
     setStep(targetStep);
   };
 
+  // ──── Check manager for organizational users ────
+  const checkManagerBeforeFinish = async () => {
+    if (isIndependent) {
+      await performFinish('closed');
+      return;
+    }
+    // Organizational user: check if has manager
+    if (!user) return;
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('is_manager, manager_id')
+      .eq('id', user.id)
+      .single();
+
+    const hasManager = !!profileData?.manager_id;
+    const isManagerUser = !!profileData?.is_manager;
+
+    if (!isManagerUser && hasManager) {
+      // Load manager info and show dialog
+      const { data: mgr } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('id', profileData.manager_id)
+        .single();
+      if (mgr) {
+        setManagerInfo({ id: mgr.id, name: mgr.full_name || 'מנהל', email: mgr.email || '' });
+        setShowManagerDialog(true);
+        return;
+      }
+    }
+    // Manager or no manager → close directly
+    await performFinish('closed');
+  };
+
   // ──── Final save ────
   const handleFinish = async () => {
+    await checkManagerBeforeFinish();
+  };
+
+  const handleManagerApprovalConfirm = async () => {
+    setShowManagerDialog(false);
+    await performFinish('pending_approval');
+  };
+
+  const performFinish = async (finalStatus: 'closed' | 'pending_approval') => {
     if (!user) return;
     setSaving(true);
 
     try {
       const allowanceIls = data.addAllowance ? allowanceTotalIls : 0;
-
       const docsTotal = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0);
       const totalIls = docsTotal + allowanceIls + data.flightTotal + data.accommodationTotal;
+      const isPending = finalStatus === 'pending_approval';
 
       let reportId = draftReportId;
 
+      const reportPayload = {
+        trip_start_date: data.tripStartDate,
+        trip_end_date: data.tripEndDate,
+        trip_destination: data.tripDestination,
+        trip_purpose: data.tripPurpose,
+        status: finalStatus,
+        total_amount_ils: totalIls,
+        daily_allowance: data.addAllowance ? data.dailyAllowance : null,
+        allowance_days: data.addAllowance ? data.allowanceDays : null,
+        submitted_at: new Date().toISOString(),
+        ...(finalStatus === 'closed' ? { approved_at: new Date().toISOString(), approved_by: user.id } : {}),
+      };
+
       if (draftReportId) {
-        // Update existing draft → closed
         const { error: updateError } = await supabase
           .from('reports')
-          .update({
-            trip_start_date: data.tripStartDate,
-            trip_end_date: data.tripEndDate,
-            trip_destination: data.tripDestination,
-            trip_purpose: data.tripPurpose,
-            status: 'closed',
-            total_amount_ils: totalIls,
-            daily_allowance: data.addAllowance ? data.dailyAllowance : null,
-            allowance_days: data.addAllowance ? data.allowanceDays : null,
-            submitted_at: new Date().toISOString(),
-            approved_at: new Date().toISOString(),
-            approved_by: user.id,
-          })
+          .update(reportPayload)
           .eq('id', draftReportId);
         if (updateError) throw updateError;
       } else {
-        // Create new report (no draft existed)
         const { data: report, error: reportError } = await supabase
           .from('reports')
-          .insert({
-            user_id: user.id,
-            trip_start_date: data.tripStartDate,
-            trip_end_date: data.tripEndDate,
-            trip_destination: data.tripDestination,
-            trip_purpose: data.tripPurpose,
-            status: 'closed',
-            total_amount_ils: totalIls,
-            daily_allowance: data.addAllowance ? data.dailyAllowance : null,
-            allowance_days: data.addAllowance ? data.allowanceDays : null,
-            submitted_at: new Date().toISOString(),
-            approved_at: new Date().toISOString(),
-            approved_by: user.id,
-          })
+          .insert({ user_id: user.id, ...reportPayload })
           .select()
           .single();
         if (reportError) throw reportError;
@@ -636,7 +762,6 @@ export default function IndependentNewReport() {
 
       for (const doc of allDocs) {
         if (!doc.paymentMethod) continue;
-        // Skip docs that already exist in DB (loaded from edit)
         if (doc.existingExpenseId) continue;
 
         const category = doc.docType === 'flight' ? 'flights'
@@ -654,7 +779,7 @@ export default function IndependentNewReport() {
             amount_in_ils: doc.amountIls || doc.amount || 0,
             description: doc.description || doc.file.name,
             payment_method: doc.paymentMethod as any,
-            approval_status: 'approved' as any,
+            approval_status: isPending ? 'pending' : 'approved' as any,
           } as any)
           .select()
           .single();
@@ -683,7 +808,6 @@ export default function IndependentNewReport() {
       }
 
       if (data.addAllowance && allowanceIls > 0) {
-        // Delete old allowance expense if it exists, then recreate
         await supabase.from('expenses')
           .delete()
           .eq('report_id', report.id)
@@ -698,13 +822,60 @@ export default function IndependentNewReport() {
           amount_in_ils: allowanceIls,
           description: `ימי שהייה: ${data.allowanceDays} ימים x $${data.dailyAllowance} (שער ${usdToIls.toFixed(2)})`,
           payment_method: 'out_of_pocket' as any,
-          approval_status: 'approved' as any,
+          approval_status: isPending ? 'pending' : 'approved' as any,
         } as any);
       }
 
-      // Clear draft from localStorage
+      // Create history record
+      await supabase.from('report_history').insert({
+        report_id: report.id,
+        action: isPending ? 'submitted' : 'submitted',
+        performed_by: user.id,
+        notes: isPending ? 'הדוח נשלח לאישור מנהל' : 'הדוח סגור והופק',
+      });
+
+      // If pending, send manager approval request
+      if (isPending && managerInfo) {
+        try {
+          const { data: profileData } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+          await supabase.functions.invoke('request-report-approval', {
+            body: {
+              reportId: report.id,
+              managerEmail: managerInfo.email,
+              managerName: managerInfo.name,
+              employeeName: profileData?.full_name || '',
+              reportDetails: {
+                destination: data.tripDestination,
+                startDate: data.tripStartDate,
+                endDate: data.tripEndDate,
+                purpose: data.tripPurpose,
+                totalAmount: totalIls,
+              },
+            },
+          });
+        } catch (e) { console.error('Manager notification error:', e); }
+      }
+
+      // Send to accounting if closed (non-independent)
+      if (finalStatus === 'closed' && !isIndependent) {
+        try {
+          const { data: profileData } = await supabase.from('profiles')
+            .select('accounting_manager_email, username')
+            .eq('id', user.id)
+            .single();
+          if (profileData?.accounting_manager_email) {
+            supabase.functions.invoke('send-accounting-report', {
+              body: { reportId: report.id, accountingEmail: profileData.accounting_manager_email },
+            }).catch(() => {});
+          }
+        } catch (e) { console.error('Accounting email error:', e); }
+      }
+
       localStorage.removeItem(DRAFT_KEY);
-      toast({ title: 'הדוח נוצר בהצלחה!', description: 'הדוח הושלם וניתן לצפות בו' });
+      toast({
+        title: isPending ? 'הדוח נשלח לאישור מנהל' : 'הדוח נוצר בהצלחה!',
+        description: isPending ? 'הדוח נשלח למנהל האחראי לאישור' : 'הדוח הושלם וניתן לצפות בו',
+      });
       navigate(`/reports/${reportId}`);
     } catch (error) {
       console.error('Error creating report:', error);
@@ -1317,7 +1488,7 @@ export default function IndependentNewReport() {
             className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground py-1 px-1"
             onClick={() => {
               if (step === 0) {
-                navigate('/independent');
+                navigate(isIndependent ? '/independent' : '/dashboard');
               } else {
                 goToStep(step - 1);
               }
@@ -1392,6 +1563,75 @@ export default function IndependentNewReport() {
           )}
         </div>
       </div>
+
+      {/* Manager Approval Dialog */}
+      <Dialog open={showManagerDialog} onOpenChange={setShowManagerDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Send className="w-5 h-5 text-primary" />
+              שליחת דוח לאישור מנהל
+            </DialogTitle>
+            <DialogDescription>
+              הדוח יישלח לאישור המנהל שלך לפני הגשה סופית
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {managerInfo && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">{managerInfo.name}</p>
+                    <p className="text-sm text-muted-foreground">{managerInfo.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <h4 className="font-semibold text-sm text-muted-foreground">סיכום הדוח</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">יעד:</span>
+                  <span className="font-medium">{data.tripDestination}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">סה״כ:</span>
+                  <span className="font-bold text-primary">
+                    ₪{(
+                      data.docs.reduce((s, d) => s + (d.amountIls || 0), 0) +
+                      (data.addAllowance ? allowanceTotalIls : 0) +
+                      (data.addFlights ? data.flightTotal : 0) +
+                      (data.addAccommodation ? data.accommodationTotal : 0)
+                    ).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowManagerDialog(false)} className="gap-2">
+              חזור לעריכה
+            </Button>
+            <Button
+              onClick={handleManagerApprovalConfirm}
+              disabled={saving}
+              className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+            >
+              {saving ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> שולח...</>
+              ) : (
+                <><Send className="w-4 h-4" /> שלח לאישור</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
