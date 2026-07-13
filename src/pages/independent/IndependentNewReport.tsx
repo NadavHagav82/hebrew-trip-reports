@@ -475,10 +475,10 @@ export default function IndependentNewReport() {
     let reportId = draftReportIdRef.current;
     if (reportId) {
       await withTimeout(supabase.from('reports').update({
-        trip_start_date: draftData.tripStartDate,
-        trip_end_date: draftData.tripEndDate,
-        trip_destination: draftData.tripDestination,
-        trip_purpose: draftData.tripPurpose,
+        trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
+        trip_end_date: draftData.tripEndDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
+        trip_destination: draftData.tripDestination || 'טיוטא',
+        trip_purpose: draftData.tripPurpose || 'טיוטא',
         total_amount_ils: totalIls,
         daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
         allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
