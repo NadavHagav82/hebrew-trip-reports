@@ -258,8 +258,38 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteReport = async (reportId: string) => {
+    if (!user) return;
+    try {
+      // Delete storage files (best-effort)
+      try {
+        const { data: files } = await supabase.storage
+          .from('receipts')
+          .list(`${user.id}/${reportId}`);
+        if (files && files.length > 0) {
+          await supabase.storage
+            .from('receipts')
+            .remove(files.map((f) => `${user.id}/${reportId}/${f.name}`));
+        }
+      } catch (e) {
+        console.error('Storage cleanup error:', e);
+      }
+
+      const { error } = await supabase.from('reports').delete().eq('id', reportId);
+      if (error) throw error;
+
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+      toast({ title: 'הדוח נמחק', description: 'הדוח וההוצאות הקשורות אליו הוסרו' });
+    } catch (error: any) {
+      toast({
+        title: 'שגיאה במחיקה',
+        description: error?.message || 'לא ניתן למחוק את הדוח',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const fetchProfile = async () => {
-;
     if (!user) return;
     
     try {
