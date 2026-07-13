@@ -329,6 +329,7 @@ export default function IndependentNewReport() {
     if (draftId) {
       // Load draft from DB
       setDraftReportId(draftId);
+      draftReportIdRef.current = draftId;
       supabase.from('reports').select('*').eq('id', draftId).single().then(async ({ data: report }) => {
         if (report) {
           setData(prev => ({
@@ -342,104 +343,7 @@ export default function IndependentNewReport() {
             addAllowance: report.allowance_days ? true : null,
           }));
 
-          // Load existing expenses from DB
-          const { data: expenses } = await supabase
-            .from('expenses')
-            .select('*, receipts(*)')
-            .eq('report_id', draftId)
-            .order('expense_date', { ascending: true });
-
-          if (expenses && expenses.length > 0) {
-            const existingDocs: UploadedDoc[] = [];
-            let hasAllowanceExpense = false;
-
-            for (const exp of expenses) {
-              // Skip per-diem expense (it's managed by the wizard's allowance step)
-              if (exp.description?.startsWith('ימי שהייה:')) {
-                hasAllowanceExpense = true;
-                continue;
-              }
-
-              // Create a placeholder File for existing expenses
-              const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
-
-              // Try to get receipt preview (always resolve via signed URL for private bucket)
-              let preview: string | null = null;
-              if (exp.receipts && exp.receipts.length > 0) {
-                const receipt = exp.receipts[0];
-                const rawUrl = String(receipt.file_url || '').trim();
-
-                if (receipt.file_type === 'pdf') {
-                  preview = 'pdf';
-                } else if (rawUrl) {
-                  try {
-                    const decodedUrl = decodeURIComponent(rawUrl);
-                    const storagePath =
-                      decodedUrl.startsWith('http') || decodedUrl.includes('/storage/v1/')
-                        ? (
-                            decodedUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] ||
-                            decodedUrl.match(/\/receipts\/([^?#]+)/i)?.[1] ||
-                            ''
-                          )
-                        : decodedUrl.replace(/^\/+/, '');
-
-                    if (storagePath) {
-                      const { data: signedData } = await supabase.storage
-                        .from('receipts')
-                        .createSignedUrl(storagePath, 3600);
-
-                      const signedUrl = signedData?.signedUrl;
-                      preview = signedUrl
-                        ? (signedUrl.startsWith('http')
-                            ? signedUrl
-                            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`)
-                        : null;
-                    } else if (decodedUrl.startsWith('http')) {
-                      preview = decodedUrl;
-                    }
-                  } catch {
-                    preview = null;
-                  }
-                }
-              }
-
-              existingDocs.push({
-                id: exp.id,
-                file: placeholderFile,
-                preview,
-                paymentMethod: exp.payment_method as PaymentMethod || 'out_of_pocket',
-                analyzed: true,
-                analyzing: false,
-                amount: exp.amount,
-                amountIls: exp.amount_in_ils,
-                currency: exp.currency || 'ILS',
-                description: exp.description || '',
-                category: exp.category || 'miscellaneous',
-                expenseDate: exp.expense_date || '',
-                error: null,
-                existingExpenseId: exp.id,
-              });
-            }
-
-            if (existingDocs.length > 0) {
-              // Separate by category
-              const flightDocs = existingDocs.filter(d => d.category === 'flights');
-              const accDocs = existingDocs.filter(d => d.category === 'accommodation');
-              const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
-
-              setData(prev => ({
-                ...prev,
-                docs: [...prev.docs, ...regularDocs],
-                flightDocs: [...prev.flightDocs, ...flightDocs],
-                accommodationDocs: [...prev.accommodationDocs, ...accDocs],
-                addFlights: flightDocs.length > 0 ? true : prev.addFlights,
-                flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
-                addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
-                accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
-                addAllowance: hasAllowanceExpense ? true : prev.addAllowance,
-              }));
-            }
-          }
+          await loadExistingExpensesIntoWizard(draftId);
 
           // Load saved step from localStorage
           const saved = localStorage.getItem(DRAFT_KEY);
