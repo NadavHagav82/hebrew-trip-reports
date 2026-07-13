@@ -111,8 +111,13 @@ export default function IndependentNewReport() {
     accommodationDocs: [],
     accommodationTotal: 0,
   });
+  const dataRef = useRef<WizardData>(data);
 
   const [usdToIls, setUsdToIls] = useState(3.7); // fallback rate
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -414,31 +419,32 @@ export default function IndependentNewReport() {
   }, [data, step, draftReportId]);
 
   // ──── Draft: Create/update in DB ────
-  const saveDraftToDb = async () => {
+  const saveDraftToDb = async (draftData: WizardData = dataRef.current) => {
     if (!user) return;
-    const totalIls = data.docs.reduce((s, d) => s + (d.amountIls || 0), 0)
-      + (data.addAllowance ? allowanceTotalIls : 0)
-      + (data.addFlights ? data.flightTotal : 0)
-      + (data.addAccommodation ? data.accommodationTotal : 0);
+    const draftAllowanceTotalIls = Math.round((draftData.allowanceDays || 0) * (draftData.dailyAllowance || DEFAULT_DAILY_ALLOWANCE) * usdToIls);
+    const totalIls = draftData.docs.reduce((s, d) => s + (d.amountIls || 0), 0)
+      + (draftData.addAllowance ? draftAllowanceTotalIls : 0)
+      + (draftData.addFlights ? draftData.flightTotal : 0)
+      + (draftData.addAccommodation ? draftData.accommodationTotal : 0);
 
     let reportId = draftReportId;
     if (reportId) {
       await supabase.from('reports').update({
-        trip_start_date: data.tripStartDate,
-        trip_end_date: data.tripEndDate,
-        trip_destination: data.tripDestination,
-        trip_purpose: data.tripPurpose,
+        trip_start_date: draftData.tripStartDate,
+        trip_end_date: draftData.tripEndDate,
+        trip_destination: draftData.tripDestination,
+        trip_purpose: draftData.tripPurpose,
         total_amount_ils: totalIls,
-        daily_allowance: data.addAllowance ? data.dailyAllowance : null,
-        allowance_days: data.addAllowance ? data.allowanceDays : null,
+        daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
+        allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
       }).eq('id', reportId);
     } else {
       const { data: report } = await supabase.from('reports').insert({
         user_id: user.id,
-        trip_start_date: data.tripStartDate || new Date().toISOString().split('T')[0],
-        trip_end_date: data.tripEndDate || new Date().toISOString().split('T')[0],
-        trip_destination: data.tripDestination || 'טיוטא',
-        trip_purpose: data.tripPurpose || 'טיוטא',
+        trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
+        trip_end_date: draftData.tripEndDate || new Date().toISOString().split('T')[0],
+        trip_destination: draftData.tripDestination || 'טיוטא',
+        trip_purpose: draftData.tripPurpose || 'טיוטא',
         status: 'draft',
         total_amount_ils: 0,
       }).select().single();
@@ -449,13 +455,13 @@ export default function IndependentNewReport() {
     }
 
     if (reportId) {
-      await persistDocsAsDraft(reportId);
+      await persistDocsAsDraft(reportId, draftData);
     }
   };
 
   // Persist analyzed docs (from all 3 buckets) to DB as draft expenses+receipts.
   // Idempotent: skips docs that already have existingExpenseId.
-  const persistDocsAsDraft = async (reportId: string) => {
+  const persistDocsAsDraft = async (reportId: string, draftData: WizardData = dataRef.current) => {
     if (!user) return;
     const buckets: Array<{ key: 'docs' | 'flightDocs' | 'accommodationDocs'; forceCategory?: string }> = [
       { key: 'docs' },
@@ -464,7 +470,7 @@ export default function IndependentNewReport() {
     ];
 
     for (const { key, forceCategory } of buckets) {
-      const list = data[key];
+      const list = draftData[key];
       for (const doc of list) {
         if (doc.existingExpenseId) continue;
         if (!doc.analyzed || doc.analyzing) continue;
@@ -477,7 +483,7 @@ export default function IndependentNewReport() {
             .from('expenses')
             .insert({
               report_id: reportId,
-              expense_date: doc.expenseDate || data.tripStartDate || new Date().toISOString().split('T')[0],
+              expense_date: doc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
               category: category as any,
               amount: doc.amount || 0,
               currency: (doc.currency || 'ILS') as any,
@@ -509,6 +515,11 @@ export default function IndependentNewReport() {
           }
 
           // Mark this doc as persisted so we don't insert it again
+          const markedData = {
+            ...dataRef.current,
+            [key]: dataRef.current[key].map(d => (d.id === doc.id ? { ...d, existingExpenseId: expense.id } : d)),
+          } as WizardData;
+          dataRef.current = markedData;
           setData(prev => ({
             ...prev,
             [key]: prev[key].map(d => (d.id === doc.id ? { ...d, existingExpenseId: expense.id } : d)),
@@ -596,8 +607,10 @@ export default function IndependentNewReport() {
 
   const handleFilesAdded = useCallback(async (files: FileList, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
     const maxPerBatch = 10;
-    const allowedCount = Math.min(files.length, maxPerBatch);
-    if (allowedCount <= 0) return;
+    // FileList is live: resetting the input on mobile can clear it while previews are still processing.
+    // Copy it synchronously before the first await so camera captures never disappear mid-upload.
+    const selectedFiles = Array.from(files).slice(0, maxPerBatch);
+    if (selectedFiles.length === 0) return;
 
     const destination = data.tripDestination;
     const startDate = data.tripStartDate;
@@ -605,10 +618,13 @@ export default function IndependentNewReport() {
     const newDocs: UploadedDoc[] = [];
     let skippedUnsupported = 0;
 
-    for (let i = 0; i < allowedCount; i++) {
-      const rawFile = files[i];
-      const isImage = rawFile.type.startsWith('image/') || /\.(heic|heif|jpg|jpeg|png|gif|webp|bmp)$/i.test(rawFile.name);
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const rawFile = selectedFiles[i];
       const isPdf = rawFile.type === 'application/pdf' || /\.pdf$/i.test(rawFile.name);
+      const hasKnownType = !!rawFile.type && rawFile.type !== 'application/octet-stream';
+      const isImage = rawFile.type.startsWith('image/')
+        || /\.(heic|heif|jpg|jpeg|png|gif|webp|bmp)$/i.test(rawFile.name)
+        || (!hasKnownType && !isPdf);
 
       if (!isImage && !isPdf) {
         skippedUnsupported += 1;
@@ -620,6 +636,14 @@ export default function IndependentNewReport() {
       if ((!rawFile.type || rawFile.type === 'application/octet-stream') && isPdf) {
         // Re-wrap with correct MIME so storage upload works
         file = new File([rawFile], rawFile.name, { type: 'application/pdf' });
+      } else if ((!rawFile.type || rawFile.type === 'application/octet-stream') && isImage) {
+        const lowerName = rawFile.name.toLowerCase();
+        const imageType = lowerName.endsWith('.heic') ? 'image/heic'
+          : lowerName.endsWith('.heif') ? 'image/heif'
+          : lowerName.endsWith('.png') ? 'image/png'
+          : lowerName.endsWith('.webp') ? 'image/webp'
+          : 'image/jpeg';
+        file = new File([rawFile], rawFile.name || `receipt-${Date.now()}-${i}.jpg`, { type: imageType });
       }
 
       let preview: string | null = null;
@@ -668,7 +692,12 @@ export default function IndependentNewReport() {
       return;
     }
 
-    setData(prev => ({ ...prev, [target]: [...prev[target], ...newDocs] }));
+    const optimisticData = {
+      ...dataRef.current,
+      [target]: [...dataRef.current[target], ...newDocs],
+    } as WizardData;
+    dataRef.current = optimisticData;
+    setData(optimisticData);
 
     // Show toast confirmation on mobile
     toast({ title: `${newDocs.length} קבצים נוספו`, description: 'מנתח...' });
@@ -681,18 +710,20 @@ export default function IndependentNewReport() {
     }
 
     // Auto-save draft immediately so files are persisted even if user leaves
-    saveDraftToDb().catch(() => {});
+    saveDraftToDb(optimisticData).catch(() => {});
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
-      setData(prev => ({
-        ...prev,
-        [target]: prev[target].map(d => d.id === doc.id ? { ...d, ...result } : d),
-      }));
+      const analyzedData = {
+        ...dataRef.current,
+        [target]: dataRef.current[target].map(d => d.id === doc.id ? { ...d, ...result } : d),
+      } as WizardData;
+      dataRef.current = analyzedData;
+      setData(analyzedData);
       // Persist analyzed result to DB draft
-      saveDraftToDb().catch(() => {});
+      saveDraftToDb(analyzedData).catch(() => {});
     });
-  }, [data, toast]);
+  }, [toast, user, draftReportId, usdToIls]);
 
   const setPaymentMethod = (docId: string, method: PaymentMethod, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
     setData(prev => ({
