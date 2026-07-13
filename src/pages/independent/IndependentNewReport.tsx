@@ -74,12 +74,12 @@ const STEP_LABELS = [
 
 const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
-const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane; emoji: string }> = {
-  flights: { label: 'טיסות', icon: Plane, emoji: '✈️' },
-  accommodation: { label: 'לינה', icon: Hotel, emoji: '🏨' },
-  food: { label: 'אוכל', icon: UtensilsCrossed, emoji: '🍽️' },
-  transportation: { label: 'תחבורה', icon: Car, emoji: '🚗' },
-  miscellaneous: { label: 'שונות', icon: ShoppingBag, emoji: '📦' },
+const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane }> = {
+  flights: { label: 'טיסות', icon: Plane },
+  accommodation: { label: 'לינה', icon: Hotel },
+  food: { label: 'אוכל', icon: UtensilsCrossed },
+  transportation: { label: 'תחבורה', icon: Car },
+  miscellaneous: { label: 'שונות', icon: ShoppingBag },
 };
 const CATEGORY_OPTIONS = Object.keys(CATEGORY_CONFIG);
 
