@@ -618,8 +618,8 @@ export default function IndependentNewReport() {
     const selectedFiles = Array.from(files).slice(0, maxPerBatch);
     if (selectedFiles.length === 0) return;
 
-    const destination = data.tripDestination;
-    const startDate = data.tripStartDate;
+    const destination = dataRef.current.tripDestination;
+    const startDate = dataRef.current.tripStartDate;
 
     const newDocs: UploadedDoc[] = [];
     let skippedUnsupported = 0;
@@ -715,8 +715,11 @@ export default function IndependentNewReport() {
       });
     }
 
-    // Auto-save draft immediately so files are persisted even if user leaves
-    saveDraftToDb(optimisticData).catch(() => {});
+    // Auto-save draft immediately so files are persisted even if user leaves.
+    // Await the first save to avoid concurrent draft creation on fast mobile captures.
+    try {
+      await saveDraftToDb(optimisticData);
+    } catch {}
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
