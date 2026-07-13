@@ -41,6 +41,8 @@ interface UploadedDoc {
   existingExpenseId?: string;
 }
 
+type DocBucketKey = 'docs' | 'flightDocs' | 'accommodationDocs';
+
 interface WizardData {
   tripStartDate: string;
   tripEndDate: string;
@@ -113,6 +115,7 @@ export default function IndependentNewReport() {
     accommodationTotal: 0,
   });
   const dataRef = useRef<WizardData>(data);
+  const draftCreationRef = useRef<Promise<string | null> | null>(null);
 
   const [usdToIls, setUsdToIls] = useState(3.7); // fallback rate
 
@@ -138,6 +141,148 @@ export default function IndependentNewReport() {
 
   const allowanceTotalUsd = data.allowanceDays * data.dailyAllowance;
   const allowanceTotalIls = Math.round(allowanceTotalUsd * usdToIls);
+
+  const withTimeout = async <T,>(promise: PromiseLike<T>, ms = 25_000): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('timeout')), ms);
+    });
+    try {
+      return await Promise.race([Promise.resolve(promise), timeout]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
+  const hasMeaningfulDraftContent = (draftData: WizardData = dataRef.current) => (
+    !!draftData.tripStartDate ||
+    !!draftData.tripEndDate ||
+    !!draftData.tripDestination.trim() ||
+    !!draftData.tripPurpose.trim() ||
+    draftData.docs.length > 0 ||
+    draftData.flightDocs.length > 0 ||
+    draftData.accommodationDocs.length > 0 ||
+    draftData.addAllowance !== null ||
+    draftData.addFlights !== null ||
+    draftData.addAccommodation !== null
+  );
+
+  const extractReceiptStoragePath = (source: string) => {
+    const decoded = decodeURIComponent(String(source || '').trim());
+    if (!decoded) return '';
+    if (decoded.startsWith('http') || decoded.includes('/storage/v1/')) {
+      return (
+        decoded.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] ||
+        decoded.match(/\/receipts\/([^?#]+)/i)?.[1] ||
+        ''
+      );
+    }
+    return decoded.replace(/^\/+/, '');
+  };
+
+  const resolveReceiptPreview = async (receipt: any): Promise<string | null> => {
+    const rawUrl = String(receipt?.file_url || '').trim();
+    if (!rawUrl) return null;
+
+    if (receipt?.file_type === 'pdf') return 'pdf';
+
+    try {
+      const storagePath = extractReceiptStoragePath(rawUrl);
+      if (storagePath) {
+        const { data: signedData } = await withTimeout(
+          supabase.storage.from('receipts').createSignedUrl(storagePath, 3600),
+          15_000,
+        );
+        const signedUrl = signedData?.signedUrl;
+        return signedUrl
+          ? (signedUrl.startsWith('http') ? signedUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`)
+          : null;
+      }
+      return rawUrl.startsWith('http') ? rawUrl : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const mergeDocsByExpenseId = (current: UploadedDoc[], incoming: UploadedDoc[]) => {
+    const seen = new Set(current.map(doc => doc.existingExpenseId || doc.id));
+    return [
+      ...current,
+      ...incoming.filter(doc => {
+        const key = doc.existingExpenseId || doc.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }),
+    ];
+  };
+
+  const loadExistingExpensesIntoWizard = async (reportId: string) => {
+    const { data: expenses, error } = await withTimeout(
+      supabase
+        .from('expenses')
+        .select('*, receipts(*)')
+        .eq('report_id', reportId)
+        .order('expense_date', { ascending: true }),
+      25_000,
+    );
+
+    if (error) throw error;
+
+    const existingDocs: UploadedDoc[] = [];
+    let hasAllowanceExpense = false;
+
+    for (const exp of expenses || []) {
+      if (exp.description?.startsWith('ימי שהייה:')) {
+        hasAllowanceExpense = true;
+        continue;
+      }
+
+      const receipt = Array.isArray(exp.receipts) && exp.receipts.length > 0 ? exp.receipts[0] : null;
+      const placeholderFile = new File([], receipt?.file_name || exp.description || 'existing-receipt', {
+        type: receipt?.file_type === 'pdf' ? 'application/pdf' : 'application/octet-stream',
+      });
+
+      existingDocs.push({
+        id: exp.id,
+        file: placeholderFile,
+        preview: receipt ? await resolveReceiptPreview(receipt) : null,
+        paymentMethod: (exp.payment_method as PaymentMethod) || 'out_of_pocket',
+        analyzed: true,
+        analyzing: false,
+        amount: exp.amount,
+        amountIls: exp.amount_in_ils,
+        currency: exp.currency || 'ILS',
+        description: exp.description || receipt?.file_name || '',
+        category: exp.category || 'miscellaneous',
+        expenseDate: exp.expense_date || '',
+        error: null,
+        existingExpenseId: exp.id,
+      });
+    }
+
+    if (existingDocs.length === 0 && !hasAllowanceExpense) return;
+
+    const flightDocs = existingDocs.filter(d => d.category === 'flights');
+    const accDocs = existingDocs.filter(d => d.category === 'accommodation');
+    const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
+
+    setData(prev => {
+      const merged = {
+        ...prev,
+        docs: mergeDocsByExpenseId(prev.docs, regularDocs),
+        flightDocs: mergeDocsByExpenseId(prev.flightDocs, flightDocs),
+        accommodationDocs: mergeDocsByExpenseId(prev.accommodationDocs, accDocs),
+        addFlights: flightDocs.length > 0 ? true : prev.addFlights,
+        flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
+        addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
+        accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
+        addAllowance: hasAllowanceExpense ? true : prev.addAllowance,
+      };
+      dataRef.current = merged;
+      return merged;
+    });
+  };
 
   // Fetch USD→ILS exchange rate on mount
   useEffect(() => {
