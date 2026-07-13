@@ -216,6 +216,11 @@ export default function IndependentNewReport() {
     dataRef.current = nextData;
     setData(nextData);
     persistLocalDraft(nextData, step, draftReportIdRef.current);
+    if (user && hasMeaningfulDraftContent(nextData)) {
+      saveDraftToDb(nextData).catch(error => {
+        console.error('Immediate field draft save failed:', error);
+      });
+    }
   };
 
   const extractReceiptStoragePath = (source: string) => {
