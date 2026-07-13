@@ -91,6 +91,7 @@ export default function IndependentNewReport() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [draftReportId, setDraftReportId] = useState<string | null>(null);
+  const draftReportIdRef = useRef<string | null>(null);
   const [isIndependent, setIsIndependent] = useState<boolean | null>(null);
   const [managerInfo, setManagerInfo] = useState<{ id: string; name: string; email: string } | null>(null);
   const [showManagerDialog, setShowManagerDialog] = useState(false);
@@ -118,6 +119,10 @@ export default function IndependentNewReport() {
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
+
+  useEffect(() => {
+    draftReportIdRef.current = draftReportId;
+  }, [draftReportId]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -427,7 +432,7 @@ export default function IndependentNewReport() {
       + (draftData.addFlights ? draftData.flightTotal : 0)
       + (draftData.addAccommodation ? draftData.accommodationTotal : 0);
 
-    let reportId = draftReportId;
+    let reportId = draftReportIdRef.current;
     if (reportId) {
       await supabase.from('reports').update({
         trip_start_date: draftData.tripStartDate,
@@ -450,6 +455,7 @@ export default function IndependentNewReport() {
       }).select().single();
       if (report) {
         reportId = report.id;
+        draftReportIdRef.current = report.id;
         setDraftReportId(report.id);
       }
     }
