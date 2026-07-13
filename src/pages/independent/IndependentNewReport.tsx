@@ -41,6 +41,8 @@ interface UploadedDoc {
   existingExpenseId?: string;
 }
 
+type DocBucketKey = 'docs' | 'flightDocs' | 'accommodationDocs';
+
 interface WizardData {
   tripStartDate: string;
   tripEndDate: string;
@@ -72,12 +74,12 @@ const STEP_LABELS = [
 
 const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
-const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane; emoji: string }> = {
-  flights: { label: 'טיסות', icon: Plane, emoji: '✈️' },
-  accommodation: { label: 'לינה', icon: Hotel, emoji: '🏨' },
-  food: { label: 'אוכל', icon: UtensilsCrossed, emoji: '🍽️' },
-  transportation: { label: 'תחבורה', icon: Car, emoji: '🚗' },
-  miscellaneous: { label: 'שונות', icon: ShoppingBag, emoji: '📦' },
+const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane }> = {
+  flights: { label: 'טיסות', icon: Plane },
+  accommodation: { label: 'לינה', icon: Hotel },
+  food: { label: 'אוכל', icon: UtensilsCrossed },
+  transportation: { label: 'תחבורה', icon: Car },
+  miscellaneous: { label: 'שונות', icon: ShoppingBag },
 };
 const CATEGORY_OPTIONS = Object.keys(CATEGORY_CONFIG);
 
@@ -113,6 +115,8 @@ export default function IndependentNewReport() {
     accommodationTotal: 0,
   });
   const dataRef = useRef<WizardData>(data);
+  const draftCreationRef = useRef<Promise<string | null> | null>(null);
+  const persistingDocIdsRef = useRef<Set<string>>(new Set());
 
   const [usdToIls, setUsdToIls] = useState(3.7); // fallback rate
 
@@ -139,6 +143,148 @@ export default function IndependentNewReport() {
   const allowanceTotalUsd = data.allowanceDays * data.dailyAllowance;
   const allowanceTotalIls = Math.round(allowanceTotalUsd * usdToIls);
 
+  const withTimeout = async <T,>(promise: PromiseLike<T>, ms = 25_000): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('timeout')), ms);
+    });
+    try {
+      return await Promise.race([Promise.resolve(promise), timeout]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
+  const hasMeaningfulDraftContent = (draftData: WizardData = dataRef.current) => (
+    !!draftData.tripStartDate ||
+    !!draftData.tripEndDate ||
+    !!draftData.tripDestination.trim() ||
+    !!draftData.tripPurpose.trim() ||
+    draftData.docs.length > 0 ||
+    draftData.flightDocs.length > 0 ||
+    draftData.accommodationDocs.length > 0 ||
+    draftData.addAllowance !== null ||
+    draftData.addFlights !== null ||
+    draftData.addAccommodation !== null
+  );
+
+  const extractReceiptStoragePath = (source: string) => {
+    const decoded = decodeURIComponent(String(source || '').trim());
+    if (!decoded) return '';
+    if (decoded.startsWith('http') || decoded.includes('/storage/v1/')) {
+      return (
+        decoded.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] ||
+        decoded.match(/\/receipts\/([^?#]+)/i)?.[1] ||
+        ''
+      );
+    }
+    return decoded.replace(/^\/+/, '');
+  };
+
+  const resolveReceiptPreview = async (receipt: any): Promise<string | null> => {
+    const rawUrl = String(receipt?.file_url || '').trim();
+    if (!rawUrl) return null;
+
+    if (receipt?.file_type === 'pdf') return 'pdf';
+
+    try {
+      const storagePath = extractReceiptStoragePath(rawUrl);
+      if (storagePath) {
+        const { data: signedData } = await withTimeout(
+          supabase.storage.from('receipts').createSignedUrl(storagePath, 3600),
+          15_000,
+        );
+        const signedUrl = signedData?.signedUrl;
+        return signedUrl
+          ? (signedUrl.startsWith('http') ? signedUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`)
+          : null;
+      }
+      return rawUrl.startsWith('http') ? rawUrl : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const mergeDocsByExpenseId = (current: UploadedDoc[], incoming: UploadedDoc[]) => {
+    const seen = new Set(current.map(doc => doc.existingExpenseId || doc.id));
+    return [
+      ...current,
+      ...incoming.filter(doc => {
+        const key = doc.existingExpenseId || doc.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }),
+    ];
+  };
+
+  const loadExistingExpensesIntoWizard = async (reportId: string) => {
+    const { data: expenses, error } = await withTimeout(
+      supabase
+        .from('expenses')
+        .select('*, receipts(*)')
+        .eq('report_id', reportId)
+        .order('expense_date', { ascending: true }),
+      25_000,
+    );
+
+    if (error) throw error;
+
+    const existingDocs: UploadedDoc[] = [];
+    let hasAllowanceExpense = false;
+
+    for (const exp of expenses || []) {
+      if (exp.description?.startsWith('ימי שהייה:')) {
+        hasAllowanceExpense = true;
+        continue;
+      }
+
+      const receipt = Array.isArray(exp.receipts) && exp.receipts.length > 0 ? exp.receipts[0] : null;
+      const placeholderFile = new File([], receipt?.file_name || exp.description || 'existing-receipt', {
+        type: receipt?.file_type === 'pdf' ? 'application/pdf' : 'application/octet-stream',
+      });
+
+      existingDocs.push({
+        id: exp.id,
+        file: placeholderFile,
+        preview: receipt ? await resolveReceiptPreview(receipt) : null,
+        paymentMethod: (exp.payment_method as PaymentMethod) || 'out_of_pocket',
+        analyzed: true,
+        analyzing: false,
+        amount: exp.amount,
+        amountIls: exp.amount_in_ils,
+        currency: exp.currency || 'ILS',
+        description: exp.description || receipt?.file_name || '',
+        category: exp.category || 'miscellaneous',
+        expenseDate: exp.expense_date || '',
+        error: null,
+        existingExpenseId: exp.id,
+      });
+    }
+
+    if (existingDocs.length === 0 && !hasAllowanceExpense) return;
+
+    const flightDocs = existingDocs.filter(d => d.category === 'flights');
+    const accDocs = existingDocs.filter(d => d.category === 'accommodation');
+    const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
+
+    setData(prev => {
+      const merged = {
+        ...prev,
+        docs: mergeDocsByExpenseId(prev.docs, regularDocs),
+        flightDocs: mergeDocsByExpenseId(prev.flightDocs, flightDocs),
+        accommodationDocs: mergeDocsByExpenseId(prev.accommodationDocs, accDocs),
+        addFlights: flightDocs.length > 0 ? true : prev.addFlights,
+        flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
+        addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
+        accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
+        addAllowance: hasAllowanceExpense ? true : prev.addAllowance,
+      };
+      dataRef.current = merged;
+      return merged;
+    });
+  };
+
   // Fetch USD→ILS exchange rate on mount
   useEffect(() => {
     supabase.functions.invoke('get-exchange-rates').then(({ data: rateData }) => {
@@ -159,7 +305,7 @@ export default function IndependentNewReport() {
   useEffect(() => {
     if (editId && user && !searchParams.get('draft')) {
       setDraftReportId(editId);
-      // Load the report data - reuse the same loading logic as draft
+      draftReportIdRef.current = editId;
       supabase.from('reports').select('*').eq('id', editId).single().then(async ({ data: report }) => {
         if (report) {
           setData(prev => ({
@@ -172,67 +318,7 @@ export default function IndependentNewReport() {
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
           }));
-
-          // Load existing expenses
-          const { data: expenses } = await supabase
-            .from('expenses')
-            .select('*, receipts(*)')
-            .eq('report_id', editId)
-            .order('expense_date', { ascending: true });
-
-          if (expenses && expenses.length > 0) {
-            const existingDocs: UploadedDoc[] = [];
-            for (const exp of expenses) {
-              if (exp.description?.startsWith('ימי שהייה:')) continue;
-              const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
-              let preview: string | null = null;
-              if (exp.receipts && exp.receipts.length > 0) {
-                const receipt = exp.receipts[0];
-                const rawUrl = String(receipt.file_url || '').trim();
-                if (receipt.file_type === 'pdf') {
-                  preview = 'pdf';
-                } else if (rawUrl) {
-                  try {
-                    const decodedUrl = decodeURIComponent(rawUrl);
-                    const storagePath = decodedUrl.startsWith('http') || decodedUrl.includes('/storage/v1/')
-                      ? (decodedUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] || decodedUrl.match(/\/receipts\/([^?#]+)/i)?.[1] || '')
-                      : decodedUrl.replace(/^\/+/, '');
-                    if (storagePath) {
-                      const { data: signedData } = await supabase.storage.from('receipts').createSignedUrl(storagePath, 3600);
-                      const signedUrl = signedData?.signedUrl;
-                      preview = signedUrl ? (signedUrl.startsWith('http') ? signedUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`) : null;
-                    } else if (decodedUrl.startsWith('http')) {
-                      preview = decodedUrl;
-                    }
-                  } catch { preview = null; }
-                }
-              }
-              existingDocs.push({
-                id: exp.id, file: placeholderFile, preview,
-                paymentMethod: exp.payment_method as PaymentMethod || 'out_of_pocket',
-                analyzed: true, analyzing: false,
-                amount: exp.amount, amountIls: exp.amount_in_ils,
-                currency: exp.currency || 'ILS', description: exp.description || '',
-                category: exp.category || 'miscellaneous', expenseDate: exp.expense_date || '',
-                error: null, existingExpenseId: exp.id,
-              });
-            }
-            if (existingDocs.length > 0) {
-              const flightDocs = existingDocs.filter(d => d.category === 'flights');
-              const accDocs = existingDocs.filter(d => d.category === 'accommodation');
-              const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
-              setData(prev => ({
-                ...prev,
-                docs: [...prev.docs, ...regularDocs],
-                flightDocs: [...prev.flightDocs, ...flightDocs],
-                accommodationDocs: [...prev.accommodationDocs, ...accDocs],
-                addFlights: flightDocs.length > 0 ? true : prev.addFlights,
-                flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
-                addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
-                accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
-              }));
-            }
-          }
+          await loadExistingExpensesIntoWizard(editId);
         }
       });
     }
@@ -244,6 +330,7 @@ export default function IndependentNewReport() {
     if (draftId) {
       // Load draft from DB
       setDraftReportId(draftId);
+      draftReportIdRef.current = draftId;
       supabase.from('reports').select('*').eq('id', draftId).single().then(async ({ data: report }) => {
         if (report) {
           setData(prev => ({
@@ -257,104 +344,7 @@ export default function IndependentNewReport() {
             addAllowance: report.allowance_days ? true : null,
           }));
 
-          // Load existing expenses from DB
-          const { data: expenses } = await supabase
-            .from('expenses')
-            .select('*, receipts(*)')
-            .eq('report_id', draftId)
-            .order('expense_date', { ascending: true });
-
-          if (expenses && expenses.length > 0) {
-            const existingDocs: UploadedDoc[] = [];
-            let hasAllowanceExpense = false;
-
-            for (const exp of expenses) {
-              // Skip per-diem expense (it's managed by the wizard's allowance step)
-              if (exp.description?.startsWith('ימי שהייה:')) {
-                hasAllowanceExpense = true;
-                continue;
-              }
-
-              // Create a placeholder File for existing expenses
-              const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
-
-              // Try to get receipt preview (always resolve via signed URL for private bucket)
-              let preview: string | null = null;
-              if (exp.receipts && exp.receipts.length > 0) {
-                const receipt = exp.receipts[0];
-                const rawUrl = String(receipt.file_url || '').trim();
-
-                if (receipt.file_type === 'pdf') {
-                  preview = 'pdf';
-                } else if (rawUrl) {
-                  try {
-                    const decodedUrl = decodeURIComponent(rawUrl);
-                    const storagePath =
-                      decodedUrl.startsWith('http') || decodedUrl.includes('/storage/v1/')
-                        ? (
-                            decodedUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] ||
-                            decodedUrl.match(/\/receipts\/([^?#]+)/i)?.[1] ||
-                            ''
-                          )
-                        : decodedUrl.replace(/^\/+/, '');
-
-                    if (storagePath) {
-                      const { data: signedData } = await supabase.storage
-                        .from('receipts')
-                        .createSignedUrl(storagePath, 3600);
-
-                      const signedUrl = signedData?.signedUrl;
-                      preview = signedUrl
-                        ? (signedUrl.startsWith('http')
-                            ? signedUrl
-                            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`)
-                        : null;
-                    } else if (decodedUrl.startsWith('http')) {
-                      preview = decodedUrl;
-                    }
-                  } catch {
-                    preview = null;
-                  }
-                }
-              }
-
-              existingDocs.push({
-                id: exp.id,
-                file: placeholderFile,
-                preview,
-                paymentMethod: exp.payment_method as PaymentMethod || 'out_of_pocket',
-                analyzed: true,
-                analyzing: false,
-                amount: exp.amount,
-                amountIls: exp.amount_in_ils,
-                currency: exp.currency || 'ILS',
-                description: exp.description || '',
-                category: exp.category || 'miscellaneous',
-                expenseDate: exp.expense_date || '',
-                error: null,
-                existingExpenseId: exp.id,
-              });
-            }
-
-            if (existingDocs.length > 0) {
-              // Separate by category
-              const flightDocs = existingDocs.filter(d => d.category === 'flights');
-              const accDocs = existingDocs.filter(d => d.category === 'accommodation');
-              const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
-
-              setData(prev => ({
-                ...prev,
-                docs: [...prev.docs, ...regularDocs],
-                flightDocs: [...prev.flightDocs, ...flightDocs],
-                accommodationDocs: [...prev.accommodationDocs, ...accDocs],
-                addFlights: flightDocs.length > 0 ? true : prev.addFlights,
-                flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
-                addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
-                accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
-                addAllowance: hasAllowanceExpense ? true : prev.addAllowance,
-              }));
-            }
-          }
+          await loadExistingExpensesIntoWizard(draftId);
 
           // Load saved step from localStorage
           const saved = localStorage.getItem(DRAFT_KEY);
@@ -379,8 +369,9 @@ export default function IndependentNewReport() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed.tripDestination && parsed.draftReportId) {
+          if (parsed.draftReportId) {
             setDraftReportId(parsed.draftReportId);
+            draftReportIdRef.current = parsed.draftReportId;
             setStep(parsed.step || 0);
             setData(prev => ({
               ...prev,
@@ -396,6 +387,7 @@ export default function IndependentNewReport() {
               addAccommodation: parsed.addAccommodation ?? null,
               accommodationTotal: parsed.accommodationTotal || 0,
             }));
+            loadExistingExpensesIntoWizard(parsed.draftReportId).catch(() => {});
             toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
           }
         } catch {}
@@ -423,9 +415,57 @@ export default function IndependentNewReport() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
   }, [data, step, draftReportId]);
 
+  // ──── Draft: Auto-save to DB on every meaningful change ────
+  useEffect(() => {
+    if (!user || !hasMeaningfulDraftContent(data)) return;
+
+    const timeoutId = window.setTimeout(() => {
+      saveDraftToDb(data).catch(error => {
+        console.error('Auto-save draft error:', error);
+      });
+    }, 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [data, user, usdToIls]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const saveCurrentDraft = () => {
+      if (user && hasMeaningfulDraftContent(dataRef.current)) {
+        saveDraftToDb(dataRef.current).catch(() => {});
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') saveCurrentDraft();
+    };
+
+    window.addEventListener('pagehide', saveCurrentDraft);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pagehide', saveCurrentDraft);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const exitWizard = async () => {
+    if (hasMeaningfulDraftContent(dataRef.current)) {
+      setSaving(true);
+      try {
+        await saveDraftToDb(dataRef.current);
+      } catch (error) {
+        console.error('Exit draft save failed:', error);
+        toast({ title: 'שגיאה בשמירה', description: 'לא הצלחתי לשמור את הטיוטה לפני היציאה', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
+    }
+    navigate(isIndependent ? '/independent' : '/dashboard');
+  };
+
   // ──── Draft: Create/update in DB ────
   const saveDraftToDb = async (draftData: WizardData = dataRef.current) => {
-    if (!user) return;
+    if (!user || !hasMeaningfulDraftContent(draftData)) return null;
     const draftAllowanceTotalIls = Math.round((draftData.allowanceDays || 0) * (draftData.dailyAllowance || DEFAULT_DAILY_ALLOWANCE) * usdToIls);
     const totalIls = draftData.docs.reduce((s, d) => s + (d.amountIls || 0), 0)
       + (draftData.addAllowance ? draftAllowanceTotalIls : 0)
@@ -434,42 +474,55 @@ export default function IndependentNewReport() {
 
     let reportId = draftReportIdRef.current;
     if (reportId) {
-      await supabase.from('reports').update({
-        trip_start_date: draftData.tripStartDate,
-        trip_end_date: draftData.tripEndDate,
-        trip_destination: draftData.tripDestination,
-        trip_purpose: draftData.tripPurpose,
+      await withTimeout(supabase.from('reports').update({
+        trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
+        trip_end_date: draftData.tripEndDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
+        trip_destination: draftData.tripDestination || 'טיוטא',
+        trip_purpose: draftData.tripPurpose || 'טיוטא',
         total_amount_ils: totalIls,
         daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
         allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
-      }).eq('id', reportId);
+      }).eq('id', reportId), 20_000);
     } else {
-      const { data: report } = await supabase.from('reports').insert({
-        user_id: user.id,
-        trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
-        trip_end_date: draftData.tripEndDate || new Date().toISOString().split('T')[0],
-        trip_destination: draftData.tripDestination || 'טיוטא',
-        trip_purpose: draftData.tripPurpose || 'טיוטא',
-        status: 'draft',
-        total_amount_ils: 0,
-      }).select().single();
-      if (report) {
-        reportId = report.id;
-        draftReportIdRef.current = report.id;
-        setDraftReportId(report.id);
+      if (!draftCreationRef.current) {
+        draftCreationRef.current = (async () => {
+          const { data: report, error } = await withTimeout(supabase.from('reports').insert({
+            user_id: user.id,
+            trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
+            trip_end_date: draftData.tripEndDate || new Date().toISOString().split('T')[0],
+            trip_destination: draftData.tripDestination || 'טיוטא',
+            trip_purpose: draftData.tripPurpose || 'טיוטא',
+            status: 'draft',
+            total_amount_ils: totalIls,
+            daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
+            allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
+          }).select().single(), 20_000);
+
+          if (error || !report) throw error || new Error('Draft report was not created');
+
+          draftReportIdRef.current = report.id;
+          setDraftReportId(report.id);
+          return report.id;
+        })().finally(() => {
+          draftCreationRef.current = null;
+        });
       }
+
+      reportId = await draftCreationRef.current;
     }
 
     if (reportId) {
       await persistDocsAsDraft(reportId, draftData);
     }
+
+    return reportId;
   };
 
-  // Persist analyzed docs (from all 3 buckets) to DB as draft expenses+receipts.
-  // Idempotent: skips docs that already have existingExpenseId.
+  // Persist docs (from all 3 buckets) to DB as draft expenses+receipts.
+  // It saves immediately, even before analysis finishes, then updates the same expense when analysis returns.
   const persistDocsAsDraft = async (reportId: string, draftData: WizardData = dataRef.current) => {
     if (!user) return;
-    const buckets: Array<{ key: 'docs' | 'flightDocs' | 'accommodationDocs'; forceCategory?: string }> = [
+    const buckets: Array<{ key: DocBucketKey; forceCategory?: string }> = [
       { key: 'docs' },
       { key: 'flightDocs', forceCategory: 'flights' },
       { key: 'accommodationDocs', forceCategory: 'accommodation' },
@@ -478,46 +531,92 @@ export default function IndependentNewReport() {
     for (const { key, forceCategory } of buckets) {
       const list = draftData[key];
       for (const doc of list) {
-        if (doc.existingExpenseId) continue;
-        if (!doc.analyzed || doc.analyzing) continue;
-        // Only persist docs with a real file (not empty placeholder)
-        if (!doc.file || doc.file.size === 0) continue;
-
+        if (persistingDocIdsRef.current.has(doc.id)) continue;
         const category = forceCategory || doc.category || 'miscellaneous';
+        const expensePayload = {
+          expense_date: doc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
+          category: category as any,
+          amount: doc.amount || 0,
+          currency: (doc.currency || 'ILS') as any,
+          amount_in_ils: doc.amountIls || doc.amount || 0,
+          description: doc.description || doc.file?.name || 'חשבונית',
+          payment_method: (doc.paymentMethod || 'out_of_pocket') as any,
+          approval_status: 'pending' as any,
+        };
+
         try {
-          const { data: expense, error: expenseError } = await supabase
-            .from('expenses')
-            .insert({
-              report_id: reportId,
-              expense_date: doc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
-              category: category as any,
-              amount: doc.amount || 0,
-              currency: (doc.currency || 'ILS') as any,
-              amount_in_ils: doc.amountIls || doc.amount || 0,
-              description: doc.description || doc.file.name,
-              payment_method: (doc.paymentMethod || 'out_of_pocket') as any,
-              approval_status: 'pending' as any,
-            } as any)
-            .select()
-            .single();
-          if (expenseError || !expense) continue;
+          if (doc.existingExpenseId) {
+            await withTimeout(
+              supabase
+                .from('expenses')
+                .update(expensePayload as any)
+                .eq('id', doc.existingExpenseId),
+              20_000,
+            );
+            continue;
+          }
+
+          // Only brand-new docs with a real file need a new expense + receipt upload.
+          if (!doc.file || doc.file.size === 0) continue;
+          persistingDocIdsRef.current.add(doc.id);
+
+          const { data: expense, error: expenseError } = await withTimeout(
+            supabase
+              .from('expenses')
+              .insert({ report_id: reportId, ...expensePayload } as any)
+              .select()
+              .single(),
+            20_000,
+          );
+
+          if (expenseError || !expense) throw expenseError || new Error('Expense was not created');
 
           const isImageFile =
             doc.file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(doc.file.name);
           const ext = isImageFile ? (doc.file.name.split('.').pop() || 'jpg') : 'jpg';
           const filePath = `${user.id}/${reportId}/${expense.id}.${ext}`;
-          const { error: storageError } = await supabase.storage
-            .from('receipts')
-            .upload(filePath, doc.file, { upsert: true });
-          if (!storageError) {
-            const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(filePath);
-            await supabase.from('receipts').insert({
+
+          const { error: storageError } = await withTimeout(
+            supabase.storage
+              .from('receipts')
+              .upload(filePath, doc.file, { upsert: true }),
+            30_000,
+          );
+
+          if (storageError) {
+            await supabase.from('expenses').delete().eq('id', expense.id);
+            throw storageError;
+          }
+
+          await withTimeout(
+            supabase.from('receipts').insert({
               expense_id: expense.id,
               file_name: doc.file.name,
               file_size: doc.file.size,
               file_type: 'image' as any,
-              file_url: urlData.publicUrl,
-            });
+              file_url: filePath,
+            }),
+            20_000,
+          );
+
+          const latestDoc = dataRef.current[key].find(d => d.id === doc.id);
+          if (latestDoc) {
+            const latestCategory = forceCategory || latestDoc.category || 'miscellaneous';
+            await withTimeout(
+              supabase
+                .from('expenses')
+                .update({
+                  expense_date: latestDoc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
+                  category: latestCategory as any,
+                  amount: latestDoc.amount || 0,
+                  currency: (latestDoc.currency || 'ILS') as any,
+                  amount_in_ils: latestDoc.amountIls || latestDoc.amount || 0,
+                  description: latestDoc.description || latestDoc.file?.name || 'חשבונית',
+                  payment_method: (latestDoc.paymentMethod || 'out_of_pocket') as any,
+                } as any)
+                .eq('id', expense.id),
+              20_000,
+            );
           }
 
           // Mark this doc as persisted so we don't insert it again
@@ -532,6 +631,8 @@ export default function IndependentNewReport() {
           }));
         } catch (e) {
           console.error('Draft persist error:', e);
+        } finally {
+          persistingDocIdsRef.current.delete(doc.id);
         }
       }
     }
@@ -611,7 +712,7 @@ export default function IndependentNewReport() {
     }
   };
 
-  const handleFilesAdded = useCallback(async (files: FileList, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
+  const handleFilesAdded = useCallback(async (files: FileList, target: DocBucketKey) => {
     const maxPerBatch = 10;
     // FileList is live: resetting the input on mobile can clear it while previews are still processing.
     // Copy it synchronously before the first await so camera captures never disappear mid-upload.
@@ -622,6 +723,7 @@ export default function IndependentNewReport() {
     const startDate = dataRef.current.tripStartDate;
 
     const newDocs: UploadedDoc[] = [];
+    const previewJobs: Array<{ docId: string; file: File }> = [];
     let skippedUnsupported = 0;
 
     for (let i = 0; i < selectedFiles.length; i++) {
@@ -665,15 +767,20 @@ export default function IndependentNewReport() {
             preview = 'pdf';
           }
         } else {
-          preview = await fileToPreview(file);
+          // Do not block draft persistence on preview generation; mobile camera images can be large.
+          // The raw file is saved first, preview is filled in after the upload starts.
+          preview = null;
         }
       } catch {
         // preview generation failed - still add the file
         if (isPdf) preview = 'pdf';
       }
 
+      const docId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${i}`;
+      if (!isPdf) previewJobs.push({ docId, file: finalFile });
+
       newDocs.push({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${i}`,
+        id: docId,
         file: finalFile,
         preview,
         paymentMethod: null,
@@ -719,7 +826,25 @@ export default function IndependentNewReport() {
     // Await the first save to avoid concurrent draft creation on fast mobile captures.
     try {
       await saveDraftToDb(optimisticData);
-    } catch {}
+    } catch (error) {
+      console.error('Immediate draft save failed:', error);
+      toast({
+        title: 'שמירת הטיוטה נכשלה',
+        description: 'הקובץ מוצג במסך, אבל עדיין לא נשמר. נסה להישאר במסך עד סיום הניתוח.',
+        variant: 'destructive',
+      });
+    }
+
+    previewJobs.forEach(async ({ docId, file }) => {
+      const preview = await fileToPreview(file).catch(() => null);
+      if (!preview) return;
+      const previewData = {
+        ...dataRef.current,
+        [target]: dataRef.current[target].map(d => d.id === docId ? { ...d, preview } : d),
+      } as WizardData;
+      dataRef.current = previewData;
+      setData(previewData);
+    });
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
@@ -730,32 +855,81 @@ export default function IndependentNewReport() {
       dataRef.current = analyzedData;
       setData(analyzedData);
       // Persist analyzed result to DB draft
-      saveDraftToDb(analyzedData).catch(() => {});
+      saveDraftToDb(analyzedData).catch(error => console.error('Analyzed draft save failed:', error));
     });
   }, [toast, user, draftReportId, usdToIls]);
 
-  const setPaymentMethod = (docId: string, method: PaymentMethod, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    setData(prev => ({
-      ...prev,
-      [target]: prev[target].map(d => d.id === docId ? { ...d, paymentMethod: method } : d),
-    }));
+  const setPaymentMethod = (docId: string, method: PaymentMethod | null, target: DocBucketKey) => {
+    let changedDoc: UploadedDoc | undefined;
+    setData(prev => {
+      const next = {
+        ...prev,
+        [target]: prev[target].map(d => {
+          if (d.id !== docId) return d;
+          changedDoc = { ...d, paymentMethod: method };
+          return changedDoc;
+        }),
+      } as WizardData;
+      dataRef.current = next;
+      return next;
+    });
+
+    if (changedDoc?.existingExpenseId) {
+      supabase
+        .from('expenses')
+        .update({ payment_method: (method || 'out_of_pocket') as any })
+        .eq('id', changedDoc.existingExpenseId)
+        .then(({ error }) => {
+          if (error) console.error('Payment method update failed:', error);
+        });
+    } else {
+      saveDraftToDb().catch(error => console.error('Payment method draft save failed:', error));
+    }
   };
 
-  const removeDoc = async (docId: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    const doc = data[target].find(d => d.id === docId);
+  const removeDoc = async (docId: string, target: DocBucketKey) => {
+    const doc = dataRef.current[target].find(d => d.id === docId);
+    const nextData = {
+      ...dataRef.current,
+      [target]: dataRef.current[target].filter(d => d.id !== docId),
+    } as WizardData;
+    dataRef.current = nextData;
+    setData(nextData);
+
     // If this is an existing expense from DB, delete it
     if (doc?.existingExpenseId) {
       await supabase.from('receipts').delete().eq('expense_id', doc.existingExpenseId);
       await supabase.from('expenses').delete().eq('id', doc.existingExpenseId);
     }
-    setData(prev => ({ ...prev, [target]: prev[target].filter(d => d.id !== docId) }));
+    saveDraftToDb(nextData).catch(error => console.error('Remove doc draft save failed:', error));
   };
 
-  const setDocCategory = (docId: string, category: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    setData(prev => ({
+  const setDocCategory = (docId: string, category: string, target: DocBucketKey) => {
+    let changedDoc: UploadedDoc | undefined;
+    setData(prev => {
+      const next = {
       ...prev,
-      [target]: prev[target].map(d => d.id === docId ? { ...d, category } : d),
-    }));
+        [target]: prev[target].map(d => {
+          if (d.id !== docId) return d;
+          changedDoc = { ...d, category };
+          return changedDoc;
+        }),
+      } as WizardData;
+      dataRef.current = next;
+      return next;
+    });
+
+    if (changedDoc?.existingExpenseId) {
+      supabase
+        .from('expenses')
+        .update({ category: category as any })
+        .eq('id', changedDoc.existingExpenseId)
+        .then(({ error }) => {
+          if (error) console.error('Category update failed:', error);
+        });
+    } else {
+      saveDraftToDb().catch(error => console.error('Category draft save failed:', error));
+    }
   };
 
   // ──── Step validation ────
@@ -1058,7 +1232,7 @@ export default function IndependentNewReport() {
               >
                 {CATEGORY_OPTIONS.map(cat => (
                   <option key={cat} value={cat}>
-                    {CATEGORY_CONFIG[cat].emoji} {CATEGORY_CONFIG[cat].label}
+                    {CATEGORY_CONFIG[cat].label}
                   </option>
                 ))}
               </select>
@@ -1242,8 +1416,9 @@ export default function IndependentNewReport() {
         </div>
       </div>
       {tripDays > 0 && (
-        <div className="text-sm text-center bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-3 py-2.5 rounded-xl font-medium">
-          🗓️ משך הנסיעה: {tripDays} ימים
+        <div className="text-sm text-center bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-3 py-2.5 rounded-xl font-medium flex items-center justify-center gap-1.5">
+          <Calendar className="w-4 h-4" />
+          <span>משך הנסיעה: {tripDays} ימים</span>
         </div>
       )}
       <div className="space-y-1.5">
@@ -1576,6 +1751,34 @@ export default function IndependentNewReport() {
         </div>
       </div>
 
+      {/* All saved receipts */}
+      {(() => {
+        const allSavedDocs: Array<{ doc: UploadedDoc; target: DocBucketKey }> = [
+          ...data.docs.map(doc => ({ doc, target: 'docs' as const })),
+          ...data.flightDocs.map(doc => ({ doc, target: 'flightDocs' as const })),
+          ...data.accommodationDocs.map(doc => ({ doc, target: 'accommodationDocs' as const })),
+        ];
+
+        if (allSavedDocs.length === 0) return null;
+
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold flex items-center gap-1.5">
+                <Receipt className="w-4 h-4 text-primary" />
+                חשבוניות בדוח
+              </h4>
+              <span className="text-xs text-muted-foreground">{allSavedDocs.length} קבצים</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {allSavedDocs.map(({ doc, target }) => (
+                <DocCard key={`${target}-${doc.id}`} doc={doc} target={target} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Payment split */}
       {(() => {
         const allDocs = [...data.docs, ...data.flightDocs, ...data.accommodationDocs];
@@ -1609,7 +1812,7 @@ export default function IndependentNewReport() {
             className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground py-1 px-1"
             onClick={() => {
               if (step === 0) {
-                navigate(isIndependent ? '/independent' : '/dashboard');
+                exitWizard();
               } else {
                 goToStep(step - 1);
               }
@@ -1619,7 +1822,7 @@ export default function IndependentNewReport() {
             <span>חזרה</span>
           </button>
           <h1 className="text-sm font-bold">
-            {draftReportId ? '✏️ טיוטא' : 'דוח הוצאות חדש'}
+            {draftReportId ? 'טיוטא' : 'דוח הוצאות חדש'}
           </h1>
           <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
             {step + 1}/{STEP_LABELS.length}
