@@ -1470,7 +1470,7 @@ export default function IndependentNewReport() {
             type="date"
             className="h-12 text-base"
             value={data.tripStartDate}
-            onChange={e => setData(p => ({ ...p, tripStartDate: e.target.value }))}
+            onChange={e => setWizardData(p => ({ ...p, tripStartDate: e.target.value }))}
           />
         </div>
         <div className="space-y-1.5">
@@ -1481,7 +1481,7 @@ export default function IndependentNewReport() {
             className="h-12 text-base"
             min={data.tripStartDate}
             value={data.tripEndDate}
-            onChange={e => setData(p => ({ ...p, tripEndDate: e.target.value }))}
+            onChange={e => setWizardData(p => ({ ...p, tripEndDate: e.target.value }))}
           />
         </div>
       </div>
@@ -1498,7 +1498,7 @@ export default function IndependentNewReport() {
           className="h-12 text-base"
           placeholder="לדוגמה: ניו יורק, ארה״ב"
           value={data.tripDestination}
-          onChange={e => setData(p => ({ ...p, tripDestination: e.target.value }))}
+          onChange={e => setWizardData(p => ({ ...p, tripDestination: e.target.value }))}
         />
       </div>
       <div className="space-y-1.5">
@@ -1508,7 +1508,7 @@ export default function IndependentNewReport() {
           className="h-12 text-base"
           placeholder="לדוגמה: כנס מקצועי"
           value={data.tripPurpose}
-          onChange={e => setData(p => ({ ...p, tripPurpose: e.target.value }))}
+          onChange={e => setWizardData(p => ({ ...p, tripPurpose: e.target.value }))}
         />
       </div>
     </div>,
@@ -1565,7 +1565,7 @@ export default function IndependentNewReport() {
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAllowance: true, allowanceDays: tripDays }))}
+          onClick={() => setWizardData(p => ({ ...p, addAllowance: true, allowanceDays: tripDays }))}
         >
           <CheckCircle2 className="w-4 h-4 inline-block ml-1" /> כן, הוסף
         </button>
@@ -1575,7 +1575,7 @@ export default function IndependentNewReport() {
               ? 'bg-muted-foreground text-background shadow-lg'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAllowance: false }))}
+          onClick={() => setWizardData(p => ({ ...p, addAllowance: false }))}
         >
           לא
         </button>
@@ -1592,7 +1592,7 @@ export default function IndependentNewReport() {
                 className="h-12 text-base text-center"
                 min={1}
                 value={data.allowanceDays}
-                onChange={e => setData(p => ({ ...p, allowanceDays: Number(e.target.value) }))}
+                onChange={e => setWizardData(p => ({ ...p, allowanceDays: Number(e.target.value) }))}
               />
             </div>
             <div className="space-y-1.5">
@@ -1603,7 +1603,7 @@ export default function IndependentNewReport() {
                 className="h-12 text-base text-center"
                 min={0}
                 value={data.dailyAllowance}
-                onChange={e => setData(p => ({ ...p, dailyAllowance: Number(e.target.value) }))}
+                onChange={e => setWizardData(p => ({ ...p, dailyAllowance: Number(e.target.value) }))}
               />
             </div>
           </div>
@@ -1635,7 +1635,7 @@ export default function IndependentNewReport() {
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/50'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addFlights: true }))}
+          onClick={() => setWizardData(p => ({ ...p, addFlights: true }))}
         >
           <Plane className="w-4 h-4 inline-block ml-1" /> כן
         </button>
@@ -1645,7 +1645,7 @@ export default function IndependentNewReport() {
               ? 'bg-muted-foreground text-background shadow-lg'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addFlights: false }))}
+          onClick={() => setWizardData(p => ({ ...p, addFlights: false }))}
         >
           לא
         </button>
@@ -1670,7 +1670,7 @@ export default function IndependentNewReport() {
               min={0}
               placeholder="0"
               value={data.flightTotal || ''}
-              onChange={e => setData(p => ({ ...p, flightTotal: Number(e.target.value) }))}
+              onChange={e => setWizardData(p => ({ ...p, flightTotal: Number(e.target.value) }))}
             />
             {data.flightDocs.some(d => d.amountIls) && (
               <p className="text-xs text-muted-foreground">
@@ -1698,7 +1698,7 @@ export default function IndependentNewReport() {
               ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/50'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAccommodation: true }))}
+          onClick={() => setWizardData(p => ({ ...p, addAccommodation: true }))}
         >
           <Hotel className="w-4 h-4 inline-block ml-1" /> כן
         </button>
@@ -1708,7 +1708,7 @@ export default function IndependentNewReport() {
               ? 'bg-muted-foreground text-background shadow-lg'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAccommodation: false }))}
+          onClick={() => setWizardData(p => ({ ...p, addAccommodation: false }))}
         >
           לא
         </button>
@@ -1733,7 +1733,7 @@ export default function IndependentNewReport() {
               min={0}
               placeholder="0"
               value={data.accommodationTotal || ''}
-              onChange={e => setData(p => ({ ...p, accommodationTotal: Number(e.target.value) }))}
+              onChange={e => setWizardData(p => ({ ...p, accommodationTotal: Number(e.target.value) }))}
             />
           </div>
         </div>
