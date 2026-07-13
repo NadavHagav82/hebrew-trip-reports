@@ -16,6 +16,44 @@ export const blobToDataUrl = (blob: Blob): Promise<string> => {
   });
 };
 
+const loadImageElement = async (dataUrl: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Failed to decode image'));
+    image.src = dataUrl;
+  });
+};
+
+const drawImageToDataUrl = (
+  source: CanvasImageSource,
+  width: number,
+  height: number,
+  options: Required<Pick<OrientedImageOptions, 'mimeType' | 'quality' | 'maxSize'>>
+) => {
+  let targetW = width;
+  let targetH = height;
+
+  const maxDim = Math.max(targetW, targetH);
+  if (maxDim > options.maxSize) {
+    const scale = options.maxSize / maxDim;
+    targetW = Math.max(1, Math.round(targetW * scale));
+    targetH = Math.max(1, Math.round(targetH * scale));
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Failed to create image canvas');
+  }
+
+  ctx.drawImage(source, 0, 0, targetW, targetH);
+  return canvas.toDataURL(options.mimeType, options.quality);
+};
+
 /**
  * Normalizes image orientation (EXIF) and optionally downscales, returning a data URL.
  *
@@ -30,6 +68,7 @@ export const blobToOrientedImageDataUrl = async (
   const mimeType = options.mimeType || 'image/jpeg';
   const quality = options.quality ?? 0.92;
   const maxSize = options.maxSize ?? 1800;
+  const normalizedOptions = { mimeType, quality, maxSize };
 
   // If not an image, just return as-is.
   if (!blob.type?.startsWith('image/')) {
@@ -39,32 +78,19 @@ export const blobToOrientedImageDataUrl = async (
   // Best effort: use createImageBitmap with EXIF orientation support.
   try {
     const bitmap: ImageBitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
-
-    let targetW = bitmap.width;
-    let targetH = bitmap.height;
-
-    const maxDim = Math.max(targetW, targetH);
-    if (maxDim > maxSize) {
-      const scale = maxSize / maxDim;
-      targetW = Math.max(1, Math.round(targetW * scale));
-      targetH = Math.max(1, Math.round(targetH * scale));
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = targetW;
-    canvas.height = targetH;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
+    const dataUrl = drawImageToDataUrl(bitmap, bitmap.width, bitmap.height, normalizedOptions);
+    bitmap.close?.();
+    return dataUrl;
+  } catch {
+    // Fallback for mobile browsers where camera images can fail in createImageBitmap
+    // but still decode through the native image element pipeline.
+    try {
+      const originalDataUrl = await blobToDataUrl(blob);
+      const image = await loadImageElement(originalDataUrl);
+      return drawImageToDataUrl(image, image.naturalWidth || image.width, image.naturalHeight || image.height, normalizedOptions);
+    } catch {
+      // Last resort: keep the upload alive even when preview normalization is unavailable.
       return await blobToDataUrl(blob);
     }
-
-    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
-    bitmap.close?.();
-
-    return canvas.toDataURL(mimeType, quality);
-  } catch {
-    // Fallback: no orientation normalization available
-    return await blobToDataUrl(blob);
   }
 };
