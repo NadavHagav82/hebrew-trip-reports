@@ -173,9 +173,9 @@ export default function IndependentNewReport() {
     !!stored?.tripEndDate ||
     !!String(stored?.tripDestination || '').trim() ||
     !!String(stored?.tripPurpose || '').trim() ||
-    stored?.addAllowance !== null && stored?.addAllowance !== undefined ||
-    stored?.addFlights !== null && stored?.addFlights !== undefined ||
-    stored?.addAccommodation !== null && stored?.addAccommodation !== undefined ||
+    (stored?.addAllowance !== null && stored?.addAllowance !== undefined) ||
+    (stored?.addFlights !== null && stored?.addFlights !== undefined) ||
+    (stored?.addAccommodation !== null && stored?.addAccommodation !== undefined) ||
     Number(stored?.allowanceDays || 0) > 0 ||
     Number(stored?.flightTotal || 0) > 0 ||
     Number(stored?.accommodationTotal || 0) > 0
@@ -209,14 +209,14 @@ export default function IndependentNewReport() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(buildLocalDraftPayload(draftData, draftStep, reportId)));
   };
 
-  const setWizardData = useCallback((updater: WizardData | ((previous: WizardData) => WizardData)) => {
+  const setWizardData = (updater: WizardData | ((previous: WizardData) => WizardData)) => {
     const nextData = typeof updater === 'function'
       ? (updater as (previous: WizardData) => WizardData)(dataRef.current)
       : updater;
     dataRef.current = nextData;
     setData(nextData);
     persistLocalDraft(nextData, step, draftReportIdRef.current);
-  }, [step]);
+  };
 
   const extractReceiptStoragePath = (source: string) => {
     const decoded = decodeURIComponent(String(source || '').trim());
