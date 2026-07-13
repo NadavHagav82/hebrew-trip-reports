@@ -259,6 +259,7 @@ export default function Dashboard() {
   };
 
   const fetchProfile = async () => {
+;
     if (!user) return;
     
     try {
