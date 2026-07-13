@@ -1363,7 +1363,7 @@ export default function IndependentNewReport() {
 
       {data.addFlights && (
         <div className="space-y-3">
-          <UploadZone target="flightDocs" inputRef={flightInputRef} pdfInputRef={flightPdfInputRef} color="blue" label="העלה תמונות טיסה" />
+          {UploadZone({ target: 'flightDocs', inputRef: flightInputRef, pdfInputRef: flightPdfInputRef, color: 'blue', label: 'העלה תמונות טיסה' })}
 
           {data.flightDocs.length > 0 && (
             <div className="grid grid-cols-2 gap-2.5">
@@ -1426,7 +1426,7 @@ export default function IndependentNewReport() {
 
       {data.addAccommodation && (
         <div className="space-y-3">
-          <UploadZone target="accommodationDocs" inputRef={accommodationInputRef} pdfInputRef={accommodationPdfInputRef} color="purple" label="העלה תמונות לינה" />
+          {UploadZone({ target: 'accommodationDocs', inputRef: accommodationInputRef, pdfInputRef: accommodationPdfInputRef, color: 'purple', label: 'העלה תמונות לינה' })}
 
           {data.accommodationDocs.length > 0 && (
             <div className="grid grid-cols-2 gap-2.5">
