@@ -416,7 +416,7 @@ export default function IndependentNewReport() {
 
   // ──── Draft: Create/update in DB ────
   const saveDraftToDb = async (draftData: WizardData = dataRef.current) => {
-    if (!user) return;
+    if (!user || !hasMeaningfulDraftContent(draftData)) return null;
     const draftAllowanceTotalIls = Math.round((draftData.allowanceDays || 0) * (draftData.dailyAllowance || DEFAULT_DAILY_ALLOWANCE) * usdToIls);
     const totalIls = draftData.docs.reduce((s, d) => s + (d.amountIls || 0), 0)
       + (draftData.addAllowance ? draftAllowanceTotalIls : 0)
@@ -425,7 +425,7 @@ export default function IndependentNewReport() {
 
     let reportId = draftReportIdRef.current;
     if (reportId) {
-      await supabase.from('reports').update({
+      await withTimeout(supabase.from('reports').update({
         trip_start_date: draftData.tripStartDate,
         trip_end_date: draftData.tripEndDate,
         trip_destination: draftData.tripDestination,
@@ -433,27 +433,40 @@ export default function IndependentNewReport() {
         total_amount_ils: totalIls,
         daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
         allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
-      }).eq('id', reportId);
+      }).eq('id', reportId), 20_000);
     } else {
-      const { data: report } = await supabase.from('reports').insert({
-        user_id: user.id,
-        trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
-        trip_end_date: draftData.tripEndDate || new Date().toISOString().split('T')[0],
-        trip_destination: draftData.tripDestination || 'טיוטא',
-        trip_purpose: draftData.tripPurpose || 'טיוטא',
-        status: 'draft',
-        total_amount_ils: 0,
-      }).select().single();
-      if (report) {
-        reportId = report.id;
-        draftReportIdRef.current = report.id;
-        setDraftReportId(report.id);
+      if (!draftCreationRef.current) {
+        draftCreationRef.current = (async () => {
+          const { data: report, error } = await withTimeout(supabase.from('reports').insert({
+            user_id: user.id,
+            trip_start_date: draftData.tripStartDate || new Date().toISOString().split('T')[0],
+            trip_end_date: draftData.tripEndDate || new Date().toISOString().split('T')[0],
+            trip_destination: draftData.tripDestination || 'טיוטא',
+            trip_purpose: draftData.tripPurpose || 'טיוטא',
+            status: 'draft',
+            total_amount_ils: totalIls,
+            daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
+            allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
+          }).select().single(), 20_000);
+
+          if (error || !report) throw error || new Error('Draft report was not created');
+
+          draftReportIdRef.current = report.id;
+          setDraftReportId(report.id);
+          return report.id;
+        })().finally(() => {
+          draftCreationRef.current = null;
+        });
       }
+
+      reportId = await draftCreationRef.current;
     }
 
     if (reportId) {
       await persistDocsAsDraft(reportId, draftData);
     }
+
+    return reportId;
   };
 
   // Persist analyzed docs (from all 3 buckets) to DB as draft expenses+receipts.
