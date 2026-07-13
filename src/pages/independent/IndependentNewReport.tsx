@@ -209,6 +209,15 @@ export default function IndependentNewReport() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(buildLocalDraftPayload(draftData, draftStep, reportId)));
   };
 
+  const setWizardData = useCallback((updater: WizardData | ((previous: WizardData) => WizardData)) => {
+    const nextData = typeof updater === 'function'
+      ? (updater as (previous: WizardData) => WizardData)(dataRef.current)
+      : updater;
+    dataRef.current = nextData;
+    setData(nextData);
+    persistLocalDraft(nextData, step, draftReportIdRef.current);
+  }, [step]);
+
   const extractReceiptStoragePath = (source: string) => {
     const decoded = decodeURIComponent(String(source || '').trim());
     if (!decoded) return '';
@@ -414,8 +423,9 @@ export default function IndependentNewReport() {
             setDraftReportId(parsed.draftReportId);
             draftReportIdRef.current = parsed.draftReportId;
             setStep(parsed.step || 0);
-            setData(prev => ({
-              ...prev,
+            setData(prev => {
+              const restored = {
+                ...prev,
               tripStartDate: parsed.tripStartDate || '',
               tripEndDate: parsed.tripEndDate || '',
               tripDestination: parsed.tripDestination || '',
@@ -427,9 +437,33 @@ export default function IndependentNewReport() {
               flightTotal: parsed.flightTotal || 0,
               addAccommodation: parsed.addAccommodation ?? null,
               accommodationTotal: parsed.accommodationTotal || 0,
-            }));
+              };
+              dataRef.current = restored;
+              return restored;
+            });
             loadExistingExpensesIntoWizard(parsed.draftReportId).catch(() => {});
             toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
+          } else if (hasStoredDraftContent(parsed)) {
+            setStep(parsed.step || 0);
+            setData(prev => {
+              const restored = {
+                ...prev,
+                tripStartDate: parsed.tripStartDate || '',
+                tripEndDate: parsed.tripEndDate || '',
+                tripDestination: parsed.tripDestination || '',
+                tripPurpose: parsed.tripPurpose || '',
+                addAllowance: parsed.addAllowance ?? null,
+                allowanceDays: parsed.allowanceDays || 0,
+                dailyAllowance: parsed.dailyAllowance || DEFAULT_DAILY_ALLOWANCE,
+                addFlights: parsed.addFlights ?? null,
+                flightTotal: parsed.flightTotal || 0,
+                addAccommodation: parsed.addAccommodation ?? null,
+                accommodationTotal: parsed.accommodationTotal || 0,
+              };
+              dataRef.current = restored;
+              return restored;
+            });
+            toast({ title: 'טיוטא מקומית נטענה', description: 'ממשיך מאיפה שעצרת' });
           }
         } catch {}
       }
@@ -535,6 +569,7 @@ export default function IndependentNewReport() {
 
           draftReportIdRef.current = report.id;
           setDraftReportId(report.id);
+          persistLocalDraft(draftData, step, report.id);
           return report.id;
         })().finally(() => {
           draftCreationRef.current = null;
@@ -983,14 +1018,16 @@ export default function IndependentNewReport() {
 
   // ──── Navigate to step (with auto-save draft) ────
   const goToStep = async (targetStep: number) => {
-    // Save draft to DB on first forward navigation from step 0
-    if (step === 0 && targetStep > 0 && !draftReportId && isStepComplete(0)) {
-      await saveDraftToDb();
+    persistLocalDraft(dataRef.current, targetStep, draftReportIdRef.current);
+
+    if (hasMeaningfulDraftContent(dataRef.current)) {
+      try {
+        await saveDraftToDb(dataRef.current);
+      } catch (error) {
+        console.error('Step draft save failed:', error);
+      }
     }
-    // Save draft on any forward step
-    if (targetStep > step && draftReportId) {
-      saveDraftToDb();
-    }
+
     setStep(targetStep);
   };
 
