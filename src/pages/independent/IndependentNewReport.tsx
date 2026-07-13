@@ -469,11 +469,11 @@ export default function IndependentNewReport() {
     return reportId;
   };
 
-  // Persist analyzed docs (from all 3 buckets) to DB as draft expenses+receipts.
-  // Idempotent: skips docs that already have existingExpenseId.
+  // Persist docs (from all 3 buckets) to DB as draft expenses+receipts.
+  // It saves immediately, even before analysis finishes, then updates the same expense when analysis returns.
   const persistDocsAsDraft = async (reportId: string, draftData: WizardData = dataRef.current) => {
     if (!user) return;
-    const buckets: Array<{ key: 'docs' | 'flightDocs' | 'accommodationDocs'; forceCategory?: string }> = [
+    const buckets: Array<{ key: DocBucketKey; forceCategory?: string }> = [
       { key: 'docs' },
       { key: 'flightDocs', forceCategory: 'flights' },
       { key: 'accommodationDocs', forceCategory: 'accommodation' },
@@ -482,47 +482,71 @@ export default function IndependentNewReport() {
     for (const { key, forceCategory } of buckets) {
       const list = draftData[key];
       for (const doc of list) {
-        if (doc.existingExpenseId) continue;
-        if (!doc.analyzed || doc.analyzing) continue;
-        // Only persist docs with a real file (not empty placeholder)
-        if (!doc.file || doc.file.size === 0) continue;
-
         const category = forceCategory || doc.category || 'miscellaneous';
+        const expensePayload = {
+          expense_date: doc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
+          category: category as any,
+          amount: doc.amount || 0,
+          currency: (doc.currency || 'ILS') as any,
+          amount_in_ils: doc.amountIls || doc.amount || 0,
+          description: doc.description || doc.file?.name || 'חשבונית',
+          payment_method: (doc.paymentMethod || 'out_of_pocket') as any,
+          approval_status: 'pending' as any,
+        };
+
         try {
-          const { data: expense, error: expenseError } = await supabase
-            .from('expenses')
-            .insert({
-              report_id: reportId,
-              expense_date: doc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
-              category: category as any,
-              amount: doc.amount || 0,
-              currency: (doc.currency || 'ILS') as any,
-              amount_in_ils: doc.amountIls || doc.amount || 0,
-              description: doc.description || doc.file.name,
-              payment_method: (doc.paymentMethod || 'out_of_pocket') as any,
-              approval_status: 'pending' as any,
-            } as any)
-            .select()
-            .single();
-          if (expenseError || !expense) continue;
+          if (doc.existingExpenseId) {
+            await withTimeout(
+              supabase
+                .from('expenses')
+                .update(expensePayload as any)
+                .eq('id', doc.existingExpenseId),
+              20_000,
+            );
+            continue;
+          }
+
+          // Only brand-new docs with a real file need a new expense + receipt upload.
+          if (!doc.file || doc.file.size === 0) continue;
+
+          const { data: expense, error: expenseError } = await withTimeout(
+            supabase
+              .from('expenses')
+              .insert({ report_id: reportId, ...expensePayload } as any)
+              .select()
+              .single(),
+            20_000,
+          );
+
+          if (expenseError || !expense) throw expenseError || new Error('Expense was not created');
 
           const isImageFile =
             doc.file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(doc.file.name);
           const ext = isImageFile ? (doc.file.name.split('.').pop() || 'jpg') : 'jpg';
           const filePath = `${user.id}/${reportId}/${expense.id}.${ext}`;
-          const { error: storageError } = await supabase.storage
-            .from('receipts')
-            .upload(filePath, doc.file, { upsert: true });
-          if (!storageError) {
-            const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(filePath);
-            await supabase.from('receipts').insert({
+
+          const { error: storageError } = await withTimeout(
+            supabase.storage
+              .from('receipts')
+              .upload(filePath, doc.file, { upsert: true }),
+            30_000,
+          );
+
+          if (storageError) {
+            await supabase.from('expenses').delete().eq('id', expense.id);
+            throw storageError;
+          }
+
+          await withTimeout(
+            supabase.from('receipts').insert({
               expense_id: expense.id,
               file_name: doc.file.name,
               file_size: doc.file.size,
               file_type: 'image' as any,
-              file_url: urlData.publicUrl,
-            });
-          }
+              file_url: filePath,
+            }),
+            20_000,
+          );
 
           // Mark this doc as persisted so we don't insert it again
           const markedData = {
