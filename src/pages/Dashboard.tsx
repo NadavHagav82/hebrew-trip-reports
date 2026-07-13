@@ -1302,6 +1302,35 @@ export default function Dashboard() {
                             </>
                           )}
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full mt-2 h-11 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 rounded-xl"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              מחק דוח
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>למחוק את הדוח?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                פעולה זו תמחק לצמיתות את הדוח "{report.trip_destination}" וכל ההוצאות והקבלות המשויכות אליו. לא ניתן לשחזר.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>ביטול</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteReport(report.id)}
+                              >
+                                מחק
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardContent>
                     </Card>
                   ))}
