@@ -1108,7 +1108,7 @@ export default function IndependentNewReport() {
 
         const category = doc.docType === 'flight' ? 'flights'
           : doc.docType === 'accommodation' ? 'accommodation'
-          : doc.category || 'other';
+          : doc.category || 'miscellaneous';
 
         const { data: expense, error: expenseError } = await supabase
           .from('expenses')
@@ -1158,7 +1158,7 @@ export default function IndependentNewReport() {
         await supabase.from('expenses').insert({
           report_id: report.id,
           expense_date: data.tripStartDate,
-          category: 'other' as any,
+          category: 'miscellaneous' as any,
           amount: allowanceTotalUsd,
           currency: 'USD' as any,
           amount_in_ils: allowanceIls,
