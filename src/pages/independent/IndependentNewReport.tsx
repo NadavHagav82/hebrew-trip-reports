@@ -1229,7 +1229,7 @@ export default function IndependentNewReport() {
         עד 10 קבצים בכל העלאה · ללא הגבלה על סה״כ
       </p>
 
-      <UploadZone target="docs" inputRef={fileInputRef} pdfInputRef={pdfInputRef} label="העלה תמונות" />
+      {UploadZone({ target: 'docs', inputRef: fileInputRef, pdfInputRef: pdfInputRef, label: 'העלה תמונות' })}
 
       {data.docs.length > 0 && (
         <>
