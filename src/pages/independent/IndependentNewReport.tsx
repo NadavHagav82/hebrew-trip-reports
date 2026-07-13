@@ -472,6 +472,7 @@ export default function IndependentNewReport() {
 
   // ──── Draft: Auto-save to localStorage on change ────
   useEffect(() => {
+    if (!draftReportId && !hasMeaningfulDraftContent(data)) return;
     persistLocalDraft(data, step, draftReportId);
   }, [data, step, draftReportId]);
 
