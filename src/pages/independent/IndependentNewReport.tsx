@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
   Plane, Hotel, Sun, FileText, Loader2, Receipt, Camera, Plus, Check,
-  UtensilsCrossed, Car, ShoppingBag, ChevronDown, Globe, Calendar, Target, Wallet, Building2, Send, User
+  UtensilsCrossed, Car, ShoppingBag, ChevronDown, Globe, Calendar, Target, Wallet, Building2, Send, User, Save
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -1900,9 +1900,26 @@ export default function IndependentNewReport() {
           <h1 className="text-sm font-bold">
             {draftReportId ? 'טיוטא' : 'דוח הוצאות חדש'}
           </h1>
-          <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
-            {step + 1}/{STEP_LABELS.length}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await saveDraftToDb(dataRef.current);
+                  toast({ title: 'הטיוטא נשמרה', description: 'ניתן להמשיך מהמסך הראשי' });
+                } catch (e) {
+                  toast({ title: 'שגיאה בשמירה', variant: 'destructive' });
+                }
+              }}
+              className="flex items-center gap-1 text-xs font-semibold bg-emerald-500 text-white px-2.5 py-1 rounded-full active:scale-95 transition-transform"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>שמור טיוטא</span>
+            </button>
+            <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
+              {step + 1}/{STEP_LABELS.length}
+            </span>
+          </div>
         </div>
         {/* Step navigation */}
         <div className="px-3 pb-2.5">
