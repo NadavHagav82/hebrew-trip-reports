@@ -1929,7 +1929,7 @@ export default function IndependentNewReport() {
             aria-label="שמור טיוטא"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span className="hidden min-[380px]:inline mr-1">שמור</span>
+            <span className="mr-1">שמור</span>
           </Button>
 
           {step < STEP_LABELS.length - 1 ? (
