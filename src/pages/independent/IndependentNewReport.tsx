@@ -168,6 +168,61 @@ export default function IndependentNewReport() {
     draftData.addAccommodation !== null
   );
 
+  const hasStoredDraftContent = (stored: any) => (
+    !!stored?.tripStartDate ||
+    !!stored?.tripEndDate ||
+    !!String(stored?.tripDestination || '').trim() ||
+    !!String(stored?.tripPurpose || '').trim() ||
+    (stored?.addAllowance !== null && stored?.addAllowance !== undefined) ||
+    (stored?.addFlights !== null && stored?.addFlights !== undefined) ||
+    (stored?.addAccommodation !== null && stored?.addAccommodation !== undefined) ||
+    Number(stored?.allowanceDays || 0) > 0 ||
+    Number(stored?.flightTotal || 0) > 0 ||
+    Number(stored?.accommodationTotal || 0) > 0
+  );
+
+  const buildLocalDraftPayload = (
+    draftData: WizardData = dataRef.current,
+    draftStep = step,
+    reportId = draftReportIdRef.current,
+  ) => ({
+    tripStartDate: draftData.tripStartDate,
+    tripEndDate: draftData.tripEndDate,
+    tripDestination: draftData.tripDestination,
+    tripPurpose: draftData.tripPurpose,
+    addAllowance: draftData.addAllowance,
+    allowanceDays: draftData.allowanceDays,
+    dailyAllowance: draftData.dailyAllowance,
+    addFlights: draftData.addFlights,
+    flightTotal: draftData.flightTotal,
+    addAccommodation: draftData.addAccommodation,
+    accommodationTotal: draftData.accommodationTotal,
+    step: draftStep,
+    draftReportId: reportId,
+  });
+
+  const persistLocalDraft = (
+    draftData: WizardData = dataRef.current,
+    draftStep = step,
+    reportId = draftReportIdRef.current,
+  ) => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(buildLocalDraftPayload(draftData, draftStep, reportId)));
+  };
+
+  const setWizardData = (updater: WizardData | ((previous: WizardData) => WizardData)) => {
+    const nextData = typeof updater === 'function'
+      ? (updater as (previous: WizardData) => WizardData)(dataRef.current)
+      : updater;
+    dataRef.current = nextData;
+    setData(nextData);
+    persistLocalDraft(nextData, step, draftReportIdRef.current);
+    if (user && hasMeaningfulDraftContent(nextData)) {
+      saveDraftToDb(nextData).catch(error => {
+        console.error('Immediate field draft save failed:', error);
+      });
+    }
+  };
+
   const extractReceiptStoragePath = (source: string) => {
     const decoded = decodeURIComponent(String(source || '').trim());
     if (!decoded) return '';
@@ -373,8 +428,9 @@ export default function IndependentNewReport() {
             setDraftReportId(parsed.draftReportId);
             draftReportIdRef.current = parsed.draftReportId;
             setStep(parsed.step || 0);
-            setData(prev => ({
-              ...prev,
+            setData(prev => {
+              const restored = {
+                ...prev,
               tripStartDate: parsed.tripStartDate || '',
               tripEndDate: parsed.tripEndDate || '',
               tripDestination: parsed.tripDestination || '',
@@ -386,9 +442,33 @@ export default function IndependentNewReport() {
               flightTotal: parsed.flightTotal || 0,
               addAccommodation: parsed.addAccommodation ?? null,
               accommodationTotal: parsed.accommodationTotal || 0,
-            }));
+              };
+              dataRef.current = restored;
+              return restored;
+            });
             loadExistingExpensesIntoWizard(parsed.draftReportId).catch(() => {});
             toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
+          } else if (hasStoredDraftContent(parsed)) {
+            setStep(parsed.step || 0);
+            setData(prev => {
+              const restored = {
+                ...prev,
+                tripStartDate: parsed.tripStartDate || '',
+                tripEndDate: parsed.tripEndDate || '',
+                tripDestination: parsed.tripDestination || '',
+                tripPurpose: parsed.tripPurpose || '',
+                addAllowance: parsed.addAllowance ?? null,
+                allowanceDays: parsed.allowanceDays || 0,
+                dailyAllowance: parsed.dailyAllowance || DEFAULT_DAILY_ALLOWANCE,
+                addFlights: parsed.addFlights ?? null,
+                flightTotal: parsed.flightTotal || 0,
+                addAccommodation: parsed.addAccommodation ?? null,
+                accommodationTotal: parsed.accommodationTotal || 0,
+              };
+              dataRef.current = restored;
+              return restored;
+            });
+            toast({ title: 'טיוטא מקומית נטענה', description: 'ממשיך מאיפה שעצרת' });
           }
         } catch {}
       }
@@ -397,33 +477,26 @@ export default function IndependentNewReport() {
 
   // ──── Draft: Auto-save to localStorage on change ────
   useEffect(() => {
-    const toSave = {
-      tripStartDate: data.tripStartDate,
-      tripEndDate: data.tripEndDate,
-      tripDestination: data.tripDestination,
-      tripPurpose: data.tripPurpose,
-      addAllowance: data.addAllowance,
-      allowanceDays: data.allowanceDays,
-      dailyAllowance: data.dailyAllowance,
-      addFlights: data.addFlights,
-      flightTotal: data.flightTotal,
-      addAccommodation: data.addAccommodation,
-      accommodationTotal: data.accommodationTotal,
-      step,
-      draftReportId,
-    };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
+    if (!draftReportId && !hasMeaningfulDraftContent(data)) return;
+    persistLocalDraft(data, step, draftReportId);
   }, [data, step, draftReportId]);
 
   // ──── Draft: Auto-save to DB on every meaningful change ────
   useEffect(() => {
     if (!user || !hasMeaningfulDraftContent(data)) return;
 
+    if (!draftReportIdRef.current && !draftCreationRef.current) {
+      saveDraftToDb(data).catch(error => {
+        console.error('Immediate draft creation error:', error);
+      });
+      return;
+    }
+
     const timeoutId = window.setTimeout(() => {
       saveDraftToDb(data).catch(error => {
         console.error('Auto-save draft error:', error);
       });
-    }, 900);
+    }, 450);
 
     return () => window.clearTimeout(timeoutId);
   }, [data, user, usdToIls]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -502,6 +575,7 @@ export default function IndependentNewReport() {
 
           draftReportIdRef.current = report.id;
           setDraftReportId(report.id);
+          persistLocalDraft(draftData, step, report.id);
           return report.id;
         })().finally(() => {
           draftCreationRef.current = null;
@@ -950,14 +1024,16 @@ export default function IndependentNewReport() {
 
   // ──── Navigate to step (with auto-save draft) ────
   const goToStep = async (targetStep: number) => {
-    // Save draft to DB on first forward navigation from step 0
-    if (step === 0 && targetStep > 0 && !draftReportId && isStepComplete(0)) {
-      await saveDraftToDb();
+    persistLocalDraft(dataRef.current, targetStep, draftReportIdRef.current);
+
+    if (hasMeaningfulDraftContent(dataRef.current)) {
+      try {
+        await saveDraftToDb(dataRef.current);
+      } catch (error) {
+        console.error('Step draft save failed:', error);
+      }
     }
-    // Save draft on any forward step
-    if (targetStep > step && draftReportId) {
-      saveDraftToDb();
-    }
+
     setStep(targetStep);
   };
 
@@ -1400,7 +1476,7 @@ export default function IndependentNewReport() {
             type="date"
             className="h-12 text-base"
             value={data.tripStartDate}
-            onChange={e => setData(p => ({ ...p, tripStartDate: e.target.value }))}
+            onChange={e => setWizardData(p => ({ ...p, tripStartDate: e.target.value }))}
           />
         </div>
         <div className="space-y-1.5">
@@ -1411,7 +1487,7 @@ export default function IndependentNewReport() {
             className="h-12 text-base"
             min={data.tripStartDate}
             value={data.tripEndDate}
-            onChange={e => setData(p => ({ ...p, tripEndDate: e.target.value }))}
+            onChange={e => setWizardData(p => ({ ...p, tripEndDate: e.target.value }))}
           />
         </div>
       </div>
@@ -1428,7 +1504,7 @@ export default function IndependentNewReport() {
           className="h-12 text-base"
           placeholder="לדוגמה: ניו יורק, ארה״ב"
           value={data.tripDestination}
-          onChange={e => setData(p => ({ ...p, tripDestination: e.target.value }))}
+          onChange={e => setWizardData(p => ({ ...p, tripDestination: e.target.value }))}
         />
       </div>
       <div className="space-y-1.5">
@@ -1438,7 +1514,7 @@ export default function IndependentNewReport() {
           className="h-12 text-base"
           placeholder="לדוגמה: כנס מקצועי"
           value={data.tripPurpose}
-          onChange={e => setData(p => ({ ...p, tripPurpose: e.target.value }))}
+          onChange={e => setWizardData(p => ({ ...p, tripPurpose: e.target.value }))}
         />
       </div>
     </div>,
@@ -1495,7 +1571,7 @@ export default function IndependentNewReport() {
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAllowance: true, allowanceDays: tripDays }))}
+          onClick={() => setWizardData(p => ({ ...p, addAllowance: true, allowanceDays: tripDays }))}
         >
           <CheckCircle2 className="w-4 h-4 inline-block ml-1" /> כן, הוסף
         </button>
@@ -1505,7 +1581,7 @@ export default function IndependentNewReport() {
               ? 'bg-muted-foreground text-background shadow-lg'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAllowance: false }))}
+          onClick={() => setWizardData(p => ({ ...p, addAllowance: false }))}
         >
           לא
         </button>
@@ -1522,7 +1598,7 @@ export default function IndependentNewReport() {
                 className="h-12 text-base text-center"
                 min={1}
                 value={data.allowanceDays}
-                onChange={e => setData(p => ({ ...p, allowanceDays: Number(e.target.value) }))}
+                onChange={e => setWizardData(p => ({ ...p, allowanceDays: Number(e.target.value) }))}
               />
             </div>
             <div className="space-y-1.5">
@@ -1533,7 +1609,7 @@ export default function IndependentNewReport() {
                 className="h-12 text-base text-center"
                 min={0}
                 value={data.dailyAllowance}
-                onChange={e => setData(p => ({ ...p, dailyAllowance: Number(e.target.value) }))}
+                onChange={e => setWizardData(p => ({ ...p, dailyAllowance: Number(e.target.value) }))}
               />
             </div>
           </div>
@@ -1565,7 +1641,7 @@ export default function IndependentNewReport() {
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/50'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addFlights: true }))}
+          onClick={() => setWizardData(p => ({ ...p, addFlights: true }))}
         >
           <Plane className="w-4 h-4 inline-block ml-1" /> כן
         </button>
@@ -1575,7 +1651,7 @@ export default function IndependentNewReport() {
               ? 'bg-muted-foreground text-background shadow-lg'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addFlights: false }))}
+          onClick={() => setWizardData(p => ({ ...p, addFlights: false }))}
         >
           לא
         </button>
@@ -1600,7 +1676,7 @@ export default function IndependentNewReport() {
               min={0}
               placeholder="0"
               value={data.flightTotal || ''}
-              onChange={e => setData(p => ({ ...p, flightTotal: Number(e.target.value) }))}
+              onChange={e => setWizardData(p => ({ ...p, flightTotal: Number(e.target.value) }))}
             />
             {data.flightDocs.some(d => d.amountIls) && (
               <p className="text-xs text-muted-foreground">
@@ -1628,7 +1704,7 @@ export default function IndependentNewReport() {
               ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/50'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAccommodation: true }))}
+          onClick={() => setWizardData(p => ({ ...p, addAccommodation: true }))}
         >
           <Hotel className="w-4 h-4 inline-block ml-1" /> כן
         </button>
@@ -1638,7 +1714,7 @@ export default function IndependentNewReport() {
               ? 'bg-muted-foreground text-background shadow-lg'
               : 'bg-muted text-foreground'
           }`}
-          onClick={() => setData(p => ({ ...p, addAccommodation: false }))}
+          onClick={() => setWizardData(p => ({ ...p, addAccommodation: false }))}
         >
           לא
         </button>
@@ -1663,7 +1739,7 @@ export default function IndependentNewReport() {
               min={0}
               placeholder="0"
               value={data.accommodationTotal || ''}
-              onChange={e => setData(p => ({ ...p, accommodationTotal: Number(e.target.value) }))}
+              onChange={e => setWizardData(p => ({ ...p, accommodationTotal: Number(e.target.value) }))}
             />
           </div>
         </div>
