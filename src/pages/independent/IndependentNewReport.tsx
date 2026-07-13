@@ -663,6 +663,7 @@ export default function IndependentNewReport() {
     const startDate = dataRef.current.tripStartDate;
 
     const newDocs: UploadedDoc[] = [];
+    const previewJobs: Array<{ docId: string; file: File }> = [];
     let skippedUnsupported = 0;
 
     for (let i = 0; i < selectedFiles.length; i++) {
@@ -706,15 +707,20 @@ export default function IndependentNewReport() {
             preview = 'pdf';
           }
         } else {
-          preview = await fileToPreview(file);
+          // Do not block draft persistence on preview generation; mobile camera images can be large.
+          // The raw file is saved first, preview is filled in after the upload starts.
+          preview = null;
         }
       } catch {
         // preview generation failed - still add the file
         if (isPdf) preview = 'pdf';
       }
 
+      const docId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${i}`;
+      if (!isPdf) previewJobs.push({ docId, file: finalFile });
+
       newDocs.push({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${i}`,
+        id: docId,
         file: finalFile,
         preview,
         paymentMethod: null,
@@ -768,6 +774,17 @@ export default function IndependentNewReport() {
         variant: 'destructive',
       });
     }
+
+    previewJobs.forEach(async ({ docId, file }) => {
+      const preview = await fileToPreview(file).catch(() => null);
+      if (!preview) return;
+      const previewData = {
+        ...dataRef.current,
+        [target]: dataRef.current[target].map(d => d.id === docId ? { ...d, preview } : d),
+      } as WizardData;
+      dataRef.current = previewData;
+      setData(previewData);
+    });
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
