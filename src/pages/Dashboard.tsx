@@ -12,7 +12,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
-import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole, BookOpen, AlertTriangle } from 'lucide-react';
+import { Edit, Eye, FileText, LogOut, Plus, Search, User, FileStack, FolderOpen, FilePen, CheckCircle2, Calculator, BarChart3, Building2, Key, Mail, LockKeyhole, BookOpen, AlertTriangle, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useToast } from '@/hooks/use-toast';
@@ -244,6 +255,37 @@ export default function Dashboard() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (!user) return;
+    try {
+      // Delete storage files (best-effort)
+      try {
+        const { data: files } = await supabase.storage
+          .from('receipts')
+          .list(`${user.id}/${reportId}`);
+        if (files && files.length > 0) {
+          await supabase.storage
+            .from('receipts')
+            .remove(files.map((f) => `${user.id}/${reportId}/${f.name}`));
+        }
+      } catch (e) {
+        console.error('Storage cleanup error:', e);
+      }
+
+      const { error } = await supabase.from('reports').delete().eq('id', reportId);
+      if (error) throw error;
+
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+      toast({ title: 'הדוח נמחק', description: 'הדוח וההוצאות הקשורות אליו הוסרו' });
+    } catch (error: any) {
+      toast({
+        title: 'שגיאה במחיקה',
+        description: error?.message || 'לא ניתן למחוק את הדוח',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -1100,6 +1142,7 @@ export default function Dashboard() {
                             )}
                           </td>
                           <td className="p-4">
+                            <div className="flex items-center gap-2">
                             {report.status === 'draft' ? (
                               <Button
                                 variant="outline"
@@ -1127,6 +1170,36 @@ export default function Dashboard() {
                                 צפייה
                               </Button>
                             )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 rounded-xl transition-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>למחוק את הדוח?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    פעולה זו תמחק לצמיתות את הדוח "{report.trip_destination}" וכל ההוצאות והקבלות המשויכות אליו. לא ניתן לשחזר.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => handleDeleteReport(report.id)}
+                                  >
+                                    מחק
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1229,6 +1302,35 @@ export default function Dashboard() {
                             </>
                           )}
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full mt-2 h-11 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 rounded-xl"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              מחק דוח
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>למחוק את הדוח?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                פעולה זו תמחק לצמיתות את הדוח "{report.trip_destination}" וכל ההוצאות והקבלות המשויכות אליו. לא ניתן לשחזר.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>ביטול</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteReport(report.id)}
+                              >
+                                מחק
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardContent>
                     </Card>
                   ))}
