@@ -1751,6 +1751,34 @@ export default function IndependentNewReport() {
         </div>
       </div>
 
+      {/* All saved receipts */}
+      {(() => {
+        const allSavedDocs: Array<{ doc: UploadedDoc; target: DocBucketKey }> = [
+          ...data.docs.map(doc => ({ doc, target: 'docs' as const })),
+          ...data.flightDocs.map(doc => ({ doc, target: 'flightDocs' as const })),
+          ...data.accommodationDocs.map(doc => ({ doc, target: 'accommodationDocs' as const })),
+        ];
+
+        if (allSavedDocs.length === 0) return null;
+
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold flex items-center gap-1.5">
+                <Receipt className="w-4 h-4 text-primary" />
+                חשבוניות בדוח
+              </h4>
+              <span className="text-xs text-muted-foreground">{allSavedDocs.length} קבצים</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {allSavedDocs.map(({ doc, target }) => (
+                <DocCard key={`${target}-${doc.id}`} doc={doc} target={target} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Payment split */}
       {(() => {
         const allDocs = [...data.docs, ...data.flightDocs, ...data.accommodationDocs];
