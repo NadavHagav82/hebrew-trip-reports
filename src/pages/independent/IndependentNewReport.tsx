@@ -304,7 +304,7 @@ export default function IndependentNewReport() {
   useEffect(() => {
     if (editId && user && !searchParams.get('draft')) {
       setDraftReportId(editId);
-      // Load the report data - reuse the same loading logic as draft
+      draftReportIdRef.current = editId;
       supabase.from('reports').select('*').eq('id', editId).single().then(async ({ data: report }) => {
         if (report) {
           setData(prev => ({
@@ -317,67 +317,7 @@ export default function IndependentNewReport() {
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
           }));
-
-          // Load existing expenses
-          const { data: expenses } = await supabase
-            .from('expenses')
-            .select('*, receipts(*)')
-            .eq('report_id', editId)
-            .order('expense_date', { ascending: true });
-
-          if (expenses && expenses.length > 0) {
-            const existingDocs: UploadedDoc[] = [];
-            for (const exp of expenses) {
-              if (exp.description?.startsWith('ימי שהייה:')) continue;
-              const placeholderFile = new File([], exp.description || 'existing', { type: 'application/octet-stream' });
-              let preview: string | null = null;
-              if (exp.receipts && exp.receipts.length > 0) {
-                const receipt = exp.receipts[0];
-                const rawUrl = String(receipt.file_url || '').trim();
-                if (receipt.file_type === 'pdf') {
-                  preview = 'pdf';
-                } else if (rawUrl) {
-                  try {
-                    const decodedUrl = decodeURIComponent(rawUrl);
-                    const storagePath = decodedUrl.startsWith('http') || decodedUrl.includes('/storage/v1/')
-                      ? (decodedUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/receipts\/([^?#]+)/i)?.[1] || decodedUrl.match(/\/receipts\/([^?#]+)/i)?.[1] || '')
-                      : decodedUrl.replace(/^\/+/, '');
-                    if (storagePath) {
-                      const { data: signedData } = await supabase.storage.from('receipts').createSignedUrl(storagePath, 3600);
-                      const signedUrl = signedData?.signedUrl;
-                      preview = signedUrl ? (signedUrl.startsWith('http') ? signedUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1${signedUrl}`) : null;
-                    } else if (decodedUrl.startsWith('http')) {
-                      preview = decodedUrl;
-                    }
-                  } catch { preview = null; }
-                }
-              }
-              existingDocs.push({
-                id: exp.id, file: placeholderFile, preview,
-                paymentMethod: exp.payment_method as PaymentMethod || 'out_of_pocket',
-                analyzed: true, analyzing: false,
-                amount: exp.amount, amountIls: exp.amount_in_ils,
-                currency: exp.currency || 'ILS', description: exp.description || '',
-                category: exp.category || 'miscellaneous', expenseDate: exp.expense_date || '',
-                error: null, existingExpenseId: exp.id,
-              });
-            }
-            if (existingDocs.length > 0) {
-              const flightDocs = existingDocs.filter(d => d.category === 'flights');
-              const accDocs = existingDocs.filter(d => d.category === 'accommodation');
-              const regularDocs = existingDocs.filter(d => d.category !== 'flights' && d.category !== 'accommodation');
-              setData(prev => ({
-                ...prev,
-                docs: [...prev.docs, ...regularDocs],
-                flightDocs: [...prev.flightDocs, ...flightDocs],
-                accommodationDocs: [...prev.accommodationDocs, ...accDocs],
-                addFlights: flightDocs.length > 0 ? true : prev.addFlights,
-                flightTotal: flightDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.flightTotal,
-                addAccommodation: accDocs.length > 0 ? true : prev.addAccommodation,
-                accommodationTotal: accDocs.reduce((s, d) => s + (d.amountIls || 0), 0) || prev.accommodationTotal,
-              }));
-            }
-          }
+          await loadExistingExpensesIntoWizard(editId);
         }
       });
     }
