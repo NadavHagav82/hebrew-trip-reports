@@ -368,7 +368,7 @@ export default function IndependentNewReport() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed.tripDestination && parsed.draftReportId) {
+          if (parsed.draftReportId) {
             setDraftReportId(parsed.draftReportId);
             draftReportIdRef.current = parsed.draftReportId;
             setStep(parsed.step || 0);
