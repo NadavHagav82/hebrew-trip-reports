@@ -414,6 +414,19 @@ export default function IndependentNewReport() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
   }, [data, step, draftReportId]);
 
+  // ──── Draft: Auto-save to DB on every meaningful change ────
+  useEffect(() => {
+    if (!user || !hasMeaningfulDraftContent(data)) return;
+
+    const timeoutId = window.setTimeout(() => {
+      saveDraftToDb(data).catch(error => {
+        console.error('Auto-save draft error:', error);
+      });
+    }, 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [data, user, usdToIls]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ──── Draft: Create/update in DB ────
   const saveDraftToDb = async (draftData: WizardData = dataRef.current) => {
     if (!user || !hasMeaningfulDraftContent(draftData)) return null;
