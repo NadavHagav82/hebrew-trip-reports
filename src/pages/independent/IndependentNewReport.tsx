@@ -1232,7 +1232,7 @@ export default function IndependentNewReport() {
               >
                 {CATEGORY_OPTIONS.map(cat => (
                   <option key={cat} value={cat}>
-                    {CATEGORY_CONFIG[cat].emoji} {CATEGORY_CONFIG[cat].label}
+                    {CATEGORY_CONFIG[cat].label}
                   </option>
                 ))}
               </select>
@@ -1416,8 +1416,9 @@ export default function IndependentNewReport() {
         </div>
       </div>
       {tripDays > 0 && (
-        <div className="text-sm text-center bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-3 py-2.5 rounded-xl font-medium">
-          🗓️ משך הנסיעה: {tripDays} ימים
+        <div className="text-sm text-center bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-3 py-2.5 rounded-xl font-medium flex items-center justify-center gap-1.5">
+          <Calendar className="w-4 h-4" />
+          <span>משך הנסיעה: {tripDays} ימים</span>
         </div>
       )}
       <div className="space-y-1.5">
@@ -1793,7 +1794,7 @@ export default function IndependentNewReport() {
             <span>חזרה</span>
           </button>
           <h1 className="text-sm font-bold">
-            {draftReportId ? '✏️ טיוטא' : 'דוח הוצאות חדש'}
+            {draftReportId ? 'טיוטא' : 'דוח הוצאות חדש'}
           </h1>
           <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full">
             {step + 1}/{STEP_LABELS.length}
