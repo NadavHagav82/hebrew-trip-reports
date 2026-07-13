@@ -74,6 +74,23 @@ const STEP_LABELS = [
 
 const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
+const createEmptyWizardData = (): WizardData => ({
+  tripStartDate: '',
+  tripEndDate: '',
+  tripDestination: '',
+  tripPurpose: '',
+  docs: [],
+  addAllowance: null,
+  allowanceDays: 0,
+  dailyAllowance: DEFAULT_DAILY_ALLOWANCE,
+  addFlights: null,
+  flightDocs: [],
+  flightTotal: 0,
+  addAccommodation: null,
+  accommodationDocs: [],
+  accommodationTotal: 0,
+});
+
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane }> = {
   flights: { label: 'טיסות', icon: Plane },
   accommodation: { label: 'לינה', icon: Hotel },
@@ -98,22 +115,7 @@ export default function IndependentNewReport() {
   const [managerInfo, setManagerInfo] = useState<{ id: string; name: string; email: string } | null>(null);
   const [showManagerDialog, setShowManagerDialog] = useState(false);
 
-  const [data, setData] = useState<WizardData>({
-    tripStartDate: '',
-    tripEndDate: '',
-    tripDestination: '',
-    tripPurpose: '',
-    docs: [],
-    addAllowance: null,
-    allowanceDays: 0,
-    dailyAllowance: DEFAULT_DAILY_ALLOWANCE,
-    addFlights: null,
-    flightDocs: [],
-    flightTotal: 0,
-    addAccommodation: null,
-    accommodationDocs: [],
-    accommodationTotal: 0,
-  });
+  const [data, setData] = useState<WizardData>(() => createEmptyWizardData());
   const dataRef = useRef<WizardData>(data);
   const draftCreationRef = useRef<Promise<string | null> | null>(null);
   const persistingDocIdsRef = useRef<Set<string>>(new Set());
@@ -220,6 +222,25 @@ export default function IndependentNewReport() {
       saveDraftToDb(nextData).catch(error => {
         console.error('Immediate field draft save failed:', error);
       });
+    }
+  };
+
+  const handleManualSaveDraft = async () => {
+    if (!hasMeaningfulDraftContent(dataRef.current)) {
+      toast({ title: 'אין מה לשמור עדיין', description: 'מלא לפחות פרט אחד בדוח ואז שמור טיוטא' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const reportId = await saveDraftToDb(dataRef.current);
+      if (!reportId) throw new Error('Draft was not saved');
+      toast({ title: 'הטיוטא נשמרה', description: 'אפשר להמשיך אותה מרשימת הטיוטות' });
+    } catch (e) {
+      console.error('Manual draft save failed:', e);
+      toast({ title: 'שגיאה בשמירת טיוטא', description: 'נסה שוב בעוד רגע', variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -418,60 +439,16 @@ export default function IndependentNewReport() {
         }
       });
     } else {
-      // Check localStorage for unsaved draft
+      // A plain /reports/new or /independent/new-report must always start a fresh report.
+      // Existing drafts are opened only from the dashboard via ?draft=<id>.
       if (editId) return; // Don't clobber DB-loaded edit data with localStorage
-      const saved = localStorage.getItem(DRAFT_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.draftReportId) {
-            setDraftReportId(parsed.draftReportId);
-            draftReportIdRef.current = parsed.draftReportId;
-            setStep(parsed.step || 0);
-            setData(prev => {
-              const restored = {
-                ...prev,
-              tripStartDate: parsed.tripStartDate || '',
-              tripEndDate: parsed.tripEndDate || '',
-              tripDestination: parsed.tripDestination || '',
-              tripPurpose: parsed.tripPurpose || '',
-              addAllowance: parsed.addAllowance ?? null,
-              allowanceDays: parsed.allowanceDays || 0,
-              dailyAllowance: parsed.dailyAllowance || DEFAULT_DAILY_ALLOWANCE,
-              addFlights: parsed.addFlights ?? null,
-              flightTotal: parsed.flightTotal || 0,
-              addAccommodation: parsed.addAccommodation ?? null,
-              accommodationTotal: parsed.accommodationTotal || 0,
-              };
-              dataRef.current = restored;
-              return restored;
-            });
-            loadExistingExpensesIntoWizard(parsed.draftReportId).catch(() => {});
-            toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
-          } else if (hasStoredDraftContent(parsed)) {
-            setStep(parsed.step || 0);
-            setData(prev => {
-              const restored = {
-                ...prev,
-                tripStartDate: parsed.tripStartDate || '',
-                tripEndDate: parsed.tripEndDate || '',
-                tripDestination: parsed.tripDestination || '',
-                tripPurpose: parsed.tripPurpose || '',
-                addAllowance: parsed.addAllowance ?? null,
-                allowanceDays: parsed.allowanceDays || 0,
-                dailyAllowance: parsed.dailyAllowance || DEFAULT_DAILY_ALLOWANCE,
-                addFlights: parsed.addFlights ?? null,
-                flightTotal: parsed.flightTotal || 0,
-                addAccommodation: parsed.addAccommodation ?? null,
-                accommodationTotal: parsed.accommodationTotal || 0,
-              };
-              dataRef.current = restored;
-              return restored;
-            });
-            toast({ title: 'טיוטא מקומית נטענה', description: 'ממשיך מאיפה שעצרת' });
-          }
-        } catch {}
-      }
+      localStorage.removeItem(DRAFT_KEY);
+      draftReportIdRef.current = null;
+      setDraftReportId(null);
+      setStep(0);
+      const emptyData = createEmptyWizardData();
+      dataRef.current = emptyData;
+      setData(emptyData);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1091,7 +1068,7 @@ export default function IndependentNewReport() {
       const totalIls = docsTotal + allowanceIls + data.flightTotal + data.accommodationTotal;
       const isPending = finalStatus === 'pending_approval';
 
-      let reportId = draftReportId;
+      let reportId = draftReportIdRef.current || draftReportId;
 
       const reportPayload = {
         trip_start_date: data.tripStartDate,
@@ -1106,11 +1083,11 @@ export default function IndependentNewReport() {
         ...(finalStatus === 'closed' ? { approved_at: new Date().toISOString(), approved_by: user.id } : {}),
       };
 
-      if (draftReportId) {
+      if (reportId) {
         const { error: updateError } = await supabase
           .from('reports')
           .update(reportPayload)
-          .eq('id', draftReportId);
+          .eq('id', reportId);
         if (updateError) throw updateError;
       } else {
         const { data: report, error: reportError } = await supabase
@@ -1900,18 +1877,12 @@ export default function IndependentNewReport() {
           <h1 className="text-sm font-bold">
             {draftReportId ? 'טיוטא' : 'דוח הוצאות חדש'}
           </h1>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              onClick={async () => {
-                try {
-                  await saveDraftToDb(dataRef.current);
-                  toast({ title: 'הטיוטא נשמרה', description: 'ניתן להמשיך מהמסך הראשי' });
-                } catch (e) {
-                  toast({ title: 'שגיאה בשמירה', variant: 'destructive' });
-                }
-              }}
-              className="flex items-center gap-1 text-xs font-semibold bg-emerald-500 text-white px-2.5 py-1 rounded-full active:scale-95 transition-transform"
+              onClick={handleManualSaveDraft}
+              disabled={saving}
+              className="hidden sm:flex items-center gap-1 text-xs font-semibold bg-primary text-primary-foreground px-2.5 py-1 rounded-full active:scale-95 transition-transform disabled:opacity-60"
             >
               <Save className="w-3.5 h-3.5" />
               <span>שמור טיוטא</span>
@@ -1949,6 +1920,18 @@ export default function IndependentNewReport() {
               <ArrowRight className="w-4 h-4" />
             </Button>
           )}
+
+          <Button
+            type="button"
+            variant="outline"
+            className="h-13 px-3 rounded-xl text-sm font-semibold shrink-0"
+            onClick={handleManualSaveDraft}
+            disabled={saving}
+            aria-label="שמור טיוטא"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span className="hidden min-[380px]:inline mr-1">שמור</span>
+          </Button>
 
           {step < STEP_LABELS.length - 1 ? (
             <Button
