@@ -170,19 +170,6 @@ export default function IndependentNewReport() {
     draftData.addAccommodation !== null
   );
 
-  const hasStoredDraftContent = (stored: any) => (
-    !!stored?.tripStartDate ||
-    !!stored?.tripEndDate ||
-    !!String(stored?.tripDestination || '').trim() ||
-    !!String(stored?.tripPurpose || '').trim() ||
-    (stored?.addAllowance !== null && stored?.addAllowance !== undefined) ||
-    (stored?.addFlights !== null && stored?.addFlights !== undefined) ||
-    (stored?.addAccommodation !== null && stored?.addAccommodation !== undefined) ||
-    Number(stored?.allowanceDays || 0) > 0 ||
-    Number(stored?.flightTotal || 0) > 0 ||
-    Number(stored?.accommodationTotal || 0) > 0
-  );
-
   const buildLocalDraftPayload = (
     draftData: WizardData = dataRef.current,
     draftStep = step,
@@ -1070,6 +1057,11 @@ export default function IndependentNewReport() {
 
       let reportId = draftReportIdRef.current || draftReportId;
 
+      // If auto-save is still creating the draft, finish that same report instead of creating a duplicate.
+      if (!reportId && draftCreationRef.current) {
+        reportId = await draftCreationRef.current;
+      }
+
       const reportPayload = {
         trip_start_date: data.tripStartDate,
         trip_end_date: data.tripEndDate,
@@ -1084,6 +1076,8 @@ export default function IndependentNewReport() {
       };
 
       if (reportId) {
+        await persistDocsAsDraft(reportId, dataRef.current);
+
         const { error: updateError } = await supabase
           .from('reports')
           .update(reportPayload)
@@ -1173,6 +1167,11 @@ export default function IndependentNewReport() {
           approval_status: isPending ? 'pending' : 'approved' as any,
         } as any);
       }
+
+      await supabase
+        .from('expenses')
+        .update({ approval_status: isPending ? 'pending' : 'approved' } as any)
+        .eq('report_id', report.id);
 
       // Create history record
       await supabase.from('report_history').insert({
