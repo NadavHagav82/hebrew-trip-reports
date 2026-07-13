@@ -428,6 +428,41 @@ export default function IndependentNewReport() {
     return () => window.clearTimeout(timeoutId);
   }, [data, user, usdToIls]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const saveCurrentDraft = () => {
+      if (user && hasMeaningfulDraftContent(dataRef.current)) {
+        saveDraftToDb(dataRef.current).catch(() => {});
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') saveCurrentDraft();
+    };
+
+    window.addEventListener('pagehide', saveCurrentDraft);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pagehide', saveCurrentDraft);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const exitWizard = async () => {
+    if (hasMeaningfulDraftContent(dataRef.current)) {
+      setSaving(true);
+      try {
+        await saveDraftToDb(dataRef.current);
+      } catch (error) {
+        console.error('Exit draft save failed:', error);
+        toast({ title: 'שגיאה בשמירה', description: 'לא הצלחתי לשמור את הטיוטה לפני היציאה', variant: 'destructive' });
+      } finally {
+        setSaving(false);
+      }
+    }
+    navigate(isIndependent ? '/independent' : '/dashboard');
+  };
+
   // ──── Draft: Create/update in DB ────
   const saveDraftToDb = async (draftData: WizardData = dataRef.current) => {
     if (!user || !hasMeaningfulDraftContent(draftData)) return null;
