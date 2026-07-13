@@ -1783,7 +1783,7 @@ export default function IndependentNewReport() {
             className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground py-1 px-1"
             onClick={() => {
               if (step === 0) {
-                navigate(isIndependent ? '/independent' : '/dashboard');
+                exitWizard();
               } else {
                 goToStep(step - 1);
               }
