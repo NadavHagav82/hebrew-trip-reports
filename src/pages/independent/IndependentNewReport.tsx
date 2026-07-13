@@ -364,6 +364,7 @@ export default function IndependentNewReport() {
       });
     } else {
       // Check localStorage for unsaved draft
+      if (editId) return; // Don't clobber DB-loaded edit data with localStorage
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         try {
@@ -420,7 +421,8 @@ export default function IndependentNewReport() {
       + (data.addFlights ? data.flightTotal : 0)
       + (data.addAccommodation ? data.accommodationTotal : 0);
 
-    if (draftReportId) {
+    let reportId = draftReportId;
+    if (reportId) {
       await supabase.from('reports').update({
         trip_start_date: data.tripStartDate,
         trip_end_date: data.tripEndDate,
@@ -429,7 +431,7 @@ export default function IndependentNewReport() {
         total_amount_ils: totalIls,
         daily_allowance: data.addAllowance ? data.dailyAllowance : null,
         allowance_days: data.addAllowance ? data.allowanceDays : null,
-      }).eq('id', draftReportId);
+      }).eq('id', reportId);
     } else {
       const { data: report } = await supabase.from('reports').insert({
         user_id: user.id,
@@ -441,7 +443,79 @@ export default function IndependentNewReport() {
         total_amount_ils: 0,
       }).select().single();
       if (report) {
+        reportId = report.id;
         setDraftReportId(report.id);
+      }
+    }
+
+    if (reportId) {
+      await persistDocsAsDraft(reportId);
+    }
+  };
+
+  // Persist analyzed docs (from all 3 buckets) to DB as draft expenses+receipts.
+  // Idempotent: skips docs that already have existingExpenseId.
+  const persistDocsAsDraft = async (reportId: string) => {
+    if (!user) return;
+    const buckets: Array<{ key: 'docs' | 'flightDocs' | 'accommodationDocs'; forceCategory?: string }> = [
+      { key: 'docs' },
+      { key: 'flightDocs', forceCategory: 'flights' },
+      { key: 'accommodationDocs', forceCategory: 'accommodation' },
+    ];
+
+    for (const { key, forceCategory } of buckets) {
+      const list = data[key];
+      for (const doc of list) {
+        if (doc.existingExpenseId) continue;
+        if (!doc.analyzed || doc.analyzing) continue;
+        // Only persist docs with a real file (not empty placeholder)
+        if (!doc.file || doc.file.size === 0) continue;
+
+        const category = forceCategory || doc.category || 'miscellaneous';
+        try {
+          const { data: expense, error: expenseError } = await supabase
+            .from('expenses')
+            .insert({
+              report_id: reportId,
+              expense_date: doc.expenseDate || data.tripStartDate || new Date().toISOString().split('T')[0],
+              category: category as any,
+              amount: doc.amount || 0,
+              currency: (doc.currency || 'ILS') as any,
+              amount_in_ils: doc.amountIls || doc.amount || 0,
+              description: doc.description || doc.file.name,
+              payment_method: (doc.paymentMethod || 'out_of_pocket') as any,
+              approval_status: 'pending' as any,
+            } as any)
+            .select()
+            .single();
+          if (expenseError || !expense) continue;
+
+          const isImageFile =
+            doc.file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(doc.file.name);
+          const ext = isImageFile ? (doc.file.name.split('.').pop() || 'jpg') : 'jpg';
+          const filePath = `${user.id}/${reportId}/${expense.id}.${ext}`;
+          const { error: storageError } = await supabase.storage
+            .from('receipts')
+            .upload(filePath, doc.file, { upsert: true });
+          if (!storageError) {
+            const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(filePath);
+            await supabase.from('receipts').insert({
+              expense_id: expense.id,
+              file_name: doc.file.name,
+              file_size: doc.file.size,
+              file_type: 'image' as any,
+              file_url: urlData.publicUrl,
+            });
+          }
+
+          // Mark this doc as persisted so we don't insert it again
+          setData(prev => ({
+            ...prev,
+            [key]: prev[key].map(d => (d.id === doc.id ? { ...d, existingExpenseId: expense.id } : d)),
+          }));
+        } catch (e) {
+          console.error('Draft persist error:', e);
+        }
       }
     }
   };
