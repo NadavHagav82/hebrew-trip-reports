@@ -652,7 +652,7 @@ export default function IndependentNewReport() {
     }
   };
 
-  const handleFilesAdded = useCallback(async (files: FileList, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
+  const handleFilesAdded = useCallback(async (files: FileList, target: DocBucketKey) => {
     const maxPerBatch = 10;
     // FileList is live: resetting the input on mobile can clear it while previews are still processing.
     // Copy it synchronously before the first await so camera captures never disappear mid-upload.
@@ -760,7 +760,14 @@ export default function IndependentNewReport() {
     // Await the first save to avoid concurrent draft creation on fast mobile captures.
     try {
       await saveDraftToDb(optimisticData);
-    } catch {}
+    } catch (error) {
+      console.error('Immediate draft save failed:', error);
+      toast({
+        title: 'שמירת הטיוטה נכשלה',
+        description: 'הקובץ מוצג במסך, אבל עדיין לא נשמר. נסה להישאר במסך עד סיום הניתוח.',
+        variant: 'destructive',
+      });
+    }
 
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
@@ -771,32 +778,81 @@ export default function IndependentNewReport() {
       dataRef.current = analyzedData;
       setData(analyzedData);
       // Persist analyzed result to DB draft
-      saveDraftToDb(analyzedData).catch(() => {});
+      saveDraftToDb(analyzedData).catch(error => console.error('Analyzed draft save failed:', error));
     });
   }, [toast, user, draftReportId, usdToIls]);
 
-  const setPaymentMethod = (docId: string, method: PaymentMethod, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    setData(prev => ({
-      ...prev,
-      [target]: prev[target].map(d => d.id === docId ? { ...d, paymentMethod: method } : d),
-    }));
+  const setPaymentMethod = (docId: string, method: PaymentMethod | null, target: DocBucketKey) => {
+    let changedDoc: UploadedDoc | undefined;
+    setData(prev => {
+      const next = {
+        ...prev,
+        [target]: prev[target].map(d => {
+          if (d.id !== docId) return d;
+          changedDoc = { ...d, paymentMethod: method };
+          return changedDoc;
+        }),
+      } as WizardData;
+      dataRef.current = next;
+      return next;
+    });
+
+    if (changedDoc?.existingExpenseId) {
+      supabase
+        .from('expenses')
+        .update({ payment_method: (method || 'out_of_pocket') as any })
+        .eq('id', changedDoc.existingExpenseId)
+        .then(({ error }) => {
+          if (error) console.error('Payment method update failed:', error);
+        });
+    } else {
+      saveDraftToDb().catch(error => console.error('Payment method draft save failed:', error));
+    }
   };
 
-  const removeDoc = async (docId: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    const doc = data[target].find(d => d.id === docId);
+  const removeDoc = async (docId: string, target: DocBucketKey) => {
+    const doc = dataRef.current[target].find(d => d.id === docId);
+    const nextData = {
+      ...dataRef.current,
+      [target]: dataRef.current[target].filter(d => d.id !== docId),
+    } as WizardData;
+    dataRef.current = nextData;
+    setData(nextData);
+
     // If this is an existing expense from DB, delete it
     if (doc?.existingExpenseId) {
       await supabase.from('receipts').delete().eq('expense_id', doc.existingExpenseId);
       await supabase.from('expenses').delete().eq('id', doc.existingExpenseId);
     }
-    setData(prev => ({ ...prev, [target]: prev[target].filter(d => d.id !== docId) }));
+    saveDraftToDb(nextData).catch(error => console.error('Remove doc draft save failed:', error));
   };
 
-  const setDocCategory = (docId: string, category: string, target: 'docs' | 'flightDocs' | 'accommodationDocs') => {
-    setData(prev => ({
+  const setDocCategory = (docId: string, category: string, target: DocBucketKey) => {
+    let changedDoc: UploadedDoc | undefined;
+    setData(prev => {
+      const next = {
       ...prev,
-      [target]: prev[target].map(d => d.id === docId ? { ...d, category } : d),
-    }));
+        [target]: prev[target].map(d => {
+          if (d.id !== docId) return d;
+          changedDoc = { ...d, category };
+          return changedDoc;
+        }),
+      } as WizardData;
+      dataRef.current = next;
+      return next;
+    });
+
+    if (changedDoc?.existingExpenseId) {
+      supabase
+        .from('expenses')
+        .update({ category: category as any })
+        .eq('id', changedDoc.existingExpenseId)
+        .then(({ error }) => {
+          if (error) console.error('Category update failed:', error);
+        });
+    } else {
+      saveDraftToDb().catch(error => console.error('Category draft save failed:', error));
+    }
   };
 
   // ──── Step validation ────
