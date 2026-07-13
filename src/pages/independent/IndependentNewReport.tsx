@@ -564,6 +564,26 @@ export default function IndependentNewReport() {
             20_000,
           );
 
+          const latestDoc = dataRef.current[key].find(d => d.id === doc.id);
+          if (latestDoc) {
+            const latestCategory = forceCategory || latestDoc.category || 'miscellaneous';
+            await withTimeout(
+              supabase
+                .from('expenses')
+                .update({
+                  expense_date: latestDoc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
+                  category: latestCategory as any,
+                  amount: latestDoc.amount || 0,
+                  currency: (latestDoc.currency || 'ILS') as any,
+                  amount_in_ils: latestDoc.amountIls || latestDoc.amount || 0,
+                  description: latestDoc.description || latestDoc.file?.name || 'חשבונית',
+                  payment_method: (latestDoc.paymentMethod || 'out_of_pocket') as any,
+                } as any)
+                .eq('id', expense.id),
+              20_000,
+            );
+          }
+
           // Mark this doc as persisted so we don't insert it again
           const markedData = {
             ...dataRef.current,
