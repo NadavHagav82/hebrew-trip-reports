@@ -1142,6 +1142,7 @@ export default function Dashboard() {
                             )}
                           </td>
                           <td className="p-4">
+                            <div className="flex items-center gap-2">
                             {report.status === 'draft' ? (
                               <Button
                                 variant="outline"
@@ -1169,6 +1170,36 @@ export default function Dashboard() {
                                 צפייה
                               </Button>
                             )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 rounded-xl transition-all"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>למחוק את הדוח?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    פעולה זו תמחק לצמיתות את הדוח "{report.trip_destination}" וכל ההוצאות והקבלות המשויכות אליו. לא ניתן לשחזר.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => handleDeleteReport(report.id)}
+                                  >
+                                    מחק
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            </div>
                           </td>
                         </tr>
                       ))}
