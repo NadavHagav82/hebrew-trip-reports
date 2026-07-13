@@ -643,7 +643,7 @@ export default function IndependentNewReport() {
       }
 
       newDocs.push({
-        id: `${Date.now()}-${i}`,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${i}`,
         file: finalFile,
         preview,
         paymentMethod: null,
@@ -680,12 +680,17 @@ export default function IndependentNewReport() {
       });
     }
 
+    // Auto-save draft immediately so files are persisted even if user leaves
+    saveDraftToDb().catch(() => {});
+
     newDocs.forEach(async (doc) => {
       const result = await analyzeFile(doc, destination, startDate);
       setData(prev => ({
         ...prev,
         [target]: prev[target].map(d => d.id === doc.id ? { ...d, ...result } : d),
       }));
+      // Persist analyzed result to DB draft
+      saveDraftToDb().catch(() => {});
     });
   }, [data, toast]);
 
