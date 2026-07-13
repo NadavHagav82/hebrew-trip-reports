@@ -364,6 +364,7 @@ export default function IndependentNewReport() {
       });
     } else {
       // Check localStorage for unsaved draft
+      if (editId) return; // Don't clobber DB-loaded edit data with localStorage
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         try {
