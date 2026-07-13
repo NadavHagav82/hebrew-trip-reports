@@ -116,6 +116,7 @@ export default function IndependentNewReport() {
   });
   const dataRef = useRef<WizardData>(data);
   const draftCreationRef = useRef<Promise<string | null> | null>(null);
+  const persistingDocIdsRef = useRef<Set<string>>(new Set());
 
   const [usdToIls, setUsdToIls] = useState(3.7); // fallback rate
 
@@ -495,6 +496,7 @@ export default function IndependentNewReport() {
     for (const { key, forceCategory } of buckets) {
       const list = draftData[key];
       for (const doc of list) {
+        if (persistingDocIdsRef.current.has(doc.id)) continue;
         const category = forceCategory || doc.category || 'miscellaneous';
         const expensePayload = {
           expense_date: doc.expenseDate || draftData.tripStartDate || new Date().toISOString().split('T')[0],
@@ -521,6 +523,7 @@ export default function IndependentNewReport() {
 
           // Only brand-new docs with a real file need a new expense + receipt upload.
           if (!doc.file || doc.file.size === 0) continue;
+          persistingDocIdsRef.current.add(doc.id);
 
           const { data: expense, error: expenseError } = await withTimeout(
             supabase
@@ -573,6 +576,8 @@ export default function IndependentNewReport() {
           }));
         } catch (e) {
           console.error('Draft persist error:', e);
+        } finally {
+          persistingDocIdsRef.current.delete(doc.id);
         }
       }
     }
