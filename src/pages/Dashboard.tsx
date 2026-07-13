@@ -260,7 +260,6 @@ export default function Dashboard() {
 
   const fetchProfile = async () => {
     if (!user) return;
-    if (!user) return;
     
     try {
       const { data, error } = await supabase
