@@ -168,6 +168,47 @@ export default function IndependentNewReport() {
     draftData.addAccommodation !== null
   );
 
+  const hasStoredDraftContent = (stored: any) => (
+    !!stored?.tripStartDate ||
+    !!stored?.tripEndDate ||
+    !!String(stored?.tripDestination || '').trim() ||
+    !!String(stored?.tripPurpose || '').trim() ||
+    stored?.addAllowance !== null && stored?.addAllowance !== undefined ||
+    stored?.addFlights !== null && stored?.addFlights !== undefined ||
+    stored?.addAccommodation !== null && stored?.addAccommodation !== undefined ||
+    Number(stored?.allowanceDays || 0) > 0 ||
+    Number(stored?.flightTotal || 0) > 0 ||
+    Number(stored?.accommodationTotal || 0) > 0
+  );
+
+  const buildLocalDraftPayload = (
+    draftData: WizardData = dataRef.current,
+    draftStep = step,
+    reportId = draftReportIdRef.current,
+  ) => ({
+    tripStartDate: draftData.tripStartDate,
+    tripEndDate: draftData.tripEndDate,
+    tripDestination: draftData.tripDestination,
+    tripPurpose: draftData.tripPurpose,
+    addAllowance: draftData.addAllowance,
+    allowanceDays: draftData.allowanceDays,
+    dailyAllowance: draftData.dailyAllowance,
+    addFlights: draftData.addFlights,
+    flightTotal: draftData.flightTotal,
+    addAccommodation: draftData.addAccommodation,
+    accommodationTotal: draftData.accommodationTotal,
+    step: draftStep,
+    draftReportId: reportId,
+  });
+
+  const persistLocalDraft = (
+    draftData: WizardData = dataRef.current,
+    draftStep = step,
+    reportId = draftReportIdRef.current,
+  ) => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(buildLocalDraftPayload(draftData, draftStep, reportId)));
+  };
+
   const extractReceiptStoragePath = (source: string) => {
     const decoded = decodeURIComponent(String(source || '').trim());
     if (!decoded) return '';
@@ -397,33 +438,25 @@ export default function IndependentNewReport() {
 
   // ──── Draft: Auto-save to localStorage on change ────
   useEffect(() => {
-    const toSave = {
-      tripStartDate: data.tripStartDate,
-      tripEndDate: data.tripEndDate,
-      tripDestination: data.tripDestination,
-      tripPurpose: data.tripPurpose,
-      addAllowance: data.addAllowance,
-      allowanceDays: data.allowanceDays,
-      dailyAllowance: data.dailyAllowance,
-      addFlights: data.addFlights,
-      flightTotal: data.flightTotal,
-      addAccommodation: data.addAccommodation,
-      accommodationTotal: data.accommodationTotal,
-      step,
-      draftReportId,
-    };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
+    persistLocalDraft(data, step, draftReportId);
   }, [data, step, draftReportId]);
 
   // ──── Draft: Auto-save to DB on every meaningful change ────
   useEffect(() => {
     if (!user || !hasMeaningfulDraftContent(data)) return;
 
+    if (!draftReportIdRef.current && !draftCreationRef.current) {
+      saveDraftToDb(data).catch(error => {
+        console.error('Immediate draft creation error:', error);
+      });
+      return;
+    }
+
     const timeoutId = window.setTimeout(() => {
       saveDraftToDb(data).catch(error => {
         console.error('Auto-save draft error:', error);
       });
-    }, 900);
+    }, 450);
 
     return () => window.clearTimeout(timeoutId);
   }, [data, user, usdToIls]); // eslint-disable-line react-hooks/exhaustive-deps
