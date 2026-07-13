@@ -370,6 +370,7 @@ export default function IndependentNewReport() {
           const parsed = JSON.parse(saved);
           if (parsed.tripDestination && parsed.draftReportId) {
             setDraftReportId(parsed.draftReportId);
+            draftReportIdRef.current = parsed.draftReportId;
             setStep(parsed.step || 0);
             setData(prev => ({
               ...prev,
@@ -385,6 +386,7 @@ export default function IndependentNewReport() {
               addAccommodation: parsed.addAccommodation ?? null,
               accommodationTotal: parsed.accommodationTotal || 0,
             }));
+            loadExistingExpensesIntoWizard(parsed.draftReportId).catch(() => {});
             toast({ title: 'טיוטא נטענה', description: 'ממשיך מאיפה שעצרת' });
           }
         } catch {}
