@@ -78,13 +78,15 @@ const STEP_LABELS = [
 
 const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
-const serializeNotes = (d: { flightNotes?: string; accommodationNotes?: string; generalNotes?: string }): string | null => {
+const serializeNotes = (d: { flightNotes?: string; accommodationNotes?: string; generalNotes?: string; addFlights?: boolean | null; addAccommodation?: boolean | null }): string | null => {
   const payload = {
     flight: (d.flightNotes || '').trim(),
     accommodation: (d.accommodationNotes || '').trim(),
     general: (d.generalNotes || '').trim(),
+    hasFlights: d.addFlights === true ? true : d.addFlights === false ? false : null,
+    hasAccommodation: d.addAccommodation === true ? true : d.addAccommodation === false ? false : null,
   };
-  if (!payload.flight && !payload.accommodation && !payload.general) return null;
+  if (!payload.flight && !payload.accommodation && !payload.general && payload.hasFlights === null && payload.hasAccommodation === null) return null;
   return JSON.stringify(payload);
 };
 
