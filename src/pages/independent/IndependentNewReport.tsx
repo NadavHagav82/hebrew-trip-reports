@@ -78,6 +78,27 @@ const STEP_LABELS = [
 
 const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
+const serializeNotes = (d: { flightNotes?: string; accommodationNotes?: string; generalNotes?: string }): string | null => {
+  const payload = {
+    flight: (d.flightNotes || '').trim(),
+    accommodation: (d.accommodationNotes || '').trim(),
+    general: (d.generalNotes || '').trim(),
+  };
+  if (!payload.flight && !payload.accommodation && !payload.general) return null;
+  return JSON.stringify(payload);
+};
+
+const parseNotes = (raw: string | null | undefined): { flight: string; accommodation: string; general: string } => {
+  if (!raw) return { flight: '', accommodation: '', general: '' };
+  try {
+    const p = JSON.parse(raw);
+    if (p && typeof p === 'object' && ('flight' in p || 'accommodation' in p || 'general' in p)) {
+      return { flight: p.flight || '', accommodation: p.accommodation || '', general: p.general || '' };
+    }
+  } catch {}
+  return { flight: '', accommodation: '', general: raw };
+};
+
 const createEmptyWizardData = (): WizardData => ({
   tripStartDate: '',
   tripEndDate: '',
