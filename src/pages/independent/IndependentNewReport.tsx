@@ -1918,6 +1918,21 @@ export default function IndependentNewReport() {
           </div>
         );
       })()}
+
+      {/* General notes */}
+      <div className="space-y-1.5">
+        <Label htmlFor="generalNotes" className="text-sm font-bold flex items-center gap-1.5">
+          <FileText className="w-4 h-4 text-primary" />
+          הערות כלליות לדוח
+        </Label>
+        <Textarea
+          id="generalNotes"
+          className="min-h-24 text-base"
+          placeholder="הערות כלליות על הנסיעה או הדוח (אופציונלי)"
+          value={data.generalNotes}
+          onChange={e => setWizardData(p => ({ ...p, generalNotes: e.target.value }))}
+        />
+      </div>
     </div>,
   ];
 
