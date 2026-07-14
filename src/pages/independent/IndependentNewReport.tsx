@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
@@ -58,6 +59,9 @@ interface WizardData {
   addAccommodation: boolean | null;
   accommodationDocs: UploadedDoc[];
   accommodationTotal: number;
+  flightNotes: string;
+  accommodationNotes: string;
+  generalNotes: string;
 }
 
 const DRAFT_KEY = 'independent_draft_wizard';
@@ -74,6 +78,27 @@ const STEP_LABELS = [
 
 const DEFAULT_DAILY_ALLOWANCE = 77; // USD per day
 
+const serializeNotes = (d: { flightNotes?: string; accommodationNotes?: string; generalNotes?: string }): string | null => {
+  const payload = {
+    flight: (d.flightNotes || '').trim(),
+    accommodation: (d.accommodationNotes || '').trim(),
+    general: (d.generalNotes || '').trim(),
+  };
+  if (!payload.flight && !payload.accommodation && !payload.general) return null;
+  return JSON.stringify(payload);
+};
+
+const parseNotes = (raw: string | null | undefined): { flight: string; accommodation: string; general: string } => {
+  if (!raw) return { flight: '', accommodation: '', general: '' };
+  try {
+    const p = JSON.parse(raw);
+    if (p && typeof p === 'object' && ('flight' in p || 'accommodation' in p || 'general' in p)) {
+      return { flight: p.flight || '', accommodation: p.accommodation || '', general: p.general || '' };
+    }
+  } catch {}
+  return { flight: '', accommodation: '', general: raw };
+};
+
 const createEmptyWizardData = (): WizardData => ({
   tripStartDate: '',
   tripEndDate: '',
@@ -89,6 +114,9 @@ const createEmptyWizardData = (): WizardData => ({
   addAccommodation: null,
   accommodationDocs: [],
   accommodationTotal: 0,
+  flightNotes: '',
+  accommodationNotes: '',
+  generalNotes: '',
 });
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane }> = {
@@ -186,6 +214,9 @@ export default function IndependentNewReport() {
     flightTotal: draftData.flightTotal,
     addAccommodation: draftData.addAccommodation,
     accommodationTotal: draftData.accommodationTotal,
+    flightNotes: draftData.flightNotes,
+    accommodationNotes: draftData.accommodationNotes,
+    generalNotes: draftData.generalNotes,
     step: draftStep,
     draftReportId: reportId,
   });
@@ -371,6 +402,7 @@ export default function IndependentNewReport() {
       draftReportIdRef.current = editId;
       supabase.from('reports').select('*').eq('id', editId).single().then(async ({ data: report }) => {
         if (report) {
+          const parsedNotes = parseNotes(report.notes);
           setData(prev => ({
             ...prev,
             tripStartDate: report.trip_start_date || '',
@@ -380,6 +412,9 @@ export default function IndependentNewReport() {
             dailyAllowance: report.daily_allowance || DEFAULT_DAILY_ALLOWANCE,
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
+            flightNotes: parsedNotes.flight,
+            accommodationNotes: parsedNotes.accommodation,
+            generalNotes: parsedNotes.general,
           }));
           await loadExistingExpensesIntoWizard(editId);
         }
@@ -396,6 +431,7 @@ export default function IndependentNewReport() {
       draftReportIdRef.current = draftId;
       supabase.from('reports').select('*').eq('id', draftId).single().then(async ({ data: report }) => {
         if (report) {
+          const parsedNotes = parseNotes(report.notes);
           setData(prev => ({
             ...prev,
             tripStartDate: report.trip_start_date || '',
@@ -405,6 +441,9 @@ export default function IndependentNewReport() {
             dailyAllowance: report.daily_allowance || DEFAULT_DAILY_ALLOWANCE,
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
+            flightNotes: parsedNotes.flight,
+            accommodationNotes: parsedNotes.accommodation,
+            generalNotes: parsedNotes.general,
           }));
 
           await loadExistingExpensesIntoWizard(draftId);
@@ -519,6 +558,7 @@ export default function IndependentNewReport() {
         total_amount_ils: totalIls,
         daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
         allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
+        notes: serializeNotes(draftData),
       }).eq('id', reportId), 20_000);
     } else {
       if (!draftCreationRef.current) {
@@ -533,6 +573,7 @@ export default function IndependentNewReport() {
             total_amount_ils: totalIls,
             daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
             allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
+            notes: serializeNotes(draftData),
           }).select().single(), 20_000);
 
           if (error || !report) throw error || new Error('Draft report was not created');
@@ -1072,6 +1113,7 @@ export default function IndependentNewReport() {
         daily_allowance: data.addAllowance ? data.dailyAllowance : null,
         allowance_days: data.addAllowance ? data.allowanceDays : null,
         submitted_at: new Date().toISOString(),
+        notes: serializeNotes(data),
         ...(finalStatus === 'closed' ? { approved_at: new Date().toISOString(), approved_by: user.id } : {}),
       };
 
@@ -1662,6 +1704,19 @@ export default function IndependentNewReport() {
           </div>
         </div>
       )}
+
+      {data.addFlights !== null && (
+        <div className="space-y-1.5">
+          <Label htmlFor="flightNotes" className="text-sm">הערות לטיסות</Label>
+          <Textarea
+            id="flightNotes"
+            className="min-h-20 text-base"
+            placeholder="הערה על הטיסות (אופציונלי)"
+            value={data.flightNotes}
+            onChange={e => setWizardData(p => ({ ...p, flightNotes: e.target.value }))}
+          />
+        </div>
+      )}
     </div>,
 
     // Step 4: Accommodation
@@ -1718,6 +1773,19 @@ export default function IndependentNewReport() {
               onChange={e => setWizardData(p => ({ ...p, accommodationTotal: Number(e.target.value) }))}
             />
           </div>
+        </div>
+      )}
+
+      {data.addAccommodation !== null && (
+        <div className="space-y-1.5">
+          <Label htmlFor="accNotes" className="text-sm">הערות ללינה</Label>
+          <Textarea
+            id="accNotes"
+            className="min-h-20 text-base"
+            placeholder="הערה על הלינה (אופציונלי)"
+            value={data.accommodationNotes}
+            onChange={e => setWizardData(p => ({ ...p, accommodationNotes: e.target.value }))}
+          />
         </div>
       )}
     </div>,
@@ -1850,6 +1918,21 @@ export default function IndependentNewReport() {
           </div>
         );
       })()}
+
+      {/* General notes */}
+      <div className="space-y-1.5">
+        <Label htmlFor="generalNotes" className="text-sm font-bold flex items-center gap-1.5">
+          <FileText className="w-4 h-4 text-primary" />
+          הערות כלליות לדוח
+        </Label>
+        <Textarea
+          id="generalNotes"
+          className="min-h-24 text-base"
+          placeholder="הערות כלליות על הנסיעה או הדוח (אופציונלי)"
+          value={data.generalNotes}
+          onChange={e => setWizardData(p => ({ ...p, generalNotes: e.target.value }))}
+        />
+      </div>
     </div>,
   ];
 
