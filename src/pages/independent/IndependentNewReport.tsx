@@ -550,6 +550,7 @@ export default function IndependentNewReport() {
         total_amount_ils: totalIls,
         daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
         allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
+        notes: serializeNotes(draftData),
       }).eq('id', reportId), 20_000);
     } else {
       if (!draftCreationRef.current) {
@@ -564,6 +565,7 @@ export default function IndependentNewReport() {
             total_amount_ils: totalIls,
             daily_allowance: draftData.addAllowance ? draftData.dailyAllowance : null,
             allowance_days: draftData.addAllowance ? draftData.allowanceDays : null,
+            notes: serializeNotes(draftData),
           }).select().single(), 20_000);
 
           if (error || !report) throw error || new Error('Draft report was not created');
