@@ -402,6 +402,7 @@ export default function IndependentNewReport() {
       draftReportIdRef.current = editId;
       supabase.from('reports').select('*').eq('id', editId).single().then(async ({ data: report }) => {
         if (report) {
+          const parsedNotes = parseNotes(report.notes);
           setData(prev => ({
             ...prev,
             tripStartDate: report.trip_start_date || '',
@@ -411,6 +412,9 @@ export default function IndependentNewReport() {
             dailyAllowance: report.daily_allowance || DEFAULT_DAILY_ALLOWANCE,
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
+            flightNotes: parsedNotes.flight,
+            accommodationNotes: parsedNotes.accommodation,
+            generalNotes: parsedNotes.general,
           }));
           await loadExistingExpensesIntoWizard(editId);
         }
@@ -427,6 +431,7 @@ export default function IndependentNewReport() {
       draftReportIdRef.current = draftId;
       supabase.from('reports').select('*').eq('id', draftId).single().then(async ({ data: report }) => {
         if (report) {
+          const parsedNotes = parseNotes(report.notes);
           setData(prev => ({
             ...prev,
             tripStartDate: report.trip_start_date || '',
@@ -436,6 +441,9 @@ export default function IndependentNewReport() {
             dailyAllowance: report.daily_allowance || DEFAULT_DAILY_ALLOWANCE,
             allowanceDays: report.allowance_days || 0,
             addAllowance: report.allowance_days ? true : null,
+            flightNotes: parsedNotes.flight,
+            accommodationNotes: parsedNotes.accommodation,
+            generalNotes: parsedNotes.general,
           }));
 
           await loadExistingExpensesIntoWizard(draftId);
