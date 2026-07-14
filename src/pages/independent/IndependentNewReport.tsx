@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowRight, ArrowLeft, Upload, X, CheckCircle2, AlertCircle,
@@ -58,6 +59,9 @@ interface WizardData {
   addAccommodation: boolean | null;
   accommodationDocs: UploadedDoc[];
   accommodationTotal: number;
+  flightNotes: string;
+  accommodationNotes: string;
+  generalNotes: string;
 }
 
 const DRAFT_KEY = 'independent_draft_wizard';
@@ -89,6 +93,9 @@ const createEmptyWizardData = (): WizardData => ({
   addAccommodation: null,
   accommodationDocs: [],
   accommodationTotal: 0,
+  flightNotes: '',
+  accommodationNotes: '',
+  generalNotes: '',
 });
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane }> = {
