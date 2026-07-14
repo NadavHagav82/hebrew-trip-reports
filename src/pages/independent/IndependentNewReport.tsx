@@ -1775,6 +1775,19 @@ export default function IndependentNewReport() {
           </div>
         </div>
       )}
+
+      {data.addAccommodation !== null && (
+        <div className="space-y-1.5">
+          <Label htmlFor="accNotes" className="text-sm">הערות ללינה</Label>
+          <Textarea
+            id="accNotes"
+            className="min-h-20 text-base"
+            placeholder="הערה על הלינה (אופציונלי)"
+            value={data.accommodationNotes}
+            onChange={e => setWizardData(p => ({ ...p, accommodationNotes: e.target.value }))}
+          />
+        </div>
+      )}
     </div>,
 
     // Step 5: Summary
