@@ -124,6 +124,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Plane }> = {
   accommodation: { label: 'לינה', icon: Hotel },
   food: { label: 'אוכל', icon: UtensilsCrossed },
   transportation: { label: 'תחבורה', icon: Car },
+  hospitality: { label: 'אירוח', icon: UtensilsCrossed },
   miscellaneous: { label: 'שונות', icon: ShoppingBag },
 };
 const CATEGORY_OPTIONS = Object.keys(CATEGORY_CONFIG);
