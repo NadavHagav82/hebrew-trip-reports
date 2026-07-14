@@ -1959,12 +1959,88 @@ const ViewReport = () => {
                   <span className="font-semibold text-foreground">{report.trip_purpose}</span>
                 </div>
               </div>
-              {report.notes && (
-                <div className="mt-5 p-4 bg-accent/50 rounded-xl border-r-3 border-primary/30">
-                  <span className="text-sm text-foreground font-semibold block mb-1.5">הערות:</span>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{report.notes}</p>
-                </div>
-              )}
+              {(() => {
+                const raw = report.notes;
+                if (!raw) return null;
+                let parsed: { flight?: string; accommodation?: string; general?: string; hasFlights?: boolean | null; hasAccommodation?: boolean | null } | null = null;
+                try {
+                  const p = JSON.parse(raw);
+                  if (p && typeof p === 'object' && ('flight' in p || 'accommodation' in p || 'general' in p || 'hasFlights' in p || 'hasAccommodation' in p)) {
+                    parsed = p;
+                  }
+                } catch {}
+                if (!parsed) {
+                  return (
+                    <div className="mt-5 p-4 bg-accent/40 rounded-xl border-r-4 border-primary/40">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                        <span className="text-sm text-foreground font-semibold">הערות</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{raw}</p>
+                    </div>
+                  );
+                }
+                const { flight = '', accommodation = '', general = '', hasFlights = null, hasAccommodation = null } = parsed;
+                const showFlights = hasFlights !== null || !!flight;
+                const showAccommodation = hasAccommodation !== null || !!accommodation;
+                if (!showFlights && !showAccommodation && !general) return null;
+                const StatusPill = ({ ok }: { ok: boolean }) => (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${ok ? 'bg-status-approved/15 text-status-approved' : 'bg-muted text-muted-foreground'}`}>
+                    {ok ? 'הוצאות כלולות' : 'ללא הוצאות'}
+                  </span>
+                );
+                return (
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {showFlights && (
+                      <div className="p-4 rounded-xl bg-category-flights/5 border border-category-flights/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-category-flights/15 flex items-center justify-center">
+                              <Plane className="w-3.5 h-3.5 text-category-flights" />
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">טיסות</span>
+                          </div>
+                          {hasFlights !== null && <StatusPill ok={!!hasFlights} />}
+                        </div>
+                        {flight ? (
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{flight}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground/70 italic">ללא הערות</p>
+                        )}
+                      </div>
+                    )}
+                    {showAccommodation && (
+                      <div className="p-4 rounded-xl bg-category-accommodation/5 border border-category-accommodation/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-category-accommodation/15 flex items-center justify-center">
+                              <Hotel className="w-3.5 h-3.5 text-category-accommodation" />
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">לינה</span>
+                          </div>
+                          {hasAccommodation !== null && <StatusPill ok={!!hasAccommodation} />}
+                        </div>
+                        {accommodation ? (
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{accommodation}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground/70 italic">ללא הערות</p>
+                        )}
+                      </div>
+                    )}
+                    {general && (
+                      <div className="p-4 rounded-xl bg-accent/40 border border-primary/20 sm:col-span-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                            <MessageSquare className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">הערות כלליות לדוח</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{general}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {report.manager_general_comment && (
                 <div className="mt-4 p-4 bg-accent/50 rounded-xl border-r-3 border-secondary/40">
                   <span className="text-sm text-foreground font-semibold block mb-1.5">הערת מנהל על הדוח:</span>
