@@ -1702,6 +1702,17 @@ export default function IndependentNewReport() {
               </p>
             )}
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="flightNotes" className="text-sm">הערות לטיסות</Label>
+            <Textarea
+              id="flightNotes"
+              className="min-h-20 text-base"
+              placeholder="הערה על הטיסות (אופציונלי)"
+              value={data.flightNotes}
+              onChange={e => setWizardData(p => ({ ...p, flightNotes: e.target.value }))}
+            />
+          </div>
         </div>
       )}
     </div>,
