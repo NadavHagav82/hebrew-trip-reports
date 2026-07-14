@@ -193,6 +193,9 @@ export default function IndependentNewReport() {
     flightTotal: draftData.flightTotal,
     addAccommodation: draftData.addAccommodation,
     accommodationTotal: draftData.accommodationTotal,
+    flightNotes: draftData.flightNotes,
+    accommodationNotes: draftData.accommodationNotes,
+    generalNotes: draftData.generalNotes,
     step: draftStep,
     draftReportId: reportId,
   });
