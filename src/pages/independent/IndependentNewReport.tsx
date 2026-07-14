@@ -1105,6 +1105,7 @@ export default function IndependentNewReport() {
         daily_allowance: data.addAllowance ? data.dailyAllowance : null,
         allowance_days: data.addAllowance ? data.allowanceDays : null,
         submitted_at: new Date().toISOString(),
+        notes: serializeNotes(data),
         ...(finalStatus === 'closed' ? { approved_at: new Date().toISOString(), approved_by: user.id } : {}),
       };
 
