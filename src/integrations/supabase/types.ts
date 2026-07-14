@@ -2025,6 +2025,7 @@ export type Database = {
         | "food"
         | "transportation"
         | "miscellaneous"
+        | "hospitality"
       expense_currency:
         | "USD"
         | "EUR"
@@ -2246,6 +2247,7 @@ export const Constants = {
         "food",
         "transportation",
         "miscellaneous",
+        "hospitality",
       ],
       expense_currency: [
         "USD",
